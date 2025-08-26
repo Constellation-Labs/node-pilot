@@ -15,9 +15,13 @@ export const dockerHelper = {
 
     async dockerUp() {
         // If docker is already running, stop it
-        await shellService.runCommand('docker ps | grep entrypoint.sh').then(() => this.dockerDown()).catch(() => true);
+        await this.isRunning().then(() => this.dockerDown());
         await projectHelper.generateLayerEnvFiles();
         await run('up -d');
+    },
+
+    async isRunning() {
+        return shellService.runCommand('docker ps | grep entrypoint.sh', undefined, true).then(() => true).catch(() => false);
     }
 };
 

@@ -1,11 +1,13 @@
 
-import { select } from '@inquirer/prompts';
+import {select} from '@inquirer/prompts';
 import {Command} from '@oclif/core'
 
 import {checkNetwork} from "../checks/check-network.js";
 import {checkProject} from "../checks/check-project.js";
+import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
 import {configHelper} from "../helpers/config-helper.js";
+import {dockerHelper} from "../helpers/docker-helper.js";
 import {keyFileHelper} from "../helpers/key-file-helper.js";
 import {promptHelper} from "../helpers/prompt-helper.js";
 
@@ -44,12 +46,24 @@ export default class Config extends Command {
         }
         else if (answer === 'javaMemory') {
             await promptHelper.configureJavaMemoryArguments();
+            if (await dockerHelper.isRunning()) {
+                clm.preStep('The validator node must be restarted before changes can be applied.')
+                await promptHelper.doYouWishToContinue();
+                await dockerHelper.dockerDown();
+                await dockerHelper.dockerUp();
+            }
         }
         else if (answer === 'keyFile') {
             await keyFileHelper.showKeyFileInfo();
             await keyFileHelper.promptForKeyFile();
         }
         else if (answer === 'layersToRun') {
+            if (await dockerHelper.isRunning()) {
+                clm.preStep('The validator node must be stopped first.')
+                await promptHelper.doYouWishToContinue();
+                await dockerHelper.dockerDown();
+            }
+
             await promptHelper.selectLayers();
             await promptHelper.configureJavaMemoryArguments();
         }

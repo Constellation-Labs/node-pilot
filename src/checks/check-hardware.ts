@@ -19,7 +19,7 @@ export const checkHardware = {
 
         // Retrieve sys memory
         const totalMemoryBytes = os.totalmem();
-        const totalMemoryGB = (totalMemoryBytes / (1024 * 1024 * 1024)).toString()
+        const totalMemoryGB = (totalMemoryBytes / (1024 * 1024 * 1024)).toFixed(2)
 
         // Retrieve number of CPU cores
         const numOfCores = os.availableParallelism();

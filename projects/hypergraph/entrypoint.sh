@@ -12,12 +12,12 @@ echo "Using L0 peer id: $CL_L0_PEER_ID"
 
 export RUN_COMMAND="run-validator"
 
-if [ -e "/app/seedlist" ]; then
+if [ -s "/app/seedlist" ]; then
   echo "Using seedlist mapped from host"
   export RUN_COMMAND="$RUN_COMMAND --seedlist /app/seedlist"
 fi
 
-if [ -e "/app/priority-seedlist" ]; then
+if [ -s "/app/priority-seedlist" ]; then
   echo "Using priority seedlist mapped from host"
   export RUN_COMMAND="$RUN_COMMAND --prioritySeedlist /app/priority-seedlist"
 fi
