@@ -1,0 +1,28 @@
+import {configStore} from "../config-store.js";
+import {shellService} from "../services/shell-service.js";
+import {TessellationLayer} from "../types.js";
+import {projectHelper} from "./project-helper.js";
+
+export const dockerHelper = {
+
+    async dockerDown() {
+        await run('down');
+    },
+
+    async dockerRestart() {
+        await run('restart');
+    },
+
+    async dockerUp() {
+        // If docker is already running, stop it
+        await shellService.runCommand('docker ps | grep entrypoint.sh').then(() => this.dockerDown()).catch(() => true);
+        await projectHelper.generateLayerEnvFiles();
+        await run('up -d');
+    }
+};
+
+function run(command: string, layers?: TessellationLayer[]) {
+    const {layersToRun} = configStore.getProjectInfo();
+    const args = (layers || layersToRun).map(l => `--profile ${l}`).join(' ');
+    return shellService.runCommand(`docker compose ${args} ${command}`, configStore.getDockerEnvInfo());
+}
