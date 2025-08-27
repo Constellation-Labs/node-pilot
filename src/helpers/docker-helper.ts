@@ -15,7 +15,10 @@ export const dockerHelper = {
 
     async dockerUp() {
         // If docker is already running, stop it
-        await this.isRunning().then(() => this.dockerDown());
+        if (await this.isRunning()) {
+            await this.dockerDown();
+        }
+
         await projectHelper.generateLayerEnvFiles();
         await run('up -d');
     },

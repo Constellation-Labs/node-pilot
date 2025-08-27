@@ -28,3 +28,11 @@ CL_P2P_HTTP_PORT=${layerInfo.CL_P2P_HTTP_PORT}
 CL_CLI_HTTP_PORT=${layerInfo.CL_CLI_HTTP_PORT}
 `;
 }
+
+export function getKeyFileContent(commonInfo: EnvCommonInfo) {
+    return `
+export CL_KEYSTORE="${commonInfo.CL_KEYSTORE}"
+export CL_KEYALIAS="${commonInfo.CL_KEYALIAS}"
+export CL_PASSWORD="${commonInfo.CL_PASSWORD}"
+`;
+}

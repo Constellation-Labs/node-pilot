@@ -7,7 +7,7 @@ import {clm} from "../clm.js";
 import {configStore, EnvCommonInfo, EnvLayerInfo, NetworkType} from "../config-store.js";
 import {TessellationLayer} from "../types.js";
 import {configHelper} from "./config-helper.js";
-import {getLayerEnvFileContent} from "./layer-env-template.js";
+import {getLayerEnvFileContent} from "./env-templates.js";
 
 export const projectHelper = {
 

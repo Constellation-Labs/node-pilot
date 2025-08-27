@@ -119,7 +119,7 @@ export const nodeService = {
             // eslint-disable-next-line no-await-in-loop
             const { state } = await this.getNodeInfo(layer);
 
-            if (state === "Unavailable") {
+            if (state === "Unavailable" ||  state === "ReadyToJoin") {
                 if (expectedState === 'Offline') return true;
                 clm.echo(`     Validator Node is not running.`);
             }

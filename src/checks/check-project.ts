@@ -101,7 +101,7 @@ export const checkProject = {
 
         if (rInfo && rInfo.network === nInfo.type) {
             clm.postStep(`Network files are already installed for ${nInfo.type}`);
-            return
+            return false;
         }
 
         const nodeInfo = await nodeService.getNodeInfo('first');
@@ -126,5 +126,16 @@ export const checkProject = {
             type: rInfo!.network as NetworkType,
             version: rInfo!.version
         });
+
+        return true;
+    },
+
+    async runUpgrade() {
+        const changed = await this.runInstall();
+
+        if (changed && shellService.existsScript('scripts/docker-build.sh')) {
+            clm.preStep('Building the node container...');
+            await shellService.runCommand('bash scripts/docker-build.sh');
+        }
     }
 }

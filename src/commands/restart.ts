@@ -1,9 +1,11 @@
 import {Command} from '@oclif/core'
 
+import {checkProject} from "../checks/check-project.js";
 import {configStore} from "../config-store.js";
+import {configHelper} from "../helpers/config-helper.js";
 import {dockerHelper} from "../helpers/docker-helper.js";
 import {nodeService} from "../services/node-service.js";
-import {configHelper} from "../helpers/config-helper.js";
+import {clm} from "../clm.js";
 
 export default class Restart extends Command {
 
@@ -17,6 +19,11 @@ export default class Restart extends Command {
         const {layersToRun} = configStore.getProjectInfo();
         await nodeService.leaveClusterAllLayers();
         await nodeService.pollForLayersState(layersToRun, 'Offline');
-        await dockerHelper.dockerRestart();
+        clm.preStep('Stopping the node...');
+        await dockerHelper.dockerDown();
+        clm.preStep('Checking for a new version...');
+        await checkProject.runUpgrade(); // checks for a new version
+        clm.preStep('Starting the node...');
+        await dockerHelper.dockerUp();
     }
 }
