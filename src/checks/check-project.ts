@@ -133,9 +133,8 @@ export const checkProject = {
     async runUpgrade() {
         const changed = await this.runInstall();
 
-        if (changed && shellService.existsScript('scripts/docker-build.sh')) {
-            clm.preStep('Building the node container...');
-            await shellService.runCommand('bash scripts/docker-build.sh');
+        if (changed) {
+            await dockerHelper.dockerBuild();
         }
     }
 }

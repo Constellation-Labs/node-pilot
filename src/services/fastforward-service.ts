@@ -1,13 +1,12 @@
 
 import {serializeBrotli} from "@stardust-collective/dag4-keystore";
-// import * as jsSha256 from "js-sha256";
-import fs from "node:fs";
-import path from "node:path";
-import 'json-bigint-patch';
-
-import {configStore} from "../config-store.js";
-import {clm} from "../clm.js";
 import chalk from "chalk";
+import fs from "node:fs";
+import 'json-bigint-patch';
+import path from "node:path";
+
+import {clm} from "../clm.js";
+import {configStore} from "../config-store.js";
 
 const CHUNK_SIZE = 20_000;
 
@@ -30,10 +29,9 @@ export class FastforwardService {
         fs.mkdirSync(this.tmpDir, {recursive: true});
         fs.mkdirSync(this.dataDir, {recursive: true});
 
-        // this.lbUrl = `https://l0-lb-${this.network}.constellationnetwork.io`;
-
         const env = configStore.getEnvCommonInfo();
 
+        // this.lbUrl = `https://l0-lb-${this.network}.constellationnetwork.io`;
         this.lbUrl = `http://${env.CL_GLOBAL_L0_PEER_HOST}:${env.CL_GLOBAL_L0_PEER_HTTP_PORT}`;
     }
 

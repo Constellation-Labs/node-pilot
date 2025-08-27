@@ -37,10 +37,7 @@ export const checkLayers = {
             await input({ default: 'y', message: 'Would you like to start the validator(s)? (y/n): '}).then(async answer =>  {
                 if (answer.toLowerCase() === 'y') {
 
-                    if (shellService.existsScript('scripts/docker-build.sh')) {
-                        clm.preStep('Building the node container...');
-                        await shellService.runCommand('bash scripts/docker-build.sh');
-                    }
+                    await dockerHelper.dockerBuild();
 
                     clm.preStep('Starting the node...');
                     await dockerHelper.dockerUp();

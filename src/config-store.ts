@@ -64,9 +64,9 @@ class ConfigStore {
 
         this.projectStore = new JSONStorage(path.join(projectDir,'config'));
 
-        this.projectStore.setItem('docker', { DOCKER_IMAGE_VERSION: 'test' })
-        this.projectStore.setItem('project', { name, projectDir })
-        this.projectStore.setItem('env', { common: { CL_GLOBAL_L0_PEER_HTTP_PORT: '9000' }, layers: { gl0: { CL_PUBLIC_HTTP_PORT: "9000" }}} as EnvInfo);
+        this.setDockerEnvInfo({ DOCKER_IMAGE_VERSION: 'test' });
+        this.setProjectInfo({ name, projectDir })
+        this.setEnvInfo({ common: { CL_GLOBAL_L0_PEER_HTTP_PORT: '9000' }, layers: { gl0: { CL_PUBLIC_HTTP_PORT: "9000" }}});
     }
 
     changeProjectStore(name: string) {
@@ -125,12 +125,17 @@ class ConfigStore {
         return projects.length > 0;
     }
 
+    setDockerEnvInfo(info: Partial<{ DOCKER_IMAGE_VERSION: string, DOCKER_USER_ID: string}>) {
+        const oldInfo = this.projectStore.getItem('docker');
+        this.projectStore.setItem('docker', { ...oldInfo, ...info });
+    }
+
     setEnvCommonInfo(info: Partial<EnvCommonInfo>) {
         const oldInfo = this.projectStore.getItem('env');
         this.projectStore.setItem('env', { common: { ...oldInfo.common, ...info }, layers: oldInfo.layers });
     }
 
-    setEnvInfo(info: EnvInfo) {
+    setEnvInfo(info: DeepPartial<EnvInfo>) {
         const oldInfo = this.projectStore.getItem('env');
         this.projectStore.setItem('env', { ...oldInfo, ...info });
     }
@@ -164,6 +169,10 @@ class ConfigStore {
 }
 
 export const configStore = new ConfigStore();
+
+type DeepPartial<T> = {
+    [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
 
 type PilotInfo = {
     appDir: string;

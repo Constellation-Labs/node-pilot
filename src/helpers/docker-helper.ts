@@ -1,9 +1,17 @@
+import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
 import {shellService} from "../services/shell-service.js";
 import {TessellationLayer} from "../types.js";
 import {projectHelper} from "./project-helper.js";
 
 export const dockerHelper = {
+
+    async dockerBuild() {
+        if (shellService.existsScript('scripts/docker-build.sh')) {
+            clm.preStep('Building the node container...');
+            await shellService.runCommand('bash scripts/docker-build.sh');
+        }
+    },
 
     async dockerDown() {
         await run('down');
@@ -20,6 +28,9 @@ export const dockerHelper = {
         }
 
         await projectHelper.generateLayerEnvFiles();
+
+        const userId = await shellService.runCommandWithOutput('echo "$(id -u):$(id -g)"')
+        configStore.setDockerEnvInfo({ DOCKER_USER_ID: userId });
         await run('up -d');
     },
 
