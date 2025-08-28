@@ -73,11 +73,11 @@ export const checkProject = {
             configStore.setNetworkInfo({ type: rInfo.network, version: rInfo.version });
         }
 
-        const clusterVersionInfo = await clusterService.getReleaseVersion();
+        const clusterVersion = await clusterService.getReleaseVersion();
 
         if (!requiresInstall) {
             const nInfo = configStore.getNetworkInfo();
-            if (nInfo.version !== clusterVersionInfo) {
+            if (nInfo.version !== clusterVersion) {
                 const answer = await input({
                     default: 'y',
                     message: `A new required network version has been detected. Do you want to upgrade now? (y/n): `
@@ -97,15 +97,16 @@ export const checkProject = {
 
     async runInstall() {
         const nInfo = configStore.getNetworkInfo();
+        const clusterVersion = await clusterService.getReleaseVersion();
+
         let rInfo = await configHelper.getReleaseInfo();
 
-        if (rInfo && rInfo.network === nInfo.type) {
-            clm.postStep(`Network files are already installed for ${nInfo.type}`);
+        if (rInfo && rInfo.network === nInfo.type && rInfo.version === clusterVersion) {
+            clm.postStep(`Network files are already installed for ${nInfo.type} version ${clusterVersion}`);
             return false;
         }
 
         const nodeInfo = await nodeService.getNodeInfo('first');
-
         const isRunning = nodeInfo.state !== 'Unavailable';
 
         if (isRunning) {
