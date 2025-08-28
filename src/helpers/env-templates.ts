@@ -6,10 +6,10 @@ export function getLayerEnvFileContent(layer: TessellationLayer, network: Networ
     return `
 # Node
 CL_EXTERNAL_IP=${commonInfo.CL_EXTERNAL_IP}
-CL_DOCKER_JAVA_OPTS="${layerInfo.CL_DOCKER_JAVA_OPTS}"
-CL_KEYSTORE="/app/key.p12"
-CL_KEYALIAS="${commonInfo.CL_KEYALIAS}"
-CL_PASSWORD="${commonInfo.CL_PASSWORD}"
+CL_DOCKER_JAVA_OPTS='${layerInfo.CL_DOCKER_JAVA_OPTS}'
+CL_KEYSTORE='/app/key.p12'
+CL_KEYALIAS='${commonInfo.CL_KEYALIAS}'
+CL_PASSWORD='${commonInfo.CL_PASSWORD}'
 CL_TESSELATION_LAYER=${layer}
 
 # NETWORK
@@ -31,8 +31,8 @@ CL_CLI_HTTP_PORT=${layerInfo.CL_CLI_HTTP_PORT}
 
 export function getKeyFileContent(commonInfo: EnvCommonInfo) {
     return `
-export CL_KEYSTORE="${commonInfo.CL_KEYSTORE}"
-export CL_KEYALIAS="${commonInfo.CL_KEYALIAS}"
-export CL_PASSWORD="${commonInfo.CL_PASSWORD}"
+export CL_KEYSTORE='${commonInfo.CL_KEYSTORE}'
+export CL_KEYALIAS='${commonInfo.CL_KEYALIAS}'
+export CL_PASSWORD='${commonInfo.CL_PASSWORD}'
 `;
 }
