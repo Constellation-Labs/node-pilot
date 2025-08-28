@@ -232,6 +232,7 @@ check_docker() {
         curl -fsSL https://get.docker.com -o get-docker.sh
         sudo sh ./get-docker.sh
         sudo usermod -aG docker $USER
+        newgrp docker
         echo "Docker installed. You may need to log out and back in for group changes to take effect."
       else
         echo "⚠️ Unsupported Linux distribution. Please install Docker manually."

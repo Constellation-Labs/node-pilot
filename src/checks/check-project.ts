@@ -112,11 +112,9 @@ export const checkProject = {
             await dockerHelper.dockerDown();
         }
 
-        const silent = !process.env.DEBUG;
+        clm.preStep('Running install script...');
 
-        if (silent) {
-            clm.preStep('Running install script...');
-        }
+        const silent = false; // !process.env.DEBUG;
 
         await shellService.runCommand(`scripts/install.sh ${nInfo.type}`, undefined, silent); // different for metagraphs
 

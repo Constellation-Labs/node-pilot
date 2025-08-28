@@ -29,8 +29,9 @@ export const dockerHelper = {
 
         await projectHelper.generateLayerEnvFiles();
 
-        const userId = await shellService.runCommandWithOutput('echo "$(id -u):$(id -g)"')
-        configStore.setDockerEnvInfo({ DOCKER_USER_ID: userId });
+        // const userId = await shellService.runCommandWithOutput('echo "$(id -u):$(id -g)"')
+        // console.log('Setting DOCKER_USER_ID to', userId);
+        // configStore.setDockerEnvInfo({ DOCKER_USER_ID: userId });
         await run('up -d');
     },
 

@@ -2,12 +2,6 @@ networks:
   tessellation-network:
     driver: bridge
 
-#volumes:
-#  gl0-data:
-#    name: gl0-data
-#  gl1-data:
-#    name: gl1-data
-
 services:
   gl0:
     image: constellationnetwork/tessellation${CL_DOCKER_CORE_REPO:-}:${DOCKER_IMAGE_VERSION:-latest}
@@ -32,7 +26,7 @@ services:
 #      timeout: 5s
 #      start_period: 30s
     profiles: ["gl0"]
-    user: ${DOCKER_USER_ID}
+#    user: ${DOCKER_USER_ID:-}
   gl1:
     image: constellationnetwork/tessellation${CL_DOCKER_CORE_REPO:-}:${DOCKER_IMAGE_VERSION:-latest}
     container_name: gl1
@@ -57,4 +51,4 @@ services:
 #      retries: 5
 #      start_period: 10s
     profiles: ["gl1"]
-    user: ${DOCKER_USER_ID}
+#    user: ${DOCKER_USER_ID:-}
