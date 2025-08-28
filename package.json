@@ -1,7 +1,7 @@
 {
   "name": "@constellation-network/node-pilot",
   "description": "An easy deployment and monitoring tool for Constellation nodes.",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "author": "Frank Fox",
   "bin": {
     "cpilot": "bin/run.js"
@@ -20,7 +20,8 @@
     "test": "mocha --forbid-only \"test/**/*.test.ts\"",
     "version": "oclif readme && git add README.md",
     "start": "./bin/dev.js",
-    "debug": "DEBUG=true ./bin/dev.js"
+    "debug": "DEBUG=true ./bin/dev.js",
+    "pub": "npm publish --access public"
   },
   "types": "dist/index.d.ts",
   "engines": {
@@ -64,7 +65,8 @@
     "./dist",
     "./oclif.manifest.json",
     "./projects",
-    "./README.md"
+    "./README.md",
+    "./LICENSE"
   ],
   "homepage": "https://github.com/Constellation-Labs/node-pilot",
   "keywords": [
@@ -72,7 +74,7 @@
     "validator",
     "node"
   ],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "main": "dist/index.js",
   "type": "module",
   "oclif": {
