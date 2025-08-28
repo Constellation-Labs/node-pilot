@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import * as diskusage from "diskusage";
+import fs from "node:fs";
 import os from "node:os";
 import ttyTable from "tty-table";
 
@@ -14,8 +14,10 @@ export const checkHardware = {
         clm.preStep('Checking hardware requirements...');
 
         // Retrieve disk space
-        const usage = diskusage.checkSync(os.homedir());
-        const usableSpaceGB = (usage.total / (1024 * 1024 * 1024)).toFixed(2);
+        const r = fs.statfsSync('/');
+        const totalSpaceGB = (r.bsize * r.blocks / (1024 * 1024 * 1024)).toFixed(2);
+        // const usage = diskusage.checkSync(os.homedir());
+        // const usableSpaceGB = (usage.total / (1024 * 1024 * 1024)).toFixed(2);
 
         // Retrieve sys memory
         const totalMemoryBytes = os.totalmem();
@@ -41,7 +43,7 @@ export const checkHardware = {
         ];
 
         const rows = [
-            [fc("Disk size"), fc("320 GB"), formatActual(usableSpaceGB, 320, " GB")],
+            [fc("Disk size"), fc("320 GB"), formatActual(totalSpaceGB, 320, " GB")],
             [fc("System memory"), fc("8 GB"), formatActual(totalMemoryGB, 8, " GB")],
             [fc("CPU cores"), fc("8 cores"), formatActual(numOfCores, 8, " cores")],
         ]
@@ -57,7 +59,7 @@ export const checkHardware = {
 
         await promptHelper.doYouWishToContinue();
 
-        configStore.setSystemInfo({ cores: numOfCores, disk: usableSpaceGB, memory: totalMemoryGB, platform: os.platform() });
+        configStore.setSystemInfo({ cores: numOfCores, disk: totalSpaceGB, memory: totalMemoryGB, platform: os.platform() });
 
     }
 }

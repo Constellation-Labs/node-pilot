@@ -30,7 +30,6 @@
     "@oclif/plugin-plugins": "^5",
     "@stardust-collective/dag4-keystore": "^2.6.0",
     "chalk": "^5.5.0",
-    "diskusage": "^1.2.0",
     "dotenv": "^17.2.1",
     "js-sha256": "^0.11.1",
     "json-bigint-patch": "^0.0.8",

@@ -15,4 +15,5 @@ await execute({development: true, dir: import.meta.url})
 
 // eslint-disable-next-line no-warning-comments
 // TODO
-// node-pilot config set defaultProject pacaswap-metagraph
+// cpilot config set project pacaswap-metagraph
+// cpilot config --project pacaswap-metagraph
