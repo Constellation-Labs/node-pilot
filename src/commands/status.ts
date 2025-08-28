@@ -8,6 +8,9 @@ import {keyFileHelper} from "../helpers/key-file-helper.js";
 
 export default class Status extends Command {
 
+    // eslint-disable-next-line no-warning-comments
+    // TODO add -f flag to continuously monitor status
+
   static override description = 'Display node status and configuration settings'
 
   public async run(): Promise<void> {

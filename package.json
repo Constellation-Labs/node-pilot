@@ -1,13 +1,16 @@
 {
   "name": "@constellation-network/node-pilot",
-  "description": "A new CLI generated with oclif",
+  "description": "An easy deployment and monitoring tool for Constellation nodes.",
   "version": "0.0.1",
   "author": "Frank Fox",
   "bin": {
-    "cpilot": "./bin/run.js"
+    "cpilot": "bin/run.js"
   },
   "bugs": "https://github.com/Constellation-Labs/node-pilot/issues",
-  "repository": "https://github.com/Constellation-Labs/node-pilot",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Constellation-Labs/node-pilot.git"
+  },
   "scripts": {
     "build": "shx rm -rf dist && tsc -b",
     "lint": "eslint",
@@ -60,7 +63,8 @@
     "./bin",
     "./dist",
     "./oclif.manifest.json",
-    "./projects"
+    "./projects",
+    "./README.md"
   ],
   "homepage": "https://github.com/Constellation-Labs/node-pilot",
   "keywords": [
@@ -75,7 +79,7 @@
     "bin": "cpilot",
     "dirname": "cpilot",
     "commands": {
-      "default": "hello:world",
+      "default": "status",
       "strategy": "pattern",
       "target": "./dist/commands"
     },
@@ -88,11 +92,6 @@
     "additionalVersionFlags": [
       "-v"
     ],
-    "topicSeparator": " ",
-    "topics": {
-      "hello": {
-        "description": "Say hello to the world and others"
-      }
-    }
+    "topicSeparator": " "
   }
 }

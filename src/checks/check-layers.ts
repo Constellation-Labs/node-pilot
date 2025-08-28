@@ -5,7 +5,6 @@ import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
 import {dockerHelper} from "../helpers/docker-helper.js";
 import {nodeService} from "../services/node-service.js";
-import {shellService} from "../services/shell-service.js";
 import {TessellationLayer} from "../types.js";
 
 export const checkLayers = {

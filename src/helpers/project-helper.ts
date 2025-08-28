@@ -92,6 +92,14 @@ export const projectHelper = {
     async installHypergraph() {
         await this.installEmbedded('hypergraph');
 
+        const {projectDir} = configStore.getProjectInfo();
+
+        // Create app-data folders for fast forward feature before Docker does
+        const gl0DataDir = path.join(projectDir,'app-data','gl0-data');
+        fs.mkdirSync(path.join(gl0DataDir,'incremental_snapshot'), {recursive: true});
+        fs.mkdirSync(path.join(gl0DataDir,'snapshot_info'));
+        fs.mkdirSync(path.join(gl0DataDir,'tmp'));
+
         // Set hypergraph layer defaults
         configStore.setEnvLayerInfo('gl0', {
             CL_CLI_HTTP_PORT: '9002', CL_DOCKER_JAVA_OPTS: '-Xms1024M -Xmx7G -Xss256K', CL_P2P_HTTP_PORT: '9001', CL_PUBLIC_HTTP_PORT: '9000'

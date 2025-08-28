@@ -34,7 +34,7 @@ export const promptHelper = {
             let answer = await number({
                 default: xmx-1,
                 message: `How much of the detected memory (${xmx}GB) do you want to use?: `,
-                validate: v => v !== undefined && v >= 8 && v <= xmx
+                validate: v => v !== undefined && v >= 4 && v <= xmx
             }) as number;
 
             if (answer === xmx) answer--;
@@ -52,9 +52,9 @@ export const promptHelper = {
         }
     },
 
-    async doYouWishToContinue() {
+    async doYouWishToContinue(defaultAnswer: 'n' | 'y' = 'y') {
         const result = await input({
-            default: 'y',
+            default: defaultAnswer,
             message: 'Do you wish to continue? (y/n)',
             validate(value) {
                 if (value.toLowerCase() === 'y' || value.toLowerCase() === 'n') {

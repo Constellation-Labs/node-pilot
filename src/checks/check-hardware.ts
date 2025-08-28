@@ -52,12 +52,14 @@ export const checkHardware = {
 
         if (allPassed) {
             clm.postStep(" ✅ System requirements check passed  ✅\n");
+            await promptHelper.doYouWishToContinue();
         }
         else {
             clm.warn("System recommendations not met. The validator node may not function properly.\n");
+            await promptHelper.doYouWishToContinue('n');
         }
 
-        await promptHelper.doYouWishToContinue();
+
 
         configStore.setSystemInfo({ cores: numOfCores, disk: totalSpaceGB, memory: totalMemoryGB, platform: os.platform() });
 
