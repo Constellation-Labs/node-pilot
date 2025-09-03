@@ -1,9 +1,9 @@
 import {Args, Command, Flags} from '@oclif/core'
 import path from "node:path";
 
-import {shellService} from "../services/shell-service.js";
 import {configStore} from "../config-store.js";
 import {configHelper} from "../helpers/config-helper.js";
+import {shellService} from "../services/shell-service.js";
 
 export default class Logs extends Command {
     static override args = {

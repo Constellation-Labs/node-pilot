@@ -94,9 +94,9 @@ export const projectHelper = {
     },
 
     async installHypergraph() {
-        await checkNodeCtl.check4Migration();
-
         await this.installEmbedded('hypergraph');
+
+        await checkNodeCtl.check4Migration();
 
         const {projectDir} = configStore.getProjectInfo();
 

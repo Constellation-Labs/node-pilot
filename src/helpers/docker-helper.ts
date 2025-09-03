@@ -7,9 +7,9 @@ import {projectHelper} from "./project-helper.js";
 export const dockerHelper = {
 
     async dockerBuild() {
-        if (shellService.existsScript('scripts/docker-build.sh')) {
+        if (shellService.existsProjectScript('scripts/docker-build.sh')) {
             clm.preStep('Building the node container...');
-            await shellService.runCommand('bash scripts/docker-build.sh');
+            await shellService.runProjectCommand('bash scripts/docker-build.sh');
         }
     },
 
@@ -47,5 +47,5 @@ export const dockerHelper = {
 function run(command: string, layers?: TessellationLayer[]) {
     const {layersToRun} = configStore.getProjectInfo();
     const args = (layers || layersToRun).map(l => `--profile ${l}`).join(' ');
-    return shellService.runCommand(`docker compose ${args} ${command}`, configStore.getDockerEnvInfo());
+    return shellService.runProjectCommand(`docker compose ${args} ${command}`, configStore.getDockerEnvInfo());
 }

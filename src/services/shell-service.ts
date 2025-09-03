@@ -9,9 +9,13 @@ import {configStore} from "../config-store.js";
 export const shellService = {
 
     async checkCommandAvailable(cmd: string) {
-        return this.runCommand(`command -v ${cmd}`, undefined, true)
-            .then(() => true)
-            .catch(() => false);
+        clm.debug(`Checking if command ${cmd} is available...`);
+        return this.runCommand(`command -v ${cmd}`)
+            .then(() =>  true)
+            .catch((error) => {
+                clm.debug(`Run command error: ${error}`);
+                return false;
+            });
     },
 
     async execDockerShell(serviceName: string, command: string) {
@@ -28,7 +32,7 @@ export const shellService = {
         return result.stdout;
     },
 
-    existsScript(filePath: string) {
+    existsProjectScript(filePath: string) {
         const { projectDir } = configStore.getProjectInfo();
         return fs.existsSync(path.join(projectDir, filePath));
     },
@@ -46,6 +50,33 @@ export const shellService = {
     },
 
     async runCommand (command: string, env?: object, silent = false) {
+
+        clm.debug(`START Running command: "${command}"`);
+
+        let nodeEnv: NodeJS.ProcessEnv | undefined;
+
+        if (env) {
+            nodeEnv = { ...env, ...process.env };
+        }
+
+        const result = shell.exec(command, { env: nodeEnv, silent });
+
+        clm.debug(`END ${command}. Exit code: ${result.code}`);
+
+        if (result.code > 0) {
+            throw new Error(`Failed running command: ${result.stderr}`);
+        }
+
+        return result;
+    },
+
+    async runCommandWithOutput(command: string, env?: object) {
+        const result = await this.runCommand(command, env, true);
+
+        return result.stdout.trim();
+    },
+
+    async runProjectCommand (command: string, env?: object, silent = false) {
 
         const { projectDir } = configStore.getProjectInfo();
 
@@ -68,8 +99,8 @@ export const shellService = {
         return result;
     },
 
-    async runCommandWithOutput(command: string, env?: object) {
-        const result = await this.runCommand(command, env, true);
+    async runProjectCommandWithOutput(command: string, env?: object) {
+        const result = await this.runProjectCommand(command, env, true);
 
         return result.stdout.trim();
     }

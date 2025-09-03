@@ -117,7 +117,7 @@ export const checkProject = {
         const silent = false; // !process.env.DEBUG;
 
         // NOTE: may be different for metagraphs
-        await shellService.runCommand(`scripts/install.sh ${nInfo.type}`, undefined, silent)
+        await shellService.runProjectCommand(`scripts/install.sh ${nInfo.type}`, undefined, silent)
             .catch(() => {
                 clm.error('Install script failed. Please run cpilot again after correcting the error');
             });
