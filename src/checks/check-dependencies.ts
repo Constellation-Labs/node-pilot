@@ -1,4 +1,3 @@
-import chalk from "chalk";
 import fs from "node:fs";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
@@ -6,19 +5,26 @@ import shell from "shelljs";
 
 import {clm} from "../clm.js";
 import {promptHelper} from "../helpers/prompt-helper.js";
-import {shellService} from "../services/shell-service.js";
 
 export const checkDependencies = async () => {
 
-    const isDockerV1Installed = await shellService.checkCommandAvailable('docker-compose');
+    const dockerComposeVersion = await runCommand('docker compose version').catch(() => '');
 
-    if (isDockerV1Installed) {
-        clm.error('You are using docker-compose v1. It will be uninstalled before upgrading to the latest version.'); // Please uninstall using: ${chalk.cyan('sudo apt-get remove docker-compose-plugin')}. Afterwards, run cpilot again`);
-        await promptHelper.doYouWishToContinue();
-        await shellService.runCommand('for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt-get remove $pkg; done');
+    clm.debug(`Docker compose version check: ${dockerComposeVersion || 'NOT_INSTALLED'}`);
+
+    if (dockerComposeVersion) {
+        return;
     }
 
-    const isDockerInstalled = await shellService.checkCommandAvailable('docker');
+    const isDockerV1Installed = await checkCommandAvailable('docker-compose');
+
+    if (isDockerV1Installed) {
+        clm.error('You are using docker-compose v1. It will be uninstalled before upgrading to the latest version.');
+        await promptHelper.doYouWishToContinue();
+        await runCommand('for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt-get remove $pkg; done');
+    }
+
+    const isDockerInstalled = await checkCommandAvailable('docker');
 
     if (!isDockerInstalled) {
         const pilotDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), `../..`);
@@ -43,4 +49,29 @@ export const checkDependencies = async () => {
         }
     }
 
+}
+
+async function checkCommandAvailable(cmd: string) {
+    clm.debug(`Checking if command ${cmd} is available...`);
+    return runCommand(`command -v ${cmd}`)
+        .then(() =>  true)
+        .catch((error) => {
+            clm.debug(`Run command error: ${error}`);
+            return false;
+        });
+}
+
+async function runCommand (command: string) {
+
+    clm.debug(`START Running command: "${command}`);
+
+    const result = shell.exec(command);
+
+    clm.debug(`END ${command}. Exit code: ${result.code}`);
+
+    if (result.code > 0) {
+        throw new Error(`Failed running command: ${result.stderr}`);
+    }
+
+    return result;
 }
