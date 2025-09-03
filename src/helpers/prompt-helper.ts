@@ -4,8 +4,6 @@ import chalk from "chalk";
 import {clm} from "../clm.js";
 import {configStore, NetworkType} from "../config-store.js";
 import {TessellationLayer} from "../types.js";
-import {githubHelper} from "./github-helper.js";
-import {projectHelper} from "./project-helper.js";
 
 export const promptHelper = {
 
@@ -103,58 +101,5 @@ export const promptHelper = {
 
         configStore.setNetworkInfo({type: networkType as NetworkType, version: "latest"});
         configStore.setEnvCommonInfo(configStore.getNetworkEnvInfo(networkType as NetworkType));
-    },
-
-    async selectProject() {
-        // prompt user to install hypergraph or metagraph
-        const networkType = await select({
-            choices: [
-                {name: 'Hypergraph (Global layer)', value: 'hypergraph'},
-                {disabled: true, name: 'Metagraph (Dor, Pacaswap, and more)', value: 'metagraph' },
-            ],
-            message: 'Select network:'
-        });
-
-        if (networkType === 'hypergraph') {
-            await projectHelper.installHypergraph();
-        } else if (networkType === 'metagraph') {
-            const project = await select({
-                choices: [
-                    {name: 'Dor', value: 'dor'},
-                    {name: 'Custom (Enter repo)', value: 'custom'},
-                ],
-                message: 'Select metagraph:'
-            });
-
-            const ghRepoRegex = /^https?:\/\/(?:www\.)?github\.com\/([A-Za-z0-9](?:-?[A-Za-z0-9]){0,38})\/([A-Za-z0-9._-]+)(?:\.git)?\/?$/;
-
-            if (project === 'dor') {
-                await projectHelper.installEmbedded('dor');
-            } else if (project === 'custom') {
-                let repo = await input({
-                    message: `Enter Github repository URL:`,
-                    validate(value: string) {
-
-                      const m = value.trim().match(ghRepoRegex);
-                      if (m) return true;
-                      return 'Please enter a valid Github repo URL (e.g., https://github.com/user/repo or .git)';
-                    }
-                });
-
-                if (repo.endsWith('.git')) repo = repo.slice(0, -4);
-
-                const m = repo.trim().match(ghRepoRegex);
-                const userRepo = `${m![1]}/${m![2]}`; // owner/repo
-
-                clm.preStep(`Installing from Github repository: ${chalk.cyan(userRepo)}`);
-
-                if (await githubHelper.hasAssetInRelease('node-pilot', userRepo)) {
-                    await projectHelper.installFromGithub(userRepo);
-                } else {
-                    clm.warn(`The repository ${repo} does not contain a release asset with the name "node-pilot"`);
-                    await this.selectProject();
-                }
-            }
-        }
     }
 }

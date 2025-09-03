@@ -270,7 +270,7 @@ check_node() {
     Linux)
       echo "Installing Node.js using nvm..."
       # NPM
-      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
+      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 
       # Load nvm without needing to open a new terminal
       export NVM_DIR="$HOME/.nvm"
@@ -278,7 +278,7 @@ check_node() {
       [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
       # Install node
-      nvm install node
+      nvm install 22
 
       # Verify installation
       echo "Node version: $(node -v)"

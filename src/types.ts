@@ -2,13 +2,13 @@
 export type TessellationLayer = 'cl1' | 'dl1' | 'gl0' | 'gl1' | 'ml0';
 
 export type NodeInfo = {
-    clusterSession: number;
+    clusterSession: number | string;
     host: string;
     id: string;
     layer: TessellationLayer;
     p2pPort: number;
-    publicPort: number;
-    session: number;
+    publicPort: number | string;
+    session: number | string;
     state: string;
     version: string;
 }

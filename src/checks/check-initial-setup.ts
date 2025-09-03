@@ -1,6 +1,7 @@
 import chalk from "chalk";
 
 import {configStore} from "../config-store.js";
+import {checkDependencies} from "./check-dependencies.js";
 import {checkHardware} from "./check-hardware.js";
 
 export const checkInitialSetup = {
@@ -10,6 +11,8 @@ export const checkInitialSetup = {
         if(configStore.getSystemInfo() !== null) {
             return;
         }
+
+        await checkDependencies();
 
         console.log(chalk.white("\n ****************************************"));
         console.log("          " + chalk.white("CONSTELLATION NETWORK") + "        ");

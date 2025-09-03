@@ -36,6 +36,7 @@
     "chalk": "^5.5.0",
     "dotenv": "^17.2.1",
     "js-sha256": "^0.11.1",
+    "js-yaml": "^4.1.0",
     "json-bigint-patch": "^0.0.8",
     "node-localstorage": "^3.0.5",
     "shelljs": "^0.10.0",
@@ -46,6 +47,7 @@
     "@oclif/prettier-config": "^0.2.1",
     "@oclif/test": "^4",
     "@types/chai": "^4",
+    "@types/js-yaml": "^4.0.9",
     "@types/mocha": "^10",
     "@types/node": "^22.17.1",
     "@types/node-localstorage": "^1.3.3",
@@ -64,6 +66,7 @@
     "./bin",
     "./dist",
     "./oclif.manifest.json",
+    "./install-dependencies.sh",
     "./projects",
     "./README.md",
     "./LICENSE"

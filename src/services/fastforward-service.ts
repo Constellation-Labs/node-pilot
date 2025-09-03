@@ -65,12 +65,19 @@ export class FastforwardService {
     private async fetchLatestSnapshot(): Promise<[number,string,string]> {
         const url = `${this.lbUrl}/global-snapshots/latest/combined`;
         clm.debug('Fetching latest snapshot ordinal from: ' + chalk.cyan(url));
-        return fetch(url).then(res => res.json()
+        return fetch(url)
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`Failed to fetch latest snapshot ordinal: ${res.statusText}`);
+                }
+
+                return res.json();
+            })
             .then(data => {
                 const {ordinal} = data[0].value;
                 clm.debug('fetchLatestSnapshot - ' + chalk.cyan(ordinal));
                 return [ordinal,data[0],data[1]]
-            }));
+            });
     }
 
     private async fetchSnapshot(ordinal: number): Promise<string> {
@@ -81,7 +88,7 @@ export class FastforwardService {
 
     private async fetchSnapshotHash(ordinal: number): Promise<string> {
         const url = `${this.lbUrl}/global-snapshots/${ordinal}/hash`;
-        const hash = await fetch(url).then(res => res.text().then(t => t.replace(/^"(.*)"$/, '$1')));
+        const hash = await fetch(url).then(res => res.json());
         clm.debug('fetchLatestSnapshotHash: ' + chalk.cyan(hash));
         return hash;
     }

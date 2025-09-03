@@ -13,9 +13,6 @@ require() {
   command -v "$cmd" >/dev/null 2>&1 || { echo "Error: '$cmd' is required"; exit 1; }
 }
 
-require curl
-require jq
-
 NETWORK="${1:-}"
 [[ -z "${NETWORK}" ]] && { echo "No network specified."; usage; }
 
@@ -33,8 +30,6 @@ ASSETS=("cl-node.jar" "cl-dag-l1.jar" "cl-keytool.jar" "cl-wallet.jar" "mainnet-
 ASSET_NAMES=("gl0.jar" "gl1.jar" "keytool.jar" "wallet.jar" "seedlist")
 OUTPUT_DIR="$SCRIPT_DIR/../dist"   # Directory to save the downloaded assets
 
-
-
 # load the version from the version file
 if [ -f "$OUTPUT_DIR/version.sh" ]; then
   source "$OUTPUT_DIR/version.sh"
@@ -50,6 +45,9 @@ else
   bash "$SCRIPT_DIR/install-dependencies.sh"
   RELEASE_NETWORK_TYPE=""
 fi
+
+require curl
+require jq
 
 # Check network version
 # Resolve the load balancer URL based on the network and get the release tag

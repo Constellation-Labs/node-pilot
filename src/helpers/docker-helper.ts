@@ -35,8 +35,12 @@ export const dockerHelper = {
         await run('up -d');
     },
 
+    async isPortInUse(port: number){
+        return shellService.runCommand(`sudo lsof -i :${port}`, undefined, true).then(Boolean).catch(() => false);
+    },
+
     async isRunning() {
-        return shellService.runCommand('docker ps | grep entrypoint.sh', undefined, true).then(() => true).catch(() => false);
+        return shellService.runCommand('docker ps | grep entrypoint.sh', undefined, true).then(Boolean).catch(() => false);
     }
 };
 

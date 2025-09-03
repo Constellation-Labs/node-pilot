@@ -162,7 +162,7 @@ class ConfigStore {
         this.projectStore.setItem('project', { ...oldInfo, ...info });
     }
 
-    setSystemInfo(info: SystemInfo) {
+    setSystemInfo(info: Partial<SystemInfo>) {
         const oldInfo = this.projectStore.getItem('system');
         this.pilotStore.setItem('system', { ...oldInfo, ...info });
     }
@@ -232,10 +232,11 @@ export const layerEnvNames = {
 
 
 export type SystemInfo = {
-    cores?: number;
-    disk?: string;
-    memory?: string;
-    platform?: string;
+    cores: number;
+    disk: string;
+    isDockerInstalled: boolean;
+    memory: string;
+    platform: string;
 }
 
 export type NetworkType = 'integrationnet' | 'mainnet' | 'testnet';

@@ -6,6 +6,7 @@ import ttyTable from "tty-table";
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
 import {promptHelper} from "../helpers/prompt-helper.js";
+import {shellService} from "../services/shell-service.js";
 
 export const checkHardware = {
 
@@ -58,8 +59,6 @@ export const checkHardware = {
             clm.warn("System recommendations not met. The validator node may not function properly.\n");
             await promptHelper.doYouWishToContinue('n');
         }
-
-
 
         configStore.setSystemInfo({ cores: numOfCores, disk: totalSpaceGB, memory: totalMemoryGB, platform: os.platform() });
 

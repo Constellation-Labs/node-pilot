@@ -4,9 +4,9 @@ import {clm} from "../clm.js";
 import {configStore, NetworkType} from "../config-store.js";
 import {configHelper} from "../helpers/config-helper.js";
 import {dockerHelper} from "../helpers/docker-helper.js";
+import {projectHelper} from "../helpers/project-helper.js";
 import {promptHelper} from "../helpers/prompt-helper.js";
 import {clusterService} from "../services/cluster-service.js";
-import {nodeService} from "../services/node-service.js";
 import {shellService} from "../services/shell-service.js";
 import {checkNetwork} from "./check-network.js";
 
@@ -18,7 +18,7 @@ export const checkProject = {
         let updateLayers = false;
 
         if (!configStore.hasProjects() || process.env.PILOT_ENV === 'test') {
-            await promptHelper.selectProject();
+            await projectHelper.selectProject();
             await checkNetwork.configureIpAddress();
             updateNetworkType = true;
             updateLayers = true;
@@ -106,8 +106,7 @@ export const checkProject = {
             return false;
         }
 
-        const nodeInfo = await nodeService.getNodeInfo('first');
-        const isRunning = nodeInfo.state !== 'Unavailable';
+        const isRunning = await dockerHelper.isRunning();
 
         if (isRunning) {
             await dockerHelper.dockerDown();
@@ -117,7 +116,12 @@ export const checkProject = {
 
         const silent = false; // !process.env.DEBUG;
 
-        await shellService.runCommand(`scripts/install.sh ${nInfo.type}`, undefined, silent); // different for metagraphs
+        // NOTE: may be different for metagraphs
+        await shellService.runCommand(`scripts/install.sh ${nInfo.type}`, undefined, silent)
+            .catch(() => {
+                clm.error('Install script failed. Please run cpilot again after correcting the error');
+            });
+
 
         rInfo = await configHelper.getReleaseInfo();
 
