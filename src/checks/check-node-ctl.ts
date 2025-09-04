@@ -8,6 +8,7 @@ import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
 import {dockerHelper} from "../helpers/docker-helper.js";
 import {keyFileHelper} from "../helpers/key-file-helper.js";
+import {promptHelper} from "../helpers/prompt-helper.js";
 import {shellService} from "../services/shell-service.js";
 
 export const checkNodeCtl = {
@@ -68,26 +69,22 @@ export const checkNodeCtl = {
 
             clm.debug(`Found key file path in nodectl config file: ${nodeCtlKeyPath}`);
 
-            if (fs.existsSync(nodeCtlKeyPath)) {
+            clm.step('Key file found at ' + chalk.cyan(nodeCtlKeyPath));
+            clm.preStep('Importing key file...');
 
-                clm.step('Key file found at ' + chalk.cyan(nodeCtlKeyPath));
-                clm.preStep('Importing key file...');
+            const {projectDir} = configStore.getProjectInfo();
+            const pilotKeyPath = path.join(projectDir, 'key.p12');
 
-                const {projectDir} = configStore.getProjectInfo();
-                const pilotKeyPath = path.join(projectDir, 'key.p12');
+            // copy file to home directory, change owner to current user, and make it readable by all
+            await shellService.runCommand(`sudo cp ${nodeCtlKeyPath} ${pilotKeyPath}; sudo chown $(whoami) ${pilotKeyPath}; chmod +r ${pilotKeyPath}`);
 
-                // copy file to home directory, change owner to current user, and make it readable by all
-                await shellService.runCommand(`sudo cp ${nodeCtlKeyPath} ${pilotKeyPath}; sudo chown $(whoami) ${pilotKeyPath}; chmod +r ${pilotKeyPath}`);
+            await this.promptForKeyFile(pilotKeyPath);
 
-                await this.promptForKeyFile(pilotKeyPath);
-            }
-            else {
-                clm.warn('Key file not found. Skipping nodectl migration...\n');
-            }
 
         } catch (error) {
             console.error(error);
-            clm.error('Failed to import key information from nodectl. You will need to import it manually.');
+            clm.warn('Failed to import key information from nodectl. You will need to import it manually.');
+            await promptHelper.doYouWishToContinue();
         }
 
     },
