@@ -96,8 +96,6 @@ export const projectHelper = {
     async installHypergraph() {
         await this.installEmbedded('hypergraph');
 
-        await checkNodeCtl.check4Migration();
-
         const {projectDir} = configStore.getProjectInfo();
 
         // Create app-data folders for fast forward feature before Docker does
@@ -117,7 +115,6 @@ export const projectHelper = {
 
         await this.importNetworkEnvFiles();
         await this.importLayerEnvFiles();
-
     },
 
     async selectProject() {

@@ -14,10 +14,10 @@ export const checkInitialSetup = {
 
         await checkDependencies();
 
-        console.log(chalk.white("\n ****************************************"));
-        console.log("          " + chalk.white("CONSTELLATION NETWORK") + "        ");
-        console.log("               " + chalk.white("NODE PILOT") + "              ");
-        console.log(chalk.white(" ****************************************"));
+        console.log(chalk.whiteBright("\n ****************************************"));
+        console.log("          " + chalk.whiteBright("CONSTELLATION NETWORK") + "        ");
+        console.log("               " + chalk.whiteBright("NODE PILOT") + "              ");
+        console.log(chalk.whiteBright(" ****************************************"));
 
         await checkHardware.systemRequirements();
     },

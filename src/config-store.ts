@@ -120,6 +120,11 @@ class ConfigStore {
         return this.pilotStore.getItem('system');
     }
 
+    hasProjectFlag(name: string){
+        const flags =  this.projectStore.getItem('flags') || {};
+        return flags[name] !== undefined;
+    }
+
     hasProjects() {
         const { projects } = this.pilotStore.getItem('pilot') as PilotInfo;
         return projects.length > 0;
@@ -155,6 +160,13 @@ class ConfigStore {
     setNetworkInfo(info: Partial<NetworkInfo>) {
         const oldInfo = this.projectStore.getItem('network');
         this.projectStore.setItem('network', { ...oldInfo, ...info });
+    }
+
+    setProjectFlag(name: string, value: boolean){
+        const flags =  this.projectStore.getItem('flags') || {};
+        flags[name] = value;
+        this.pilotStore.setItem('flags', flags);
+        return flags;
     }
 
     setProjectInfo(info: Partial<ProjectInfo>) {

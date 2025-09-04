@@ -14,6 +14,17 @@ export const checkNodeCtl = {
 
     async check4Migration() {
 
+        if(configStore.hasProjectFlag('nodeCtlChecked')) {
+            return;
+        }
+
+        const { name } = configStore.getProjectInfo();
+
+        if (name.toLowerCase() !== 'hypergraph') {
+            configStore.setProjectFlag('nodeCtlChecked', true);
+            return;
+        }
+
         const isDockerRunning = await dockerHelper.isRunning();
         const isPortOpen = await dockerHelper.isPortInUse(9000);
         const hasNodeAdminUser = fs.existsSync('/home/nodeadmin');
@@ -39,6 +50,7 @@ export const checkNodeCtl = {
             }
         }
 
+        configStore.setProjectFlag('nodeCtlChecked', true);
     },
 
     async importKeyInfo(cnPath: string) {
@@ -77,6 +89,7 @@ export const checkNodeCtl = {
             console.error(error);
             clm.error('Failed to import key information from nodectl. You will need to import it manually.');
         }
+
     },
 
     async promptForKeyFile(pilotKeyPath: string) {
