@@ -1,7 +1,7 @@
 import {input} from "@inquirer/prompts";
 
 import {configStore} from "../config-store.js";
-import {ClusterInfo, NodeInfo} from "../types.js";
+import {ClusterConsensusInfo, ClusterInfo, NodeInfo} from "../types.js";
 import {FastforwardService} from "./fastforward-service.js";
 
 export const clusterService = {
@@ -42,6 +42,17 @@ export const clusterService = {
                 throw new Error(`Failed`);
             })
             .catch(() => []);
+    },
+
+    async getLatestConsensus(): Promise<ClusterConsensusInfo> {
+        const { type } = configStore.getNetworkInfo();
+
+        return fetch(`https://l0-lb-${type}.constellationnetwork.io/consensus/latest/peers`)
+            .then(res => {
+                if (res.ok) return res.json();
+                return 0;
+            })
+            .catch(() => 0);
     },
 
     async getLatestOrdinal() {

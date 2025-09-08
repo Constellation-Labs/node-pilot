@@ -32,6 +32,25 @@ export const nodeService = {
             .catch(() => (''));
     },
 
+    async getStatusInfo(layer: TessellationLayer) {
+      return layer;
+    },
+
+    async isPortExposed(port: number) {
+        const command = configStore.getSystemInfo().platform === 'linux' ? `ss -tuln | grep 0.0.0.0:${port}` : `netstat -an | grep '*.${port}'`;
+        return shellService.runCommandWithOutput(command).then(o => o.length > 0);
+    },
+
+    async isPortInUse(port: number) {
+        clm.preStep('Making a sudo call to check if a port is in use...');
+        return shellService.runCommandWithOutput(`sudo lsof -i :${port}`).then(Boolean).catch(() => false);
+    },
+
+    async isPortOpen(port: number) {
+        const command = configStore.getSystemInfo().platform === 'linux' ? `ss -tuln | grep :${port}` : `netstat -an | grep '.${port}'`;
+        return shellService.runCommandWithOutput(command).then(o => o.length > 0);
+    },
+
     async joinCluster(layer: TessellationLayer): Promise<void> {
 
         const { state } = await this.getNodeInfo(layer);

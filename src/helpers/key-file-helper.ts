@@ -145,7 +145,7 @@ export const keyFileHelper = {
     },
 
     async showKeyFileInfo(prompt4ShowPassword = true) {
-        clm.preStep('Key File Information:');
+        clm.preStep('Current key file information:');
 
         const { dagAddress, nodeId } = configStore.getProjectInfo();
         configHelper.showEnvInfo('Node ID', nodeId);

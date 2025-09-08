@@ -24,7 +24,7 @@ export const clm = {
     },
 
     preStep(s: string) {
-        console.log('\n', chalk.italic(chalk.green(s)));
+        console.log('\n' + chalk.italic(chalk.green(s)));
     },
 
     step(msg: string) {

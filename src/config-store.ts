@@ -165,7 +165,7 @@ class ConfigStore {
     setProjectFlag(name: string, value: boolean){
         const flags =  this.projectStore.getItem('flags') || {};
         flags[name] = value;
-        this.pilotStore.setItem('flags', flags);
+        this.projectStore.setItem('flags', flags);
         return flags;
     }
 

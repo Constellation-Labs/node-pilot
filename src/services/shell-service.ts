@@ -88,21 +88,23 @@ export const shellService = {
 
         clm.debug(`START Running command: "${command}" in directory: "${projectDir}"`);
 
-        const result = shell.exec(command, { cwd: projectDir, env: nodeEnv, silent });
+        return new Promise<string>((resolve, reject) => {
+            shell.exec(command, {async: true, cwd: projectDir, env: nodeEnv, silent}, (code, stdout, stderr) => {
+                if (code === 0) {
+                    clm.debug(`END ${command}.`);
+                    resolve(stdout);
+                } else {
+                    reject(new Error(`Command failed with code ${code}: ${stderr}`));
+                }
+            });
+        });
 
-        clm.debug(`END ${command}. Exit code: ${result.code}`);
-
-        if (result.code > 0) {
-            throw new Error(`Failed running command: ${result.stderr}`);
-        }
-
-        return result;
     },
 
     async runProjectCommandWithOutput(command: string, env?: object) {
-        const result = await this.runProjectCommand(command, env, true);
+        const stdout = await this.runProjectCommand(command, env, true);
 
-        return result.stdout.trim();
+        return stdout.trim();
     }
 
 }

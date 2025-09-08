@@ -1,10 +1,62 @@
 import {input, select} from "@inquirer/prompts";
 import chalk from "chalk";
+import fs from "node:fs";
+import path from "node:path";
 
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
 
 export const checkNetwork = {
+
+    async checkSeedList() {
+        if(configStore.hasProjectFlag('seedListChecked')) {
+            return;
+        }
+
+        const { type } = configStore.getNetworkInfo();
+
+        clm.preStep(`Checking inclusion into seed list for ${type.toUpperCase()} network...`);
+        const { nodeId, projectDir } = configStore.getProjectInfo();
+        const seedListFile = path.resolve(projectDir, 'seedlist');
+        if (fs.existsSync(seedListFile)) {
+            const found = fs.readFileSync(seedListFile, 'utf8').includes(nodeId);
+            if (found) {
+                clm.postStep(`Node ID found in ${type.toUpperCase()} seed list.`);
+                configStore.setProjectFlag('seedListChecked', true);
+                return;
+            }
+        }
+
+        const printNotFoundError = () => {
+            clm.warn(`Node ID not found in ${type.toUpperCase()} seed list. You may try again later.`);
+            clm.error(`To change the Key File: use ${chalk.cyan('cpilot config')}, and select ${chalk.cyan('Key File')}`);
+        }
+
+        if (type === 'mainnet') {
+            // the mainnet seed list comed from a network release files
+            printNotFoundError();
+        } else {
+
+            const url = `https://constellationlabs-dag.s3.us-west-1.amazonaws.com/${type}-seedlist`
+            const seedList = await fetch(url)
+                .then(res => {
+                    if (res.ok) return res.text();
+                    throw new Error(`Failed`);
+                })
+                .catch(() => {
+                    clm.error(`Failed to fetch seed list from ${url}. Try again later.`);
+                    return '';
+                });
+            if (seedList.includes(nodeId)) {
+                clm.postStep(`Node ID found in ${type.toUpperCase()} seed list.`);
+                fs.writeFileSync(seedListFile, seedList);
+                configStore.setProjectFlag('seedListChecked', true);
+            }
+            else {
+                printNotFoundError();
+            }
+        }
+    },
 
     async configureIpAddress() {
         const {CL_EXTERNAL_IP: currentIpAddress} = configStore.getEnvCommonInfo();

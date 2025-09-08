@@ -14,16 +14,20 @@ export default class Logs extends Command {
         '<%= config.bin %> <%= command.id %>',
     ]
     static override flags = {
-
-      follow: Flags.boolean({char: 'f', description: 'continuously wait for additional data to be appended'}),
+        follow: Flags.boolean({char: 'f', description: 'continuously wait for additional data to be appended'}),
+        numOfLines: Flags.string({char: 'n', description: 'number of lines at the end of the log to display'}),
     }
 
     public async run(): Promise<void> {
         configHelper.assertProject('No project found. ');
-        let tailFlag = '';
+
         const {flags} = await this.parse(Logs);
+        const numOfLines = Number.isNaN(Number(flags.numOfLines)) ? 100 : Number(flags.numOfLines);
+
+        let tailFlag = flags.numOfLines ? `-n ${numOfLines}` : '-n 100';
+
         if (flags.follow) {
-            tailFlag = '-f';
+            tailFlag = ' -f';
         }
 
         const {projectDir} = configStore.getProjectInfo();

@@ -98,7 +98,7 @@ download_asset() {
 
   # Download the asset
   echo "$ASSET_NAME -> $OUTPUT_NAME"
-  curl -s -L -H "Accept: application/octet-stream" -o "$OUTPUT_DIR/$OUTPUT_NAME" "$DOWNLOAD_URL"
+  curl -# -L -H "Accept: application/octet-stream" -o "$OUTPUT_DIR/$OUTPUT_NAME" "$DOWNLOAD_URL"
 
   if [ $? -ne 0 ]; then
     echo "Failed to download asset '$ASSET_NAME'."

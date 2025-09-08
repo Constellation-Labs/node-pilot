@@ -1,3 +1,5 @@
+import ora from "ora";
+
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
 import {shellService} from "../services/shell-service.js";
@@ -8,8 +10,25 @@ export const dockerHelper = {
 
     async dockerBuild() {
         if (shellService.existsProjectScript('scripts/docker-build.sh')) {
-            clm.preStep('Building the node container...');
-            await shellService.runProjectCommand('bash scripts/docker-build.sh');
+
+            const silent = !process.env.DEBUG;
+            const spinner = ora('Building the node container...');
+
+            if (silent) {
+                spinner.start();
+                spinner.color = 'green';
+            }
+            else {
+                clm.preStep('Building the node container...');
+            }
+
+            await shellService.runProjectCommand('bash scripts/docker-build.sh', undefined, silent);
+
+            if (silent) {
+                spinner.stop();
+            }
+
+            clm.postStep('Node container built.');
         }
     },
 
@@ -33,10 +52,6 @@ export const dockerHelper = {
         // console.log('Setting DOCKER_USER_ID to', userId);
         // configStore.setDockerEnvInfo({ DOCKER_USER_ID: userId });
         await run('up -d');
-    },
-
-    async isPortInUse(port: number){
-        return shellService.runCommand(`sudo lsof -i :${port}`, undefined, true).then(Boolean).catch(() => false);
     },
 
     async isRunning() {

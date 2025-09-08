@@ -1,4 +1,5 @@
 import {input, select} from "@inquirer/prompts";
+import ora, {Ora} from 'ora';
 
 import {clm} from "../clm.js";
 import {configStore, NetworkType} from "../config-store.js";
@@ -112,16 +113,30 @@ export const checkProject = {
             await dockerHelper.dockerDown();
         }
 
-        clm.preStep('Running install script...');
 
-        const silent = false; // !process.env.DEBUG;
+
+        const silent = !process.env.DEBUG;
+
+        const spinner = ora('Running install script...');
+
+        if (silent) {
+            spinner.start();
+            spinner.color = 'green';
+        }
+        else {
+            clm.preStep('Running install script...');
+        }
 
         // NOTE: may be different for metagraphs
         await shellService.runProjectCommand(`scripts/install.sh ${nInfo.type}`, undefined, silent)
             .catch(() => {
+                spinner.stop();
                 clm.error('Install script failed. Please run cpilot again after correcting the error');
             });
 
+        if (silent) {
+            spinner.stop();
+        }
 
         rInfo = await configHelper.getReleaseInfo();
 

@@ -10,6 +10,7 @@ import {dockerHelper} from "../helpers/docker-helper.js";
 import {keyFileHelper} from "../helpers/key-file-helper.js";
 import {promptHelper} from "../helpers/prompt-helper.js";
 import {shellService} from "../services/shell-service.js";
+import {nodeService} from "../services/node-service.js";
 
 export const checkNodeCtl = {
 
@@ -26,15 +27,15 @@ export const checkNodeCtl = {
             return;
         }
 
-        const isDockerRunning = await dockerHelper.isRunning();
-        const isPortOpen = await dockerHelper.isPortInUse(9000);
         const hasNodeAdminUser = fs.existsSync('/home/nodeadmin');
 
         if (hasNodeAdminUser) {
-            clm.step('nodectl has been detected.');
+            const isDockerRunning = await dockerHelper.isRunning();
+            const isPortOpen = await nodeService.isPortInUse(9000);
+            clm.step(chalk.bold('NODECTL has been detected.'));
 
             if (!isDockerRunning && isPortOpen) {
-                clm.error('Please shutdown any Nodes being managed by nodectl before proceeding.');
+                clm.error('Please shutdown any Nodes being managed by NODECTL before proceeding.');
             }
 
             const cnPath = path.resolve('/var/tessellation/nodectl/cn-config.yaml');
@@ -59,6 +60,8 @@ export const checkNodeCtl = {
         clm.step('Importing key file from nodectl...');
 
         try {
+            clm.preStep('Making a sudo call to read the nodectl config file...');
+            await shellService.runCommand(`sudo chmod +r ${cnPath}`);
             const doc = yaml.parse(fs.readFileSync(cnPath, 'utf8')) as CN_YAML;
 
             // console.log(JSON.stringify(doc,null,2));
@@ -76,6 +79,7 @@ export const checkNodeCtl = {
             const pilotKeyPath = path.join(projectDir, 'key.p12');
 
             // copy file to home directory, change owner to current user, and make it readable by all
+            clm.preStep('Making a sudo call to copy the key file...');
             await shellService.runCommand(`sudo cp ${nodeCtlKeyPath} ${pilotKeyPath}; sudo chown $(whoami) ${pilotKeyPath}; chmod +r ${pilotKeyPath}`);
 
             await this.promptForKeyFile(pilotKeyPath);
