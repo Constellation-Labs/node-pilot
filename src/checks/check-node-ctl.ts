@@ -9,8 +9,8 @@ import {configStore} from "../config-store.js";
 import {dockerHelper} from "../helpers/docker-helper.js";
 import {keyFileHelper} from "../helpers/key-file-helper.js";
 import {promptHelper} from "../helpers/prompt-helper.js";
-import {shellService} from "../services/shell-service.js";
 import {nodeService} from "../services/node-service.js";
+import {shellService} from "../services/shell-service.js";
 
 export const checkNodeCtl = {
 
@@ -99,7 +99,7 @@ export const checkNodeCtl = {
         const keyPassword = await password({message: 'Enter the key file password:'});
         const keyAlias = await input({message: 'Enter the key file alias:'});
 
-        configStore.setEnvCommonInfo({CL_KEYALIAS: keyAlias, CL_KEYSTORE: pilotKeyPath, CL_PASSWORD: keyPassword});
+        configStore.setEnvInfo({CL_KEYALIAS: keyAlias, CL_KEYSTORE: pilotKeyPath, CL_PASSWORD: keyPassword});
 
         try {
             const dagAddress = await keyFileHelper.getAddress();

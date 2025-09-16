@@ -1,7 +1,7 @@
 import {input} from "@inquirer/prompts";
 
 import {configStore} from "../config-store.js";
-import {ClusterConsensusInfo, ClusterInfo, NodeInfo} from "../types.js";
+import {ClusterConsensusInfo, ClusterInfo, NodeInfo, TessellationLayer} from "../types.js";
 import {FastforwardService} from "./fastforward-service.js";
 
 export const clusterService = {
@@ -44,6 +44,16 @@ export const clusterService = {
             .catch(() => []);
     },
 
+    async getJoinPeer(layer: TessellationLayer): Promise<NodeInfo> {
+        // const {type} = configStore.getNetworkInfo();
+        // const envLayerInfo = configStore.getEnvLayerInfo(type, layer);
+        // if (envLayerInfo.CL_LB) {
+        //     return fetch(`${envLayerInfo.CL_LB}/node/info`).then(res => res.json());
+        // }
+
+        return this.getSourceNodeInfo(layer);
+    },
+
     async getLatestConsensus(): Promise<ClusterConsensusInfo> {
         const { type } = configStore.getNetworkInfo();
 
@@ -81,14 +91,17 @@ export const clusterService = {
         return this.getNodeInfo().then(i => i.version);
     },
 
-    async getSourceNodeInfo(): Promise<NodeInfo> {
-        const {CL_L0_PEER_HTTP_HOST, CL_L0_PEER_HTTP_PORT} = configStore.getEnvCommonInfo();
+    async getSourceNodeInfo(layer: TessellationLayer): Promise<NodeInfo> {
+        const {type} = configStore.getNetworkInfo();
 
-        return fetch(`http://${CL_L0_PEER_HTTP_HOST}:${CL_L0_PEER_HTTP_PORT}/node/info`)
-            .then(res => {
-                if (res.ok) return res.json();
-                throw new Error(`Failed`);
-            })
+        // eslint-disable-next-line no-warning-comments
+        // TODO: provide a source-node.env with necessary properties
+
+        const {CL_PUBLIC_HTTP_PORT} = configStore.getEnvLayerInfo(type, layer);
+        const {CL_L0_PEER_HTTP_HOST} = configStore.getEnvNetworkInfo(type);
+
+        return fetch(`http://${CL_L0_PEER_HTTP_HOST}:${CL_PUBLIC_HTTP_PORT}/node/info`)
+            .then(res =>  res.json())
 
     }
 };

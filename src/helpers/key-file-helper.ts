@@ -5,12 +5,29 @@ import os from "node:os";
 import path from "node:path";
 
 import {clm} from "../clm.js";
-import {configStore, EnvCommonInfo} from "../config-store.js";
+import {configStore} from "../config-store.js";
 import {shellService} from "../services/shell-service.js";
 import {configHelper} from "./config-helper.js";
-import {getKeyFileContent} from "./env-templates.js";
+import {getObjectToEnvContent} from "./env-templates.js";
 
 export const keyFileHelper = {
+
+    async changePassword(newPassword: string) {
+        const { projectDir } = configStore.getProjectInfo();
+        const keyFilePath = path.join(projectDir, "key.p12");
+        if (!fs.existsSync(keyFilePath)) {
+            clm.error('No key file found. Please generate a new key file first.');
+        }
+
+        const {CL_PASSWORD: currentPassword} = configStore.getEnvInfo();
+        if (currentPassword === newPassword) {
+            clm.error('The new password is the same as the current password. Please try again with a different password.');
+        }
+
+        await shellService.runCommand(`keytool -importkeystore -srckeystore ${keyFilePath} -srcstoretype PKCS12 -srcstorepass '${currentPassword}' -destkeystore ${path.join(projectDir, "temp.p12")} -deststoretype PKCS12 -deststorepass '${newPassword}' -destkeypass '${newPassword}'`);
+
+        await this.promptSaveBackup({CL_KEYALIAS: 'alias', CL_KEYSTORE: keyFilePath, CL_PASSWORD: newPassword});
+    },
 
     async generate() {
         const { projectDir } = configStore.getProjectInfo();
@@ -31,7 +48,7 @@ export const keyFileHelper = {
             CL_KEYALIAS: "alias", CL_KEYSTORE: keyFilePath, CL_PASSWORD: keyPassword
         }
         await shellService.runCommand(`java -jar ${projectDir}/dist/keytool.jar generate`, env);
-        configStore.setEnvCommonInfo(env);
+        configStore.setEnvInfo(env);
 
         const dagAddress = await this.getAddress();
         const nodeId = await this.getId();
@@ -39,23 +56,18 @@ export const keyFileHelper = {
 
         clm.postStep('Key file generated successfully.\n');
 
-        const answer = await input({default: 'y', message: 'Would you like to save a backup of the key file to your home directory? (y/n): '});
-        if (answer.toLowerCase() === 'y') {
-            fs.cpSync(keyFilePath, path.join(os.homedir(), 'key.p12'));
-            fs.writeFileSync(path.join(os.homedir(), 'key-env.sh'), getKeyFileContent({ ...env, CL_KEYSTORE: 'key.p12'} as EnvCommonInfo));
-            clm.postStep(`A copy of the Key file has been saved to your home directory - ${chalk.cyan(path.join(os.homedir(), 'key.p12'))}`);
-        }
+       await this.promptSaveBackup(env);
     },
 
     async getAddress() {
         const { projectDir } = configStore.getProjectInfo();
-        const env= configStore.getEnvCommonInfo();
+        const env= configStore.getEnvInfo();
         return shellService.runCommandWithOutput(`java -jar ${projectDir}/dist/wallet.jar show-address`, env);
     },
 
     async getId() {
         const { projectDir } = configStore.getProjectInfo();
-        const env= configStore.getEnvCommonInfo();
+        const env= configStore.getEnvInfo();
         return shellService.runCommandWithOutput(`java -jar ${projectDir}/dist/wallet.jar show-id`, env);
     },
 
@@ -86,7 +98,7 @@ export const keyFileHelper = {
         const keyPassword = await password({ message: 'Enter the key file password:'});
         const keyAlias = await input({message: 'Enter the key file alias:'});
 
-        configStore.setEnvCommonInfo({CL_KEYALIAS: keyAlias, CL_KEYSTORE: keyStorePath, CL_PASSWORD: keyPassword});
+        configStore.setEnvInfo({CL_KEYALIAS: keyAlias, CL_KEYSTORE: keyStorePath, CL_PASSWORD: keyPassword});
 
         try {
             const dagAddress = await this.getAddress();
@@ -95,10 +107,10 @@ export const keyFileHelper = {
 
         }
         catch {
-            clm.warn('Failed to unlock the key file. Please check your key file information and try again.');
             fs.rmSync(keyStorePath);
-            await this.promptForKeyFile();
-            return;
+            clm.error('Failed to unlock the key file. Please check your key file information and try again.');
+            // await this.promptForKeyFile();
+            // return;
         }
 
         clm.postStep('Key file imported successfully.\n');
@@ -144,6 +156,31 @@ export const keyFileHelper = {
         await this.promptForKeyFile();
     },
 
+    async promptSaveBackup(env: object) {
+        const { projectDir } = configStore.getProjectInfo();
+        const keyFilePath = path.join(projectDir, "key.p12");
+        const {dagAddress, nodeId} = configStore.getProjectInfo();
+        const answer = await input({default: 'y', message: 'Would you like to save a backup of the key file to your home directory? (y/n): '});
+        if (answer.toLowerCase() === 'y') {
+            const homeKeyPath = path.join(os.homedir(), 'key.p12');
+            const homeKeyInfoPath = path.join(os.homedir(), 'key-info');
+            if (fs.existsSync(homeKeyPath)) {
+                const backupUniqueName = new Date().toISOString().replaceAll(':', '-');
+                const backupKeyName = `key-${backupUniqueName}.p12`;
+                const backupKeyPath = path.join(os.homedir(), backupKeyName);
+                fs.renameSync(homeKeyPath, backupKeyPath);
+                clm.postStep(`An existing key file was found in your home directory and has been renamed to ${chalk.cyan(backupKeyName)}`);
+                if (fs.existsSync(homeKeyInfoPath)) {
+                    fs.renameSync(homeKeyInfoPath, path.join(os.homedir(), `key-info-${backupUniqueName}`));
+                }
+            }
+
+            fs.cpSync(keyFilePath, homeKeyPath);
+            fs.writeFileSync(path.join(os.homedir(), 'key-info'), getObjectToEnvContent({ ...env, CL_KEYSTORE: 'key.p12', CL_PASSWORD: '****', NODE_ADDRESS: dagAddress, NODE_ID: nodeId}));
+            clm.postStep(`A copy of the Key file has been saved to your home directory - ${chalk.cyan(homeKeyPath)}`);
+        }
+    },
+
     async showKeyFileInfo(prompt4ShowPassword = true) {
         clm.preStep('Current key file information:');
 
@@ -151,7 +188,7 @@ export const keyFileHelper = {
         configHelper.showEnvInfo('Node ID', nodeId);
         configHelper.showEnvInfo('DAG Address', dagAddress);
 
-        const {CL_KEYALIAS, CL_KEYSTORE, CL_PASSWORD} = configStore.getEnvCommonInfo();
+        const {CL_KEYALIAS, CL_KEYSTORE, CL_PASSWORD} = configStore.getEnvInfo();
         configHelper.showEnvInfo('CL_KEYSTORE', CL_KEYSTORE || '');
         configHelper.showEnvInfo('CL_KEYALIAS', CL_KEYALIAS || '');
         configHelper.showEnvInfo('CL_PASSWORD', '*********');

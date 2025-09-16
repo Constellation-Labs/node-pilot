@@ -14,6 +14,10 @@ export const clm = {
         console.log(msg);
     },
 
+    echoRepeatLine(char: string) {
+        process.stdout.write('\r' + char);
+    },
+
     error (msg: string, silent = true) {
         console.error(chalk.red(msg));
         process.exit(silent ? 0 : 1);

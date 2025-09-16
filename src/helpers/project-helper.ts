@@ -5,9 +5,8 @@ import fs from "node:fs";
 import path from "node:path";
 import {fileURLToPath} from 'node:url'
 
-import {checkNodeCtl} from "../checks/check-node-ctl.js";
 import {clm} from "../clm.js";
-import {configStore, EnvCommonInfo, EnvLayerInfo, NetworkType} from "../config-store.js";
+import {configStore, EnvLayerInfo, EnvNetworkInfo, NetworkType} from "../config-store.js";
 import {TessellationLayer} from "../types.js";
 import {configHelper} from "./config-helper.js";
 import {getLayerEnvFileContent} from "./env-templates.js";
@@ -17,45 +16,41 @@ export const projectHelper = {
 
     async generateLayerEnvFiles(layers?: TessellationLayer[]) {
         const {layersToRun, projectDir} = configStore.getProjectInfo();
-        const {type} = configStore.getNetworkInfo();
-        const commonInfo = configStore.getEnvCommonInfo();
+        const {type: network} = configStore.getNetworkInfo();
+        const envInfo = configStore.getEnvInfo();
+        const envNetworkInfo = configStore.getEnvNetworkInfo(network);
 
         layers = layers || layersToRun;
 
-        for (const n of layers) {
-            const filePath = path.join(projectDir, `${n}.env`);
-            const envInfo = configStore.getEnvLayerInfo(n);
-            const fileContents = getLayerEnvFileContent(n, type, commonInfo, envInfo);
+        for (const layer of layers) {
+            const filePath = path.join(projectDir, `${layer}.env`);
+            const envLayerInfo = configStore.getEnvLayerInfo(network, layer);
+            const fileContents = getLayerEnvFileContent(layer, { ...envInfo, ...envNetworkInfo, ...envLayerInfo });
             clm.debug(`Writing layer env file: ${filePath}`);
             fs.writeFileSync(filePath, fileContents)
         }
     },
 
-    async importLayerEnvFiles() {
-        const {projectDir} = configStore.getProjectInfo();
-
-        const possibleLayers: TessellationLayer[] = ['gl0', 'gl1', 'ml0', 'cl1', 'dl1'];
-
-        for (const n of possibleLayers) {
-            const filePath = path.join(projectDir, 'layers', `${n}.env`);
-            if (fs.existsSync(filePath)) {
-                configStore.setEnvLayerInfo(n, configHelper.parseEnvFile(filePath) as EnvLayerInfo);
-            }
-        }
-    },
-
-    async importNetworkEnvFiles() {
+    importEnvFiles() {
         const {projectDir} = configStore.getProjectInfo();
 
         const possibleNetworks: NetworkType[] = ['mainnet', 'testnet', 'integrationnet'];
-        const supportedTypes: NetworkType[] = [];
-        const networkEnvInfo = {} as Record<NetworkType, EnvCommonInfo> ;
+        const possibleLayers: TessellationLayer[] = ['gl0', 'gl1', 'ml0', 'cl1', 'dl1'];
 
-        for (const n of possibleNetworks) {
-            const filePath = path.join(projectDir, 'networks', `${n}.env`);
+        const supportedTypes: NetworkType[] = [];
+
+        for (const network of possibleNetworks) {
+            const filePath = path.join(projectDir, 'networks', network, 'network.env');
             if (fs.existsSync(filePath)) {
-                supportedTypes.push(n);
-                networkEnvInfo[n] = configHelper.parseEnvFile(filePath) as EnvCommonInfo;
+                supportedTypes.push(network);
+                configStore.setEnvNetworkInfo(network, configHelper.parseEnvFile(filePath) as EnvNetworkInfo);
+            }
+
+            for (const layer of possibleLayers) {
+                const filePath = path.join(projectDir, 'networks', network, `${layer}.env`);
+                if (fs.existsSync(filePath)) {
+                    configStore.setEnvLayerInfo(network, layer, configHelper.parseEnvFile(filePath) as EnvLayerInfo);
+                }
             }
         }
 
@@ -64,11 +59,10 @@ export const projectHelper = {
         }
 
         configStore.setNetworkInfo({supportedTypes});
-        configStore.setNetworkEnvInfo(networkEnvInfo);
+
 
         // eslint-disable-next-line no-warning-comments
         // TODO: verify all required env variables are present
-
     },
 
     async installEmbedded (name: string)   {
@@ -104,17 +98,7 @@ export const projectHelper = {
         fs.mkdirSync(path.join(gl0DataDir,'snapshot_info'));
         fs.mkdirSync(path.join(gl0DataDir,'tmp'));
 
-        // Set hypergraph layer defaults
-        configStore.setEnvLayerInfo('gl0', {
-            CL_CLI_HTTP_PORT: '9002', CL_DOCKER_JAVA_OPTS: '-Xms1024M -Xmx7G -Xss256K', CL_P2P_HTTP_PORT: '9001', CL_PUBLIC_HTTP_PORT: '9000'
-        });
-
-        configStore.setEnvLayerInfo('gl1', {
-            CL_CLI_HTTP_PORT: '9102', CL_DOCKER_JAVA_OPTS: '-Xms1024M -Xmx3G -Xss256K', CL_P2P_HTTP_PORT: '9101', CL_PUBLIC_HTTP_PORT: '9100'
-        });
-
-        await this.importNetworkEnvFiles();
-        await this.importLayerEnvFiles();
+        this.importEnvFiles();
     },
 
     async selectProject() {

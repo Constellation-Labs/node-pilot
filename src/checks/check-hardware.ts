@@ -29,7 +29,7 @@ export const checkHardware = {
 
         let allPassed = true;
         const formatActual = (value: number | string, recommended: number, units = '') => {
-            const passed = Number(value) >= recommended;
+            const passed = Math.ceil(Number(value)) >= recommended;
             allPassed = allPassed && passed;
             return passed ? chalk.greenBright(value + units) : chalk.redBright(value + units)
         }
@@ -44,8 +44,8 @@ export const checkHardware = {
         ];
 
         const rows = [
-            [fc("Disk size"), fc("320 GB"), formatActual(totalSpaceGB, 320, " GB")],
-            [fc("System memory"), fc("8 GB"), formatActual(totalMemoryGB, 8, " GB")],
+            [fc("Disk size"), fc("240 GB"), formatActual(totalSpaceGB, 240, " GB")],
+            [fc("System memory"), fc("16 GB"), formatActual(totalMemoryGB, 16, " GB")],
             [fc("CPU cores"), fc("8 cores"), formatActual(numOfCores, 8, " cores")],
         ]
 

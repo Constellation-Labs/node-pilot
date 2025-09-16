@@ -7,6 +7,7 @@ import {checkNetwork} from "../checks/check-network.js";
 import {checkNodeCtl} from "../checks/check-node-ctl.js";
 import {checkProject} from "../checks/check-project.js";
 import {keyFileHelper} from "../helpers/key-file-helper.js";
+import {checkWallet} from "../checks/check-wallet.js";
 
 export default class Status extends Command {
 
@@ -28,6 +29,8 @@ export async function checkInstallationAndConfigurationStatus() {
     await checkNodeCtl.check4Migration();
     await keyFileHelper.promptIfNoKeyFile();
     await checkNetwork.checkSeedList();
+    await checkNetwork.checkForExistingNodeIdInCluster();
+    await checkWallet.checkCollateral();
     await checkLayers.layersRunning();
     await checkLayers.layersReadyToJoin();
     await checkLayers.layersStatus();

@@ -49,11 +49,11 @@ export const checkLayers = {
         else if (notRunningLayers.length > 0) {
             const layersNotRunning = notRunningLayers.map(r => r.layer);
             clm.preStep('The following Validator Node layers are not running: ' + chalk.cyan(layersNotRunning.join(', ')));
-            await input({ default: 'y', message: 'Would you like to restart the docker containers? (y/n): '}).then(async answer =>  {
+            await input({ default: 'y', message: 'Would you like to start the validator(s)? (y/n): '}).then(async answer =>  {
                 if (answer.toLowerCase() === 'y') {
-                    clm.preStep('Restarting docker containers...');
-                    await dockerHelper.dockerUp();
-                    await nodeService.pollForLayersState(layersToRun);
+                    clm.preStep('Starting docker containers...');
+                    await dockerHelper.dockerStartLayers(layersNotRunning);
+                    await nodeService.pollForLayersState(layersNotRunning);
                 } else {
                     clm.echo('Node not started.');
                 }

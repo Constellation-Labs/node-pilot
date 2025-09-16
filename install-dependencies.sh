@@ -1,4 +1,4 @@
-#!/scripts/bash
+#!/usr/bin/env bash
 
 # Break on any error
 set -e

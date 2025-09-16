@@ -4,10 +4,11 @@ import path from "node:path";
 import {configStore} from "../config-store.js";
 import {configHelper} from "../helpers/config-helper.js";
 import {shellService} from "../services/shell-service.js";
+import {TessellationLayer} from "../types.js";
 
 export default class Logs extends Command {
     static override args = {
-        layer: Args.string({description: 'network layer to view. e.g. gl0'}),
+        layer: Args.string({description: 'network layer to view. e.g. gl0', required: true}),
     }
     static override description = 'view validator node runtime logs'
     static override examples = [
@@ -21,8 +22,12 @@ export default class Logs extends Command {
     public async run(): Promise<void> {
         configHelper.assertProject('No project found. ');
 
-        const {flags} = await this.parse(Logs);
+        const {args, flags} = await this.parse(Logs);
         const numOfLines = Number.isNaN(Number(flags.numOfLines)) ? 100 : Number(flags.numOfLines);
+        const {layersToRun} = configStore.getProjectInfo();
+        if (!layersToRun.includes(args.layer as TessellationLayer)) {
+            this.error(`Invalid layer: ${args.layer}. Available layers: ${layersToRun.join(',')}`);
+        }
 
         let tailFlag = flags.numOfLines ? `-n ${numOfLines}` : '-n 100';
 
@@ -31,7 +36,7 @@ export default class Logs extends Command {
         }
 
         const {projectDir} = configStore.getProjectInfo();
-        const logPath = path.join(projectDir, 'app-data', 'gl0-logs', 'app.log');
+        const logPath = path.join(projectDir, 'app-data', `${args.layer}-logs`, 'app.log');
         await shellService.runCommand(`tail ${tailFlag} ${logPath}`).catch(()=> 1);
     }
 }

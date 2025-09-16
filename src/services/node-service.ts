@@ -1,3 +1,5 @@
+import chalk from "chalk";
+
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
 import {NodeInfo, TessellationLayer} from "../types.js";
@@ -60,7 +62,7 @@ export const nodeService = {
         }
 
         const layerPortInfo = configStore.getLayerPortInfo(layer);
-        const peerInfo = await clusterService.getSourceNodeInfo();
+        const peerInfo = await clusterService.getJoinPeer(layer);
         const nodeId = peerInfo.id;
         const nodeIp = peerInfo.host;
         const cliPort = layerPortInfo.CLI;
@@ -91,7 +93,7 @@ export const nodeService = {
             return true;
         }
 
-        if (state === "ReadyToJoin") {
+        if (state === "ReadyToJoin" || state === 'SessionStarted') {
             clm.echo(`Node has not joined the cluster yet. Current state: "${state}".`);
             return true;
         }
@@ -138,20 +140,15 @@ export const nodeService = {
             // eslint-disable-next-line no-await-in-loop
             const { state } = await this.getNodeInfo(layer);
 
-            if (state === "Unavailable" ||  state === "ReadyToJoin") {
-                if (expectedState === 'Offline') return true;
-                clm.echo(`     Validator Node is not running.`);
-            }
+            if (expectedState === 'Offline' && (state === "Unavailable" || state === "ReadyToJoin" || state === "SessionStarted")) return true;
 
-            if (layer === 'gl0' && expectedState === 'Ready'  && state === "WaitingForDownload") {
-                clm.echo(`    [${layer}] Attempt ${i}: Current state is "${state}"`);
-            }
-            else {
-                clm.echo(`    [${layer}] Attempt ${i}: Current state is "${state}"`);
-            }
+            clm.echoRepeatLine(`[${layer}] ${chalk.bgGray.cyan('Attempt ' +i)}: Current state is "${state}"                       `);
+            // eslint-disable-next-line no-await-in-loop
+            await sleep(0.5);
+            clm.echoRepeatLine(`[${layer}] Attempt ${i}: Current state is "${state}"                       `);
 
             if (state === expectedState) {
-                clm.postStep(`    ${layer} is ${expectedState}`);
+                clm.postStep(`${layer} is ${expectedState}`);
                 return true;
             }
 
@@ -159,7 +156,7 @@ export const nodeService = {
             await sleep(5);
         }
 
-        clm.warn(`    ${layer} is not ${expectedState} after 5 minutes`);
+        clm.warn(`${layer} is not ${expectedState} after 5 minutes`);
         return false;
     }
 };

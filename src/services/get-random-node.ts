@@ -4,7 +4,7 @@ export const getRandomNode = (nodes: Pick<NodeInfo, 'host' | 'id' | 'publicPort'
     const randomNodeIndex  = Math.floor(Math.random() * nodes.length);
     const node = nodes[randomNodeIndex];
 
-    console.log(`Getting random node from ${nodes.length} nodes: ${node.host}`);
+    console.log(`Getting random node from ${nodes.length} nodes: ${node.host}:${node.publicPort}`);
 
     return fetch(`http://${node.host}:${node.publicPort}/node/info`)
         .then(async res => {

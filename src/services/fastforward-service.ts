@@ -29,10 +29,10 @@ export class FastforwardService {
         fs.mkdirSync(this.tmpDir, {recursive: true});
         fs.mkdirSync(this.dataDir, {recursive: true});
 
-        const env = configStore.getEnvCommonInfo();
+        const env = configStore.getEnvNetworkInfo(type);
 
         // this.lbUrl = `https://l0-lb-${this.network}.constellationnetwork.io`;
-        this.lbUrl = `http://${env.CL_GLOBAL_L0_PEER_HOST}:${env.CL_GLOBAL_L0_PEER_HTTP_PORT}`;
+        this.lbUrl = `http://${env.CL_L0_PEER_HTTP_HOST}:${env.CL_L0_PEER_HTTP_PORT}`;
     }
 
     static async synctoLatestSnapshot() {

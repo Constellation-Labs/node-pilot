@@ -39,8 +39,5 @@ export default class Info extends Command {
 
         // Fast Forward
         configHelper.showEnvInfo('Fast Forward Enabled', (projectInfo.fastForward === undefined || Boolean(projectInfo.fastForward)).toString());
-
-        // Auto Restart
-        configHelper.showEnvInfo('Auto Restart Enabled', Boolean(projectInfo.autoRestart).toString());
     }
 }

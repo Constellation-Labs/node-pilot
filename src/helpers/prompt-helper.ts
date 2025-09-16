@@ -4,20 +4,22 @@ import chalk from "chalk";
 import {clm} from "../clm.js";
 import {configStore, NetworkType} from "../config-store.js";
 import {TessellationLayer} from "../types.js";
+import {projectHelper} from "./project-helper.js";
 
 export const promptHelper = {
 
-    async configureAutoRestart() {
-        const answer = await input({
-            default: 'y',
-            message: 'Do you want to enable auto-restart? (y/n): '
-        });
-        configStore.setProjectInfo({ autoRestart: answer === 'y' });
-    },
+    // async configureAutoRestart() {
+    //     const answer = await input({
+    //         default: 'y',
+    //         message: 'Do you want to enable auto-restart? (y/n): '
+    //     });
+    //     configStore.setProjectInfo({ autoRestart: answer === 'y' });
+    // },
 
     async configureJavaMemoryArguments() {
         const {memory} = configStore.getSystemInfo();
         const {layersToRun, name} = configStore.getProjectInfo();
+        const {type: currentNetwork} = configStore.getNetworkInfo();
 
         const xmx = Number(memory);
 
@@ -25,7 +27,7 @@ export const promptHelper = {
             clm.warn('Minimum 8GB memory detected. Only a single layer will be allowed to run');
             await promptHelper.doYouWishToContinue();
             configStore.setProjectInfo({layersToRun: [layersToRun[0]]});
-            configStore.setEnvLayerInfo(layersToRun[0], { CL_DOCKER_JAVA_OPTS: '-Xms1024M -Xmx7G -Xss256K' });
+            configStore.setEnvLayerInfo(currentNetwork, layersToRun[0], { CL_DOCKER_JAVA_OPTS: '-Xms1024M -Xmx7G -Xss256K' });
         }
         else if (name === 'hypergraph') {
             // prompt to use all detected memory
@@ -40,13 +42,21 @@ export const promptHelper = {
             const subLayerMem = layersToRun.length > 1 ? Math.floor(answer / 3) : 0;
             const mainLayerMem = answer - subLayerMem;
 
-            clm.postStep(`${layersToRun[0]} memory allocation: ${mainLayerMem}GB`);
-            configStore.setEnvLayerInfo(layersToRun[0], { CL_DOCKER_JAVA_OPTS: `-Xms1024M -Xmx${mainLayerMem}G -Xss256K` });
+            const {supportedTypes} = configStore.getNetworkInfo();
 
-            if (subLayerMem) {
-                clm.postStep(`${layersToRun[1]} memory allocation: ${subLayerMem}GB`);
-                configStore.setEnvLayerInfo(layersToRun[1], { CL_DOCKER_JAVA_OPTS: `-Xms1024M -Xmx${subLayerMem}G -Xss256K` });
+            for (const type of supportedTypes) {
+                const network = type.toUpperCase();
+                const logMethod = type === currentNetwork ? clm.postStep : clm.debug;
+                logMethod(`${network}:: ${layersToRun[0]} memory allocation: ${mainLayerMem}GB`);
+                configStore.setEnvLayerInfo(type, layersToRun[0], { CL_DOCKER_JAVA_OPTS: `-Xms1024M -Xmx${mainLayerMem}G -Xss256K` });
+
+                if (subLayerMem) {
+                    logMethod(`${network}:: ${layersToRun[1]} memory allocation: ${subLayerMem}GB`);
+                    configStore.setEnvLayerInfo(type, layersToRun[1], { CL_DOCKER_JAVA_OPTS: `-Xms1024M -Xmx${subLayerMem}G -Xss256K` });
+                }
             }
+
+
         }
     },
 
@@ -86,7 +96,7 @@ export const promptHelper = {
 
         if (supportedTypes.length === 1) {
             configStore.setNetworkInfo({type: supportedTypes[0], version: "latest"});
-            configStore.setEnvCommonInfo(configStore.getNetworkEnvInfo(supportedTypes[0]));
+            // configStore.setEnvNetworkInfo(configStore.getNetworkEnvInfo(supportedTypes[0]));
             return;
         }
 
@@ -97,9 +107,9 @@ export const promptHelper = {
                 {disabled: !supportedTypes.includes('integrationnet'), name: 'Integrationnet', value: 'integrationnet'}
             ],
             message: 'Select network type:'
-        });
+        }) as NetworkType;
 
-        configStore.setNetworkInfo({type: networkType as NetworkType, version: "latest"});
-        configStore.setEnvCommonInfo(configStore.getNetworkEnvInfo(networkType as NetworkType));
+        configStore.setNetworkInfo({type: networkType, version: "latest"});
+        // configStore.setEnvNetworkInfo(configStore.getNetworkEnvInfo(networkType as NetworkType));
     }
 }

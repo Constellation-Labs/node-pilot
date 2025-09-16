@@ -66,7 +66,6 @@ class ConfigStore {
 
         this.setDockerEnvInfo({ DOCKER_IMAGE_VERSION: 'test' });
         this.setProjectInfo({ name, projectDir })
-        this.setEnvInfo({ common: { CL_GLOBAL_L0_PEER_HTTP_PORT: '9000' }, layers: { gl0: { CL_PUBLIC_HTTP_PORT: "9000" }}});
     }
 
     changeProjectStore(name: string) {
@@ -80,32 +79,41 @@ class ConfigStore {
         }
     }
 
+    // getCurrentEnvNetworkInfo(): EnvNetworkInfo {
+    //     const {type} = this.getNetworkInfo();
+    //     return this.getEnvNetworkInfo(type);
+    // }
+
+    // resetEnvLayerInfo() {
+    //     const layers = this.projectStore.getItem('layer-env') as Record<TessellationLayer, EnvLayerInfo>;
+    //
+    //     this.projectStore.setItem('layer-env', {  [layer]: { CL_DOCKER_JAVA_OPTS }} );
+    // }
+
     getDockerEnvInfo(): object {
         return this.projectStore.getItem('docker');
     }
 
-    getEnvCommonInfo(): EnvCommonInfo {
-        return this.projectStore.getItem('env')?.common;
-    }
-
     getEnvInfo(): EnvInfo {
-        return this.projectStore.getItem('env');
+        return this.projectStore.getItem('env') || {};
     }
 
-    getEnvLayerInfo(layer: TessellationLayer): EnvLayerInfo {
-        const envInfo = this.projectStore.getItem('env');
-        if (!envInfo) return  {} as EnvLayerInfo;
-        return { ...envInfo.common, ...envInfo.layers[layer] };
+    getEnvLayerInfo(network: NetworkType, layer: TessellationLayer): EnvLayerInfo {
+        const envInfo = this.projectStore.getItem('layer-env') as Record<NetworkType, Record<TessellationLayer, EnvLayerInfo>>;
+        if (!envInfo) return  { [network]: {}} as EnvLayerInfo;
+        return envInfo[network][layer] || {} as EnvLayerInfo;
+    }
+
+    getEnvNetworkInfo(network: NetworkType): EnvNetworkInfo {
+        const envInfo = this.projectStore.getItem('network-env') as Record<NetworkType, EnvNetworkInfo>;
+        if (!envInfo) return  {} as EnvNetworkInfo;
+        return envInfo[network];
     }
 
     getLayerPortInfo(layer: TessellationLayer): PortInfo {
-        const layerInfo = this.getEnvLayerInfo(layer);
+        const { type: network } = this.getNetworkInfo();
+        const layerInfo = this.getEnvLayerInfo(network, layer);
         return { CLI: layerInfo.CL_CLI_HTTP_PORT, P2P: layerInfo.CL_P2P_HTTP_PORT, PUBLIC: layerInfo.CL_PUBLIC_HTTP_PORT }
-    }
-
-    getNetworkEnvInfo(network: NetworkType): EnvCommonInfo {
-        const info = this.projectStore.getItem('network-env') as NetworkEnvInfo;
-        return info ? info[network] : {} as EnvCommonInfo;
     }
 
     getNetworkInfo(): NetworkInfo {
@@ -130,31 +138,32 @@ class ConfigStore {
         return projects.length > 0;
     }
 
+    // setCurrentEnvNetworkInfo(info: Partial<EnvNetworkInfo>) {
+    //     const {type} = this.getNetworkInfo();
+    //     this.setEnvNetworkInfo(type, info);
+    // }
+
     setDockerEnvInfo(info: Partial<{ DOCKER_IMAGE_VERSION: string, DOCKER_USER_ID: string}>) {
         const oldInfo = this.projectStore.getItem('docker');
         this.projectStore.setItem('docker', { ...oldInfo, ...info });
     }
 
-    setEnvCommonInfo(info: Partial<EnvCommonInfo>) {
-        const oldInfo = this.projectStore.getItem('env');
-        this.projectStore.setItem('env', { common: { ...oldInfo.common, ...info }, layers: oldInfo.layers });
-    }
-
-    setEnvInfo(info: DeepPartial<EnvInfo>) {
+    setEnvInfo(info: Partial<EnvInfo>) {
         const oldInfo = this.projectStore.getItem('env');
         this.projectStore.setItem('env', { ...oldInfo, ...info });
     }
 
-    setEnvLayerInfo(layer: TessellationLayer, info: Partial<EnvLayerInfo>) {
-        const envInfo = this.projectStore.getItem('env');
-        const {common, layers} = envInfo;
-        this.projectStore.setItem('env', { common, layers: { ...layers, [layer]: { ...layers[layer], ...info } } });
-
+    setEnvLayerInfo(network: NetworkType, layer: TessellationLayer, info: Partial<EnvLayerInfo>) {
+        let layers = this.projectStore.getItem('layer-env') as Record<NetworkType, Record<TessellationLayer, EnvLayerInfo>>;
+        if (!layers) layers = {} as Record<NetworkType, Record<TessellationLayer, EnvLayerInfo>>;
+        if (!layers[network]) layers[network] = {} as Record<TessellationLayer, EnvLayerInfo>;
+        this.projectStore.setItem('layer-env', { ...layers, [network]: { ...layers[network], [layer]: { ...layers[network][layer], ...info } } });
     }
 
-    setNetworkEnvInfo(info: NetworkEnvInfo) {
-        const oldInfo = this.projectStore.getItem('network-env');
-        this.projectStore.setItem('network-env', { ...oldInfo, ...info });
+    setEnvNetworkInfo(network: NetworkType, info: Partial<EnvNetworkInfo>) {
+        let networks = this.projectStore.getItem('network-env');
+        if (!networks) networks = {};
+        this.projectStore.setItem('network-env', { ...networks, [network]: { ...networks[network], ...info } } );
     }
 
     setNetworkInfo(info: Partial<NetworkInfo>) {
@@ -182,9 +191,9 @@ class ConfigStore {
 
 export const configStore = new ConfigStore();
 
-type DeepPartial<T> = {
-    [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
-};
+// type DeepPartial<T> = {
+//     [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+// };
 
 type PilotInfo = {
     appDir: string;
@@ -192,56 +201,83 @@ type PilotInfo = {
     projects: string[];
 }
 
-export type EnvInfo = {
-    common: EnvCommonInfo;
-    layers: Record<TessellationLayer, EnvLayerInfo>;
+export type EnvInfo = EnvKeyInfo & {
+    CL_EXTERNAL_IP: string;
 }
 
-export type EnvCommonInfo = {
+export const envNames = {
+    CL_EXTERNAL_IP: 1,
+    CL_KEYALIAS: 1,
+    CL_KEYSTORE: 1,
+    CL_PASSWORD: 1
+}
+
+export type EnvCombinedInfo = EnvInfo & EnvLayerInfo & EnvNetworkInfo;
+
+export type EnvNetworkInfo = EnvPeerInfo & {
     CL_APP_ENV: string;
-    CL_EXTERNAL_IP: string;
+    CL_COLLATERAL: string;
+    CL_L0_TOKEN_IDENTIFIER: string; // metagraph
+}
+
+export type EnvKeyInfo  = {
+    CL_KEYALIAS: string;
+    CL_KEYSTORE: string;
+    CL_PASSWORD: string;
+}
+
+export type EnvPeerInfo = {
     CL_GLOBAL_L0_PEER_HOST: string;
     CL_GLOBAL_L0_PEER_HTTP_PORT: string;
     CL_GLOBAL_L0_PEER_ID: string;
-    CL_KEYALIAS: string;
-    CL_KEYSTORE: string;
     CL_L0_PEER_HTTP_HOST: string;
     CL_L0_PEER_HTTP_PORT: string;
     CL_L0_PEER_ID: string;
     CL_L0_PEER_P2P_PORT: string;
-    CL_L0_TOKEN_IDENTIFIER: string; // metagraph
-    CL_PASSWORD: string;
 }
 
-export const commonEnvNames = {
+export const networkEnvNames = {
     CL_APP_ENV: 1,
-    CL_EXTERNAL_IP: 1,
     CL_GLOBAL_L0_PEER_HOST: 1,
     CL_GLOBAL_L0_PEER_HTTP_PORT: 1,
     CL_GLOBAL_L0_PEER_ID: 1,
-    CL_KEYALIAS: 1,
-    CL_KEYSTORE: 1,
     CL_L0_PEER_HTTP_HOST: 1,
     CL_L0_PEER_HTTP_PORT: 1,
     CL_L0_PEER_ID: 1,
+    CL_L0_PEER_P2P_PORT: 1,
     CL_L0_TOKEN_IDENTIFIER: 1,
-    CL_PASSWORD: 1
 }
 
-export type EnvLayerInfo = {
+export type EnvLayerInfo = EnvPeerInfo & {
     CL_CLI_HTTP_PORT: string;
     CL_DOCKER_JAVA_OPTS: string;
+    CL_LB: string;
     CL_P2P_HTTP_PORT: string;
     CL_PUBLIC_HTTP_PORT: string;
 }
 
+// NETWORK LAYER
 export const layerEnvNames = {
     CL_CLI_HTTP_PORT: 1,
     CL_DOCKER_JAVA_OPTS: 1,
+    CL_GLOBAL_L0_PEER_HOST: 1,
+    CL_GLOBAL_L0_PEER_HTTP_PORT: 1,
+    CL_GLOBAL_L0_PEER_ID: 1,
+    CL_L0_PEER_HTTP_HOST: 1,
+    CL_L0_PEER_HTTP_PORT: 1,
+    CL_L0_PEER_ID: 1,
+    CL_L0_PEER_P2P_PORT: 1,
+    CL_LB: 1,
     CL_P2P_HTTP_PORT: 1,
-    CL_PUBLIC_HTTP_PORT: 1,
+    CL_PUBLIC_HTTP_PORT: 1
 }
 
+// export const keyInfoNames = {
+//     KEY_ALIAS: 1,
+//     KEY_FILE: 1,
+//     NODE_ADDRESS: 1,
+//     NODE_ID: 1,
+// }
 
 export type SystemInfo = {
     cores: number;
@@ -254,9 +290,9 @@ export type SystemInfo = {
 export type NetworkType = 'integrationnet' | 'mainnet' | 'testnet';
 
 export type ProjectInfo = {
-    autoRestart: boolean;
-    autoStart: boolean;
-    autoUpdate: boolean;
+    // autoRestart: boolean;
+    // autoStart: boolean;
+    // autoUpdate: boolean;
     dagAddress: string;
     fastForward: boolean;
     homeDir: string;
@@ -266,15 +302,11 @@ export type ProjectInfo = {
     projectDir: string;
 }
 
-
-
 export type NetworkInfo = {
     supportedTypes: NetworkType[];
     type: NetworkType;
     version: string;
 }
-
-export type NetworkEnvInfo = Record<NetworkType, EnvCommonInfo>;
 
 export type PortInfo = {
     CLI: string;

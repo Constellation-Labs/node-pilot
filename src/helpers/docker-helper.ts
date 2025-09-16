@@ -36,8 +36,12 @@ export const dockerHelper = {
         await run('down');
     },
 
-    async dockerRestart() {
-        await run('restart');
+    async dockerRestart(layer: TessellationLayer) {
+        await run('restart', [layer]);
+    },
+
+    async dockerStartLayers(layers: TessellationLayer[]) {
+        await run('up -d', layers);
     },
 
     async dockerUp() {

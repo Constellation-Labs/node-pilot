@@ -87,13 +87,9 @@ check_node_pilot() {
   if ! check_node; then
     return
   fi
-  if command -v cpilot >/dev/null 2>&1; then
-    echo "✅ Node Pilot is already installed"
-  else
-    echo "Installing Node Pilot..."
-    npm install -g @constellation-network/node-pilot
-    echo "✅ Node Pilot installed: $(cpilot --version)"
-  fi
+  echo "Installing Node Pilot..."
+  npm install -g @constellation-network/node-pilot
+  echo "✅ Node Pilot installed: $(cpilot --version)"
   echo ""
   echo "Simply, run 'cpilot' to get started"
 }

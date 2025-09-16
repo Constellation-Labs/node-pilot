@@ -5,8 +5,30 @@ import path from "node:path";
 
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
+import {dockerHelper} from "../helpers/docker-helper.js";
+import {clusterService} from "../services/cluster-service.js";
+import {shellService} from "../services/shell-service.js";
 
 export const checkNetwork = {
+
+    async checkForExistingNodeIdInCluster() {
+        if(configStore.hasProjectFlag('duplicateNodeIdChecked')) {
+            return;
+        }
+
+        const {nodeId} = configStore.getProjectInfo();
+
+        const clusterInfo = await clusterService.getClusterInfo();
+        const found = clusterInfo.some(node => node.id === nodeId);
+        const isDockerRunning = await dockerHelper.isRunning();
+
+        if (!isDockerRunning && found) {
+            clm.warn('Node ID already exists in the cluster.');
+            clm.error('You need to shutdown your node from a previous installation before continuing.');
+        }
+
+        configStore.setProjectFlag('duplicateNodeIdChecked', true);
+    },
 
     async checkSeedList() {
         if(configStore.hasProjectFlag('seedListChecked')) {
@@ -29,11 +51,12 @@ export const checkNetwork = {
 
         const printNotFoundError = () => {
             clm.warn(`Node ID not found in ${type.toUpperCase()} seed list. You may try again later.`);
-            clm.error(`To change the Key File: use ${chalk.cyan('cpilot config')}, and select ${chalk.cyan('Key File')}`);
+            clm.warn(`To change the Key File: use ${chalk.cyan('cpilot config')}, and select ${chalk.cyan('Key File')}`);
+            clm.error(`To change the Network: use ${chalk.cyan('cpilot config')}, and select ${chalk.cyan('Network')}`);
         }
 
         if (type === 'mainnet') {
-            // the mainnet seed list comed from a network release files
+            // the mainnet seed list comed from a network release
             printNotFoundError();
         } else {
 
@@ -59,12 +82,12 @@ export const checkNetwork = {
     },
 
     async configureIpAddress() {
-        const {CL_EXTERNAL_IP: currentIpAddress} = configStore.getEnvCommonInfo();
+        const {CL_EXTERNAL_IP: currentIpAddress} = configStore.getEnvInfo();
         const detectedIpAddress = await checkNetwork.fetchIPAddress().catch(() => '');
 
         if (!currentIpAddress && !detectedIpAddress) {
             const newIpAddress = await checkNetwork.enterIpAddressManually();
-            configStore.setEnvCommonInfo({CL_EXTERNAL_IP: newIpAddress});
+            configStore.setEnvInfo({CL_EXTERNAL_IP: newIpAddress});
             return;
         }
 
@@ -100,7 +123,7 @@ export const checkNetwork = {
             selectedIpAddress = await checkNetwork.enterIpAddressManually();
         }
 
-        configStore.setEnvCommonInfo({CL_EXTERNAL_IP: selectedIpAddress});
+        configStore.setEnvInfo({CL_EXTERNAL_IP: selectedIpAddress});
     },
 
     async detectExternalIpAddress () {
@@ -113,7 +136,7 @@ export const checkNetwork = {
 
         clm.postStep("\nExternal IP address: " + chalk.cyan(externalIp) + "\n");
 
-        configStore.setEnvCommonInfo({CL_EXTERNAL_IP: externalIp});
+        configStore.setEnvInfo({CL_EXTERNAL_IP: externalIp});
     },
 
     async enterIpAddressManually() {
@@ -132,10 +155,11 @@ export const checkNetwork = {
     },
 
     async fetchIPAddress() {
-        return fetch('https://ifconfig.me/ip')
-            .then(res => {
-                if(res.ok) return res.text();
-                throw new Error('Failed to fetch IP address');
-            })
+        return shellService.runCommandWithOutput('curl -4 https://ifconfig.me/ip');
+        // return fetch('https://ifconfig.me/ip')
+        //     .then(res => {
+        //         if(res.ok) return res.text();
+        //         throw new Error('Failed to fetch IP address');
+        //     })
     }
 }
