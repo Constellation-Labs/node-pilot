@@ -1,8 +1,10 @@
 import {input} from "@inquirer/prompts";
 
+import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
 import {ClusterConsensusInfo, ClusterInfo, NodeInfo, TessellationLayer} from "../types.js";
 import {FastforwardService} from "./fastforward-service.js";
+import {archiverService} from "./archiver-service.js";
 
 export const clusterService = {
 
@@ -31,78 +33,69 @@ export const clusterService = {
         }
 
         await FastforwardService.synctoLatestSnapshot();
+        // await archiverService.syncToLatestSnapshot();
     },
 
-    async getClusterInfo(): Promise<ClusterInfo[]> {
-        const { type } = configStore.getNetworkInfo();
-
-        return fetch(`https://l0-lb-${type}.constellationnetwork.io/cluster/info`)
-            .then(res => {
-                if (res.ok) return res.json();
-                throw new Error(`Failed`);
-            })
-            .catch(() => []);
+    async getClusterInfo(layer?: TessellationLayer): Promise<ClusterInfo[]> {
+        return this.makeClusterRequest('cluster/info', layer);
     },
 
-    async getJoinPeer(layer: TessellationLayer): Promise<NodeInfo> {
-        // const {type} = configStore.getNetworkInfo();
-        // const envLayerInfo = configStore.getEnvLayerInfo(type, layer);
-        // if (envLayerInfo.CL_LB) {
-        //     return fetch(`${envLayerInfo.CL_LB}/node/info`).then(res => res.json());
-        // }
-
-        return this.getSourceNodeInfo(layer);
+    async getClusterNodeInfo(layer?: TessellationLayer): Promise<NodeInfo> {
+        return this.makeClusterRequest('node/info', layer);
     },
 
-    async getLatestConsensus(): Promise<ClusterConsensusInfo> {
-        const { type } = configStore.getNetworkInfo();
-
-        return fetch(`https://l0-lb-${type}.constellationnetwork.io/consensus/latest/peers`)
-            .then(res => {
-                if (res.ok) return res.json();
-                return 0;
-            })
-            .catch(() => 0);
+    async getLatestConsensusInfo(layer?: TessellationLayer): Promise<ClusterConsensusInfo> {
+         return this.makeClusterRequest('consensus/latest/peers', layer);
     },
 
-    async getLatestOrdinal() {
-        const { type } = configStore.getNetworkInfo();
-
-        return fetch(`https://l0-lb-${type}.constellationnetwork.io/global-snapshots/latest`)
-            .then(res => {
-                if (res.ok) return res.json().then(i => (i?.value?.ordinal || 0));
-                return 0;
-            })
-            .catch(() => 0);
-    },
-
-    async getNodeInfo(): Promise<NodeInfo> {
-        const { type } = configStore.getNetworkInfo();
-
-        return fetch(`https://l0-lb-${type}.constellationnetwork.io/node/info`)
-            .then(res => {
-                if (res.ok) return res.json();
-                throw new Error(`Failed`);
-            })
-            .catch(() => ({state: "Unavailable"}));
+    getLayer0() {
+        return configStore.getProjectInfo().layersToRun.includes('gl0') ? 'gl0': 'ml0';
     },
 
     async getReleaseVersion() {
-        return this.getNodeInfo().then(i => i.version);
+        return this.getClusterNodeInfo().then(i => i.version);
     },
 
     async getSourceNodeInfo(layer: TessellationLayer): Promise<NodeInfo> {
-        const {type} = configStore.getNetworkInfo();
+        return this.makeSourceNodeRequest('node/info', layer);
+    },
 
-        // eslint-disable-next-line no-warning-comments
-        // TODO: provide a source-node.env with necessary properties
+    async getSourceNodeLatestOrdinal(layer: TessellationLayer): Promise<number> {
+        return this.makeSourceNodeRequest('global-snapshots/latest', layer).then(i => i.value.ordinal);
+    },
+
+    async getSourceNodeOrdinalHash(layer: TessellationLayer, ordinal: number): Promise<string> {
+        return this.makeSourceNodeRequest(`global-snapshots/${ordinal}/hash`, layer);
+    },
+
+    async makeClusterRequest(path: string, layer?: TessellationLayer) {
+
+        layer = layer || this.getLayer0();
+        const {type} = configStore.getNetworkInfo();
+        const envLayerInfo = configStore.getEnvLayerInfo(type, layer);
+
+        if (envLayerInfo.CL_LB) {
+            return fetch(`${envLayerInfo.CL_LB}/${path}`)
+                .then(res => res.json())
+                .catch(() => {
+                    clm.debug(`Failed to get node info from ${envLayerInfo.CL_LB}. Attempting source node...`);
+                    return this.makeSourceNodeRequest(path, layer);
+                });
+        }
+
+        return this.makeSourceNodeRequest(path, layer);
+    },
+
+    async makeSourceNodeRequest(path: string, layer: TessellationLayer) {
+        const {type} = configStore.getNetworkInfo();
 
         const {CL_PUBLIC_HTTP_PORT} = configStore.getEnvLayerInfo(type, layer);
         const {CL_L0_PEER_HTTP_HOST} = configStore.getEnvNetworkInfo(type);
 
-        return fetch(`http://${CL_L0_PEER_HTTP_HOST}:${CL_PUBLIC_HTTP_PORT}/node/info`)
-            .then(res =>  res.json())
+        clm.debug(`http://${CL_L0_PEER_HTTP_HOST}:${CL_PUBLIC_HTTP_PORT}/${path}`);
 
+        return fetch(`http://${CL_L0_PEER_HTTP_HOST}:${CL_PUBLIC_HTTP_PORT}/${path}`)
+            .then(res =>  res.json())
     }
 };
 

@@ -59,7 +59,7 @@ export class FastforwardService {
 
         await this.saveSnapshotFiles(ordinal.toString(), hash);
 
-        clm.postStep('Fastforward completed.');
+        clm.postStep(`Fastforward to snapshot "${ordinal}" completed.`);
     }
 
     private async fetchLatestSnapshot(): Promise<[number,string,string]> {

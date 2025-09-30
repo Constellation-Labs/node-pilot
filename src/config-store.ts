@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 
 import {clm} from "./clm.js";
-import {TessellationLayer} from "./types.js";
+import {ClusterStats, TessellationLayer} from "./types.js";
 
 class EmptyStorage extends JSONStorage {
     constructor() {super("/tmp");}
@@ -57,7 +57,7 @@ class ConfigStore {
             }
         }
         else {
-            this.pilotStore.setItem('pilot', { appDir, project: name, projects: [...projects, name] });
+            this.setPilotInfo({ project: name, projects: [...projects, name] });
         }
 
         fs.mkdirSync(path.join(projectDir,'config'), {recursive: true});
@@ -69,26 +69,22 @@ class ConfigStore {
     }
 
     changeProjectStore(name: string) {
-        const { appDir, projects }  = this.pilotStore.getItem('pilot') as PilotInfo;
+        const { appDir, project, projects }  = this.pilotStore.getItem('pilot') as PilotInfo;
 
         if (projects && projects.includes(name)) {
-            this.projectStore = new JSONStorage(path.join(appDir, name, 'config'))
+            if (project === name) return;
+            this.projectStore = new JSONStorage(path.join(appDir, name, 'config'));
+            this.setPilotInfo({ project: name });
         }
         else {
             throw new Error(`Project ${name} doesn't exist.`);
         }
     }
 
-    // getCurrentEnvNetworkInfo(): EnvNetworkInfo {
-    //     const {type} = this.getNetworkInfo();
-    //     return this.getEnvNetworkInfo(type);
-    // }
-
-    // resetEnvLayerInfo() {
-    //     const layers = this.projectStore.getItem('layer-env') as Record<TessellationLayer, EnvLayerInfo>;
-    //
-    //     this.projectStore.setItem('layer-env', {  [layer]: { CL_DOCKER_JAVA_OPTS }} );
-    // }
+    getAppDir(): string {
+        const { appDir }  = this.pilotStore.getItem('pilot') as PilotInfo;
+        return appDir;
+    }
 
     getDockerEnvInfo(): object {
         return this.projectStore.getItem('docker');
@@ -124,13 +120,18 @@ class ConfigStore {
         return this.projectStore.getItem('project');
     }
 
+    getProjects() {
+        const { projects } = this.pilotStore.getItem('pilot') as PilotInfo;
+        return projects;
+    }
+
     getSystemInfo(): SystemInfo {
         return this.pilotStore.getItem('system');
     }
 
     hasProjectFlag(name: string){
         const flags =  this.projectStore.getItem('flags') || {};
-        return flags[name] !== undefined;
+        return flags[name] || false;
     }
 
     hasProjects() {
@@ -142,6 +143,11 @@ class ConfigStore {
     //     const {type} = this.getNetworkInfo();
     //     this.setEnvNetworkInfo(type, info);
     // }
+
+    setClusterStats(info: Partial<ClusterStats>) {
+        const oldInfo = this.projectStore.getItem('cluster-stats');
+        this.projectStore.setItem('cluster-stats', { ...oldInfo, ...info });
+    }
 
     setDockerEnvInfo(info: Partial<{ DOCKER_IMAGE_VERSION: string, DOCKER_USER_ID: string}>) {
         const oldInfo = this.projectStore.getItem('docker');
@@ -187,6 +193,15 @@ class ConfigStore {
         const oldInfo = this.projectStore.getItem('system');
         this.pilotStore.setItem('system', { ...oldInfo, ...info });
     }
+
+    private getPilotInfo(): PilotInfo {
+        return this.pilotStore.getItem('pilot') as PilotInfo;
+    }
+
+    private setPilotInfo(info: Partial<PilotInfo>) {
+        const oldInfo = this.pilotStore.getItem('pilot') as PilotInfo;
+        this.pilotStore.setItem('pilot', { ...oldInfo, ...info });
+    }
 }
 
 export const configStore = new ConfigStore();
@@ -202,6 +217,7 @@ type PilotInfo = {
 }
 
 export type EnvInfo = EnvKeyInfo & {
+    CL_ARCHIVE_NODE: boolean;
     CL_EXTERNAL_IP: string;
 }
 
@@ -290,9 +306,6 @@ export type SystemInfo = {
 export type NetworkType = 'integrationnet' | 'mainnet' | 'testnet';
 
 export type ProjectInfo = {
-    // autoRestart: boolean;
-    // autoStart: boolean;
-    // autoUpdate: boolean;
     dagAddress: string;
     fastForward: boolean;
     homeDir: string;

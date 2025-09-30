@@ -8,6 +8,7 @@ import {checkNodeCtl} from "../checks/check-node-ctl.js";
 import {checkProject} from "../checks/check-project.js";
 import {keyFileHelper} from "../helpers/key-file-helper.js";
 import {checkWallet} from "../checks/check-wallet.js";
+import {configStore} from "../config-store.js";
 
 export default class Status extends Command {
 
@@ -25,6 +26,7 @@ export async function checkInstallationAndConfigurationStatus() {
 
     await checkInitialSetup.firstTimeRun();
     await checkProject.projectInstallation();
+    await checkNetwork.isNetworkConnectable();
     await checkProject.releaseVersion();
     await checkNodeCtl.check4Migration();
     await keyFileHelper.promptIfNoKeyFile();

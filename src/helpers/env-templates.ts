@@ -3,7 +3,11 @@ import {TessellationLayer} from "../types.js";
 
 export function getLayerEnvFileContent(layer: TessellationLayer, env: EnvCombinedInfo) {
     return `
+DEBUG=${process.env.DEBUG || ''}
+NODE_PILOT_SESSION=${Date.now()}
+
 # Node
+CL_ARCHIVE_NODE=${env.CL_ARCHIVE_NODE || ''}
 CL_EXTERNAL_IP=${env.CL_EXTERNAL_IP}
 CL_DOCKER_JAVA_OPTS='${env.CL_DOCKER_JAVA_OPTS}'
 CL_KEYSTORE='/app/key.p12'
@@ -12,6 +16,7 @@ CL_PASSWORD='${env.CL_PASSWORD}'
 CL_TESSELATION_LAYER=${layer}
 
 # NETWORK
+CL_LB=${env.CL_LB}
 CL_APP_ENV=${env.CL_APP_ENV}
 CL_COLLATERAL=${env.CL_COLLATERAL}
 CL_L0_PEER_HTTP_PORT=${env.CL_L0_PEER_HTTP_PORT}

@@ -37,6 +37,13 @@ export type ClusterConsensusInfo = {
     }[];
 }
 
+export type ClusterStats = {
+    ordinal: number;
+    ready: number;
+    startTime: string;
+    total: number;
+}
+
 export type NodeStatusInfo = {
     clusterSession: string;
     id: string;

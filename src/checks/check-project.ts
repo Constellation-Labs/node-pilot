@@ -1,13 +1,14 @@
 import {input, select} from "@inquirer/prompts";
-import ora, {Ora} from 'ora';
+import chalk from "chalk";
+import ora from 'ora';
 
 import {clm} from "../clm.js";
 import {configStore, NetworkType} from "../config-store.js";
 import {configHelper} from "../helpers/config-helper.js";
-import {dockerHelper} from "../helpers/docker-helper.js";
 import {projectHelper} from "../helpers/project-helper.js";
 import {promptHelper} from "../helpers/prompt-helper.js";
 import {clusterService} from "../services/cluster-service.js";
+import {dockerService} from "../services/docker-service.js";
 import {shellService} from "../services/shell-service.js";
 import {checkNetwork} from "./check-network.js";
 
@@ -97,23 +98,23 @@ export const checkProject = {
     },
 
     async runInstall() {
+
         const nInfo = configStore.getNetworkInfo();
-        const clusterVersion = await clusterService.getReleaseVersion();
+        const node = await clusterService.getClusterNodeInfo();
+        const NODE_URL = `http://${node.host}:${node.publicPort}`;
 
         let rInfo = await configHelper.getReleaseInfo();
 
-        if (rInfo && rInfo.network === nInfo.type && rInfo.version === clusterVersion) {
-            clm.postStep(`Network files are already installed for ${nInfo.type} version ${clusterVersion}`);
+        if (rInfo && rInfo.network === nInfo.type && rInfo.version === node.version) {
+            clm.postStep(`Network files are already installed for ${nInfo.type} version ${node.version}`);
             return false;
         }
 
-        const isRunning = await dockerHelper.isRunning();
+        const isRunning = await dockerService.isRunning();
 
         if (isRunning) {
-            await dockerHelper.dockerDown();
+            await dockerService.dockerDown();
         }
-
-
 
         const silent = !process.env.DEBUG;
 
@@ -128,9 +129,13 @@ export const checkProject = {
         }
 
         // NOTE: may be different for metagraphs
-        await shellService.runProjectCommand(`scripts/install.sh ${nInfo.type}`, undefined, silent)
+        await shellService.runProjectCommand(`scripts/install.sh ${nInfo.type}`, { NODE_URL }, silent)
             .catch(() => {
                 spinner.stop();
+                if (silent) {
+                    clm.error(`Install script failed. run: ${chalk.cyan("DEBUG=true cpilot")} for more details`);
+                }
+
                 clm.error('Install script failed. Please run cpilot again after correcting the error');
             });
 
@@ -152,7 +157,7 @@ export const checkProject = {
         const changed = await this.runInstall();
 
         if (changed) {
-            await dockerHelper.dockerBuild();
+            await dockerService.dockerBuild();
         }
     }
 }

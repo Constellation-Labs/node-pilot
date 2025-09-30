@@ -14,13 +14,14 @@ require() {
 }
 
 NETWORK="${1:-}"
-[[ -z "${NETWORK}" ]] && { echo "No network specified."; usage; }
 
-case "$NETWORK" in
-  mainnet|testnet|integrationnet) ;;
-  intnet) NETWORK="integrationnet" ;;
-  *) echo "Invalid network: $NETWORK"; usage ;;
-esac
+if [ -n "$NETWORK" ]; then
+  case "$NETWORK" in
+    mainnet|testnet|integrationnet) ;;
+    intnet) NETWORK="integrationnet" ;;
+    *) echo "Invalid network: $NETWORK"; usage ;;
+  esac
+fi
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
@@ -33,31 +34,35 @@ OUTPUT_DIR="$SCRIPT_DIR/../dist"   # Directory to save the downloaded assets
 # load the version from the version file
 if [ -f "$OUTPUT_DIR/version.sh" ]; then
   source "$OUTPUT_DIR/version.sh"
-  # if argument NETWORK is different from current RELEASE_NETWORK, force download of latest release
-  if [ -n "$NETWORK" ] && [ "$NETWORK" != "$RELEASE_NETWORK_TYPE" ]; then
-    echo "Changing network from $RELEASE_NETWORK_TYPE to $NETWORK"
-    RELEASE_NETWORK_TYPE=""
+  # if argument NETWORK is different from current INSTALLED_NETWORK, force download of latest release
+  if [ -n "$NETWORK" ] && [ "$NETWORK" != "$INSTALLED_NETWORK_TYPE" ]; then
+    echo "Changing network from $INSTALLED_NETWORK_TYPE to $NETWORK"
+    INSTALLED_NETWORK_TYPE=""
     rm -rf $OUTPUT_DIR
   else
-    NETWORK="$RELEASE_NETWORK_TYPE"
+    NETWORK="$INSTALLED_NETWORK_TYPE"
   fi
 else
+  [[ -z "${NETWORK}" ]] && { echo "No network specified."; usage; }
   bash "$SCRIPT_DIR/install-dependencies.sh"
-  RELEASE_NETWORK_TYPE=""
+  INSTALLED_NETWORK_TYPE=""
 fi
 
 require curl
 require jq
 
+if [ -n "${NODE_URL:-}" ]; then
+  LB_HTTP="$NODE_URL"
+else
+  LB_HTTP="https://l0-lb-$NETWORK.constellationnetwork.io"
+fi
 # Check network version
 # Resolve the load balancer URL based on the network and get the release tag
-LB_HTTP="https://l0-lb-$NETWORK.constellationnetwork.io"
-RELEASE=$(curl -s $LB_HTTP/node/info | jq -r '.version')
-RELEASE_TAG="v$RELEASE"
+CLUSTER_NETWORK_VERSION=$(curl -s $LB_HTTP/node/info | jq -r '.version')
 
-if [ -n "$RELEASE_NETWORK_TYPE" ] && [ "$RELEASE" != "$RELEASE_NETWORK_VERSION" ]; then
-  echo "Current release version ($RELEASE) is different from the version in the version file ($RELEASE_NETWORK_VERSION)."
-  RELEASE_NETWORK_TYPE=""
+if [ -n "$INSTALLED_NETWORK_TYPE" ] && [ "$CLUSTER_NETWORK_VERSION" != "$INSTALLED_NETWORK_VERSION" ]; then
+  echo "Current release version ($CLUSTER_NETWORK_VERSION) is different from the version in the version file ($INSTALLED_NETWORK_VERSION)."
+  INSTALLED_NETWORK_TYPE=""
   rm -rf $OUTPUT_DIR
 fi
 
@@ -66,19 +71,19 @@ mkdir -p "$OUTPUT_DIR"
 
 NETWORK_UC=$(echo "$NETWORK" | tr '[:lower:]' '[:upper:]')
 
-if [ -n "$RELEASE_NETWORK_TYPE" ]; then
-  echo "Already using the latest release $NETWORK_UC :: $RELEASE"
+if [ -n "$INSTALLED_NETWORK_TYPE" ]; then
+  echo "Already using the latest release $NETWORK_UC :: $CLUSTER_NETWORK_VERSION"
   exit 0
 fi
 
-echo "Installing latest release: $NETWORK_UC :: $RELEASE"
+echo "Installing latest release: $NETWORK_UC :: $CLUSTER_NETWORK_VERSION"
 
 
 # Resolve the tessellation release download URL based on the network
 if [ "$NETWORK" == "testnet" ]; then
-  DOWNLOAD_URL_PREFIX="https://constellationlabs-dag.s3.us-west-1.amazonaws.com/testnet/tessellation/$RELEASE"
+  DOWNLOAD_URL_PREFIX="https://constellationlabs-dag.s3.us-west-1.amazonaws.com/testnet/tessellation/$CLUSTER_NETWORK_VERSION"
 else
-  DOWNLOAD_URL_PREFIX="https://github.com/Constellation-Labs/tessellation/releases/download/$RELEASE_TAG"
+  DOWNLOAD_URL_PREFIX="https://github.com/Constellation-Labs/tessellation/releases/download/v$CLUSTER_NETWORK_VERSION"
 fi
 
 DOWNLOAD_URL="$DOWNLOAD_URL_PREFIX/${ASSETS[0]}"
@@ -137,8 +142,8 @@ write_version_file() {
   local tmp
   tmp="$(mktemp "${OUTPUT_DIR}/version.sh.XXXX")"
   {
-    echo "RELEASE_NETWORK_TYPE=\"${NETWORK}\""
-    echo "RELEASE_NETWORK_VERSION=\"${RELEASE}\""
+    echo "INSTALLED_NETWORK_TYPE=\"${NETWORK}\""
+    echo "INSTALLED_NETWORK_VERSION=\"${CLUSTER_NETWORK_VERSION}\""
   } > "$tmp"
   chmod 0644 "$tmp"
   mv "$tmp" "${OUTPUT_DIR}/version.sh"

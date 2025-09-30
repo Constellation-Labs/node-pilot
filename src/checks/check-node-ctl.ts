@@ -6,7 +6,7 @@ import yaml from "yaml";
 
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
-import {dockerHelper} from "../helpers/docker-helper.js";
+import {dockerService} from "../services/docker-service.js";
 import {keyFileHelper} from "../helpers/key-file-helper.js";
 import {promptHelper} from "../helpers/prompt-helper.js";
 import {nodeService} from "../services/node-service.js";
@@ -30,7 +30,7 @@ export const checkNodeCtl = {
         const hasNodeAdminUser = fs.existsSync('/home/nodeadmin');
 
         if (hasNodeAdminUser) {
-            const isDockerRunning = await dockerHelper.isRunning();
+            const isDockerRunning = await dockerService.isRunning();
             const isPortOpen = await nodeService.isPortInUse(9000);
             clm.step(chalk.bold('NODECTL has been detected.'));
 

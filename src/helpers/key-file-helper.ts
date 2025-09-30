@@ -32,7 +32,9 @@ export const keyFileHelper = {
     async generate() {
         const { projectDir } = configStore.getProjectInfo();
         const keyFilePath = path.join(projectDir, "key.p12");
+        let modifier = '';
         if (fs.existsSync(keyFilePath)) {
+            modifier = 'new '
             const answer = await input({default: 'n', message: 'A key file already exists. Do you want to overwrite it? (y/n): '});
             if (answer.toLowerCase() === 'y') {
                 fs.rmSync(keyFilePath, { force: true } );
@@ -43,7 +45,7 @@ export const keyFileHelper = {
             }
         }
 
-        const keyPassword = await password({ message: 'Enter the key file password:', validate: value => value.length > 0});
+        const keyPassword = await password({ message: `Enter the ${modifier}key file password:`, validate: value => value.length > 0});
         const env = {
             CL_KEYALIAS: "alias", CL_KEYSTORE: keyFilePath, CL_PASSWORD: keyPassword
         }
@@ -143,6 +145,9 @@ export const keyFileHelper = {
             await this.importKeyFile();
             await this.showKeyFileInfo(false);
         }
+
+        configStore.setProjectFlag('duplicateNodeIdChecked', false);
+        configStore.setProjectFlag('seedListChecked', false);
     },
 
     async promptIfNoKeyFile() {

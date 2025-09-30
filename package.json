@@ -63,13 +63,14 @@
     "typescript": "^5"
   },
   "files": [
-    "./bin",
-    "./dist",
-    "./oclif.manifest.json",
-    "./install-dependencies.sh",
-    "./projects",
-    "./README.md",
-    "./LICENSE"
+    "bin",
+    "dist",
+    "oclif.manifest.json",
+    "install-dependencies.sh",
+    "projects",
+    "scripts",
+    "README.md",
+    "LICENSE"
   ],
   "homepage": "https://github.com/Constellation-Labs/node-pilot",
   "keywords": [

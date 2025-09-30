@@ -6,9 +6,9 @@ import {checkNetwork} from "../checks/check-network.js";
 import {checkProject} from "../checks/check-project.js";
 import {clm} from "../clm.js";
 import {configHelper} from "../helpers/config-helper.js";
-import {dockerHelper} from "../helpers/docker-helper.js";
 import {keyFileHelper} from "../helpers/key-file-helper.js";
 import {promptHelper} from "../helpers/prompt-helper.js";
+import {dockerService} from "../services/docker-service.js";
 
 export default class Config extends Command {
 
@@ -39,33 +39,33 @@ export default class Config extends Command {
             await checkNetwork.configureIpAddress();
         }
         else if (answer === 'javaMemory') {
+            await shutdownNodeIfRunning();
             await promptHelper.configureJavaMemoryArguments();
-            if (await dockerHelper.isRunning()) {
-                clm.preStep('The validator node must be restarted before changes can be applied.')
-                await promptHelper.doYouWishToContinue();
-                await dockerHelper.dockerDown();
-                await dockerHelper.dockerUp();
-            }
         }
         else if (answer === 'keyFile') {
+            await shutdownNodeIfRunning();
             await keyFileHelper.showKeyFileInfo();
             await keyFileHelper.promptForKeyFile();
         }
         else if (answer === 'layersToRun') {
-            if (await dockerHelper.isRunning()) {
-                clm.preStep('The validator node must be stopped first.')
-                await promptHelper.doYouWishToContinue();
-                await dockerHelper.dockerDown();
-            }
-
+            await shutdownNodeIfRunning();
             await promptHelper.selectLayers();
             await promptHelper.configureJavaMemoryArguments();
         }
         else if (answer === 'network') {
+            await shutdownNodeIfRunning();
             await promptHelper.selectNetwork();
             await checkProject.runInstall();
         }
 
     }
 
+}
+
+async function shutdownNodeIfRunning() {
+    if (await dockerService.isRunning()) {
+        clm.preStep('The validator node must be stopped first.')
+        await promptHelper.doYouWishToContinue();
+        await dockerService.dockerDown();
+    }
 }

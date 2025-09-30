@@ -5,6 +5,7 @@ import {configStore} from "../config-store.js";
 import {NodeInfo, TessellationLayer} from "../types.js";
 import {clusterService} from "./cluster-service.js";
 import {shellService} from "./shell-service.js";
+import {archiverService} from "./archiver-service.js";
 
 export const nodeService = {
 
@@ -62,14 +63,19 @@ export const nodeService = {
         }
 
         const layerPortInfo = configStore.getLayerPortInfo(layer);
-        const peerInfo = await clusterService.getJoinPeer(layer);
+        const peerInfo = await clusterService.getClusterNodeInfo(layer);
         const nodeId = peerInfo.id;
         const nodeIp = peerInfo.host;
         const cliPort = layerPortInfo.CLI;
         const nodeP2pPort = peerInfo.p2pPort;
 
         if (layer === 'gl0') {
-            await clusterService.fastForwardSnapshot();
+            // await clusterService.fastForwardSnapshot();
+            await archiverService.syncToLatestSnapshot()
+                .catch(() => {
+                    clm.warn(`Failed to download latest snapshots using Starchiver. Using fast forward to latest snapshot.`);
+                    clusterService.fastForwardSnapshot();
+                })
         }
 
         // escape only the quotes in the body
@@ -93,7 +99,7 @@ export const nodeService = {
             return true;
         }
 
-        if (state === "ReadyToJoin" || state === 'SessionStarted') {
+        if (state === "ReadyToJoin") {
             clm.echo(`Node has not joined the cluster yet. Current state: "${state}".`);
             return true;
         }
@@ -150,6 +156,11 @@ export const nodeService = {
             if (state === expectedState) {
                 clm.postStep(`${layer} is ${expectedState}`);
                 return true;
+            }
+
+            if (state === "Unavailable" && i > 2) {
+                clm.warn(`${layer} is not connectable. Please try again later.`);
+                return false;
             }
 
             // eslint-disable-next-line no-await-in-loop

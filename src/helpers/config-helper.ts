@@ -24,8 +24,8 @@ export const configHelper = {
         const versionObj = this.parseEnvFile(lastInstallVersion);
 
         return {
-            network: versionObj.RELEASE_NETWORK_TYPE,
-            version: versionObj.RELEASE_NETWORK_VERSION
+            network: versionObj.INSTALLED_NETWORK_TYPE,
+            version: versionObj.INSTALLED_NETWORK_VERSION
         }
     },
 

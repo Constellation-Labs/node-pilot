@@ -1,14 +1,15 @@
-import {Args, Command} from '@oclif/core'
+import {Args} from '@oclif/core'
 
+import {BaseCommand} from "../base-command.js";
 import {checkProject} from "../checks/check-project.js";
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
 import {configHelper} from "../helpers/config-helper.js";
-import {dockerHelper} from "../helpers/docker-helper.js";
+import {dockerService} from "../services/docker-service.js";
 import {nodeService} from "../services/node-service.js";
 import {TessellationLayer} from "../types.js";
 
-export default class Restart extends Command {
+export default class Restart extends BaseCommand {
     static override args = {
         layer: Args.string({description: 'network layer to view. e.g. gl0'}),
     }
@@ -18,10 +19,16 @@ export default class Restart extends Command {
     ]
 
     public async run(): Promise<void> {
+        const {args, flags} = await this.parse(Restart);
+        this.checkProject(flags);
+
         configHelper.assertProject('No project found. ');
 
-        const {args} = await this.parse(Restart);
         const {layersToRun} = configStore.getProjectInfo();
+
+        if (!await dockerService.isRunning()) {
+            this.error('The validator node is not running.');
+        }
 
         if (args && args.layer) {
             const layer = args.layer as TessellationLayer;
@@ -32,7 +39,7 @@ export default class Restart extends Command {
             await nodeService.leaveCluster(layer);
             await nodeService.pollForLayersState([layer], 'Offline');
             clm.preStep(`Restarting ${layer.toUpperCase()}...`);
-            await dockerHelper.dockerRestart(layer);
+            await dockerService.dockerRestart(layer);
             return;
         }
 
@@ -40,10 +47,11 @@ export default class Restart extends Command {
         await nodeService.leaveClusterAllLayers();
         await nodeService.pollForLayersState(layersToRun, 'Offline');
         clm.preStep('Stopping the node...');
-        await dockerHelper.dockerDown();
+        await dockerService.dockerDown();
         clm.preStep('Checking for a new version...');
         await checkProject.runUpgrade();
         clm.preStep('Starting the node...');
-        await dockerHelper.dockerUp();
+        await dockerService.dockerUp();
     }
+
 }

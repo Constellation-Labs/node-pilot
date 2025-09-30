@@ -1,5 +1,5 @@
 
-export const githubHelper = {
+export const githubService = {
 
     hasAssetInRelease (assetName: string, repo: string): Promise<boolean> {
         return fetch(`https://api.github.com/repos/${repo}/releases/latest`)

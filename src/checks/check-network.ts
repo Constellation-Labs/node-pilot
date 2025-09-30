@@ -5,29 +5,34 @@ import path from "node:path";
 
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
-import {dockerHelper} from "../helpers/docker-helper.js";
 import {clusterService} from "../services/cluster-service.js";
+import {dockerService} from "../services/docker-service.js";
 import {shellService} from "../services/shell-service.js";
 
 export const checkNetwork = {
 
     async checkForExistingNodeIdInCluster() {
+
         if(configStore.hasProjectFlag('duplicateNodeIdChecked')) {
             return;
         }
+
+        clm.preStep('Checking for existing Node ID in cluster...');
 
         const {nodeId} = configStore.getProjectInfo();
 
         const clusterInfo = await clusterService.getClusterInfo();
         const found = clusterInfo.some(node => node.id === nodeId);
-        const isDockerRunning = await dockerHelper.isRunning();
+        const isDockerRunning = await dockerService.isRunning();
 
         if (!isDockerRunning && found) {
             clm.warn('Node ID already exists in the cluster.');
-            clm.error('You need to shutdown your node from a previous installation before continuing.');
+            clm.warn('You need to shutdown your node from a previous installation before continuing.');
+            clm.error(`Or to change the node ID, configure the Key File: use ${chalk.cyan('cpilot config')}, and select ${chalk.cyan('Key File')}`);
         }
 
         configStore.setProjectFlag('duplicateNodeIdChecked', true);
+        clm.postStep('No duplicate Node ID found.');
     },
 
     async checkSeedList() {
@@ -156,10 +161,30 @@ export const checkNetwork = {
 
     async fetchIPAddress() {
         return shellService.runCommandWithOutput('curl -4 https://ifconfig.me/ip');
-        // return fetch('https://ifconfig.me/ip')
-        //     .then(res => {
-        //         if(res.ok) return res.text();
-        //         throw new Error('Failed to fetch IP address');
-        //     })
+    },
+
+    async isNetworkConnectable() {
+
+        return clusterService.getClusterInfo()
+            .then(async nodes =>  {
+                const someAreReady = nodes.some(node => node.state === 'Ready');
+                if (!someAreReady) {
+                    if (nodes.length > 0) {
+                        clm.warn(`Found ${nodes.length} nodes in the cluster, but none are READY.`);
+                    }
+
+                    throw new Error(`Network is not connectable.`);
+                }
+
+                clm.debug(`Network is live. Found ${nodes.length} nodes in the cluster.`);
+
+                configStore.setClusterStats({ total: nodes.length });
+
+                return true;
+            })
+            .catch(() => {
+                clm.error(`Network is not in service. Please try again later.`);
+                return false;
+            });
     }
 }

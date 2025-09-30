@@ -4,17 +4,8 @@ import chalk from "chalk";
 import {clm} from "../clm.js";
 import {configStore, NetworkType} from "../config-store.js";
 import {TessellationLayer} from "../types.js";
-import {projectHelper} from "./project-helper.js";
 
 export const promptHelper = {
-
-    // async configureAutoRestart() {
-    //     const answer = await input({
-    //         default: 'y',
-    //         message: 'Do you want to enable auto-restart? (y/n): '
-    //     });
-    //     configStore.setProjectInfo({ autoRestart: answer === 'y' });
-    // },
 
     async configureJavaMemoryArguments() {
         const {memory} = configStore.getSystemInfo();
@@ -110,6 +101,7 @@ export const promptHelper = {
         }) as NetworkType;
 
         configStore.setNetworkInfo({type: networkType, version: "latest"});
-        // configStore.setEnvNetworkInfo(configStore.getNetworkEnvInfo(networkType as NetworkType));
+        configStore.setProjectFlag('duplicateNodeIdChecked', false);
+        configStore.setProjectFlag('seedListChecked', false);
     }
 }

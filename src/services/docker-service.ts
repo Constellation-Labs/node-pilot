@@ -2,11 +2,11 @@ import ora from "ora";
 
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
-import {shellService} from "../services/shell-service.js";
+import {shellService} from "./shell-service.js";
 import {TessellationLayer} from "../types.js";
-import {projectHelper} from "./project-helper.js";
+import {projectHelper} from "../helpers/project-helper.js";
 
-export const dockerHelper = {
+export const dockerService = {
 
     async dockerBuild() {
         if (shellService.existsProjectScript('scripts/docker-build.sh')) {

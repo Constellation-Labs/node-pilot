@@ -15,12 +15,16 @@ export default class Info extends Command {
 
         const projectInfo = configStore.getProjectInfo();
         const networkInfo = configStore.getNetworkInfo();
+        const {CL_EXTERNAL_IP: currentIpAddress} = configStore.getEnvInfo();
 
         // Project Name
         configHelper.showEnvInfo('Project Name', projectInfo.name);
 
         // DAG Address
         configHelper.showEnvInfo('DAG Address', projectInfo.dagAddress);
+
+        // External IP Address
+        configHelper.showEnvInfo('External IP Address', currentIpAddress);
 
         // Node ID
         configHelper.showEnvInfo('Node ID', projectInfo.nodeId);

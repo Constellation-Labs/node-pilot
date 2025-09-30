@@ -7,10 +7,10 @@ import {fileURLToPath} from 'node:url'
 
 import {clm} from "../clm.js";
 import {configStore, EnvLayerInfo, EnvNetworkInfo, NetworkType} from "../config-store.js";
+import {githubService} from "../services/github-service.js";
 import {TessellationLayer} from "../types.js";
 import {configHelper} from "./config-helper.js";
 import {getLayerEnvFileContent} from "./env-templates.js";
-import {githubHelper} from "./github-helper.js";
 
 export const projectHelper = {
 
@@ -72,13 +72,7 @@ export const projectHelper = {
             clm.error(`Project folder not found: ${projectFolder}`);
         }
 
-        await configStore.applyNewProjectStore(name);
-
-        const {projectDir} = configStore.getProjectInfo();
-
-        clm.debug(`Installing project from ${projectFolder} to ${projectDir}`);
-
-        fs.cpSync(projectFolder, projectDir, {recursive: true});
+        await this.installProject(name, projectFolder);
     },
 
     //  curl -s https://api.github.com/repos/Constellation-Labs/pacaswap-metagraph/releases/latest | jq -r '.assets[] | select(.name | contains("node-pilot"))'
@@ -99,6 +93,26 @@ export const projectHelper = {
         fs.mkdirSync(path.join(gl0DataDir,'tmp'));
 
         this.importEnvFiles();
+    },
+
+    async installProject(name: string, projectFolder: string) {
+
+        if (!configStore.hasProjects()) {
+            // On first install, copy scripts
+            const scriptsFolder = path.resolve(path.dirname(fileURLToPath(import.meta.url)), `../../scripts`);
+            const projectDir = path.join(configStore.getAppDir(), 'scripts');
+            clm.debug(`Installing node pilot scripts from ${scriptsFolder} to ${projectDir}`);
+            fs.mkdirSync(projectDir, {recursive: true});
+            fs.cpSync(scriptsFolder, projectDir, {recursive: true});
+        }
+
+        await configStore.applyNewProjectStore(name);
+
+        const {projectDir} = configStore.getProjectInfo();
+
+        clm.debug(`Installing project from ${projectFolder} to ${projectDir}`);
+
+        fs.cpSync(projectFolder, projectDir, {recursive: true});
     },
 
     async selectProject() {
@@ -144,7 +158,7 @@ export const projectHelper = {
 
                 clm.preStep(`Installing from Github repository: ${chalk.cyan(userRepo)}`);
 
-                if (await githubHelper.hasAssetInRelease('node-pilot', userRepo)) {
+                if (await githubService.hasAssetInRelease('node-pilot', userRepo)) {
                     await this.installFromGithub(userRepo);
                 } else {
                     clm.warn(`The repository ${repo} does not contain a release asset with the name "node-pilot"`);

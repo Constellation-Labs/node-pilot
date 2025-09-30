@@ -3,7 +3,7 @@ import chalk from "chalk";
 
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
-import {dockerHelper} from "../helpers/docker-helper.js";
+import {dockerService} from "../services/docker-service.js";
 import {nodeService} from "../services/node-service.js";
 import {TessellationLayer} from "../types.js";
 
@@ -36,10 +36,10 @@ export const checkLayers = {
             await input({ default: 'y', message: 'Would you like to start the validator(s)? (y/n): '}).then(async answer =>  {
                 if (answer.toLowerCase() === 'y') {
 
-                    await dockerHelper.dockerBuild();
+                    await dockerService.dockerBuild();
 
                     clm.preStep('Starting the node...');
-                    await dockerHelper.dockerUp();
+                    await dockerService.dockerUp();
                     await nodeService.pollForLayersState(layersToRun);
                 } else {
                     clm.postStep('Node not started.');
@@ -52,7 +52,7 @@ export const checkLayers = {
             await input({ default: 'y', message: 'Would you like to start the validator(s)? (y/n): '}).then(async answer =>  {
                 if (answer.toLowerCase() === 'y') {
                     clm.preStep('Starting docker containers...');
-                    await dockerHelper.dockerStartLayers(layersNotRunning);
+                    await dockerService.dockerStartLayers(layersNotRunning);
                     await nodeService.pollForLayersState(layersNotRunning);
                 } else {
                     clm.echo('Node not started.');

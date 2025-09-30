@@ -3,12 +3,16 @@ networks:
     driver: bridge
 
 services:
+  autoheal:
+    image: willfarrell/autoheal
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
   gl0:
     image: constellationnetwork/tessellation${CL_DOCKER_CORE_REPO:-}:${DOCKER_IMAGE_VERSION:-latest}
     container_name: gl0
     networks:
       - tessellation-network
-#    restart: unless-stopped
+    restart: unless-stopped
     env_file:
       - gl0.env
     ports:
@@ -19,18 +23,19 @@ services:
       - ./seedlist:/app/seedlist:ro
       - ./app-data/gl0-logs:/app/logs
       - ./app-data/gl0-data:/app/data
-      - ${CL_DOCKER_PRIORITY_SEEDLIST:-/dev/null}:/app/priority-seedlist:ro
-#    healthcheck:
-#      test: ["CMD", "/app/internal-health-check.sh"]
-#      interval: 15s
-#      timeout: 5s
-#      start_period: 30s
+    healthcheck:
+      test: ["CMD", "/health-check/bin/run.sh"]
+      interval: 15s
+      retries: 1
+      timeout: 15s
+      start_period: 30s
     profiles: ["gl0"]
-#    user: ${DOCKER_USER_ID:-}
+    labels:
+      autoheal: "true"
   gl1:
     image: constellationnetwork/tessellation${CL_DOCKER_CORE_REPO:-}:${DOCKER_IMAGE_VERSION:-latest}
     container_name: gl1
-#    restart: unless-stopped
+    restart: unless-stopped
     networks:
       - tessellation-network
     env_file:
@@ -40,10 +45,8 @@ services:
       - "9011:9011"  # P2P HTTP
     volumes:
       - ./key.p12:/app/key.p12:ro
-      - ./seedlist:/app/seedlist:ro
       - ./app-data/gl1-logs:/app/logs
       - ./app-data/gl1-data:/app/data
-      - ${CL_DOCKER_PRIORITY_SEEDLIST:-/dev/null}:/app/priority-seedlist:ro
 #    healthcheck:
 #      test: ["CMD", "/app/internal-health-check.sh"]
 #      interval: 3s
@@ -51,4 +54,3 @@ services:
 #      retries: 5
 #      start_period: 10s
     profiles: ["gl1"]
-#    user: ${DOCKER_USER_ID:-}

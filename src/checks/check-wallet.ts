@@ -15,6 +15,8 @@ export const checkWallet = {
 
         if (skipCollateralCheck) return;
 
+        clm.preStep('Checking for required collateral...');
+
         const {dagAddress} = configStore.getProjectInfo();
         const url = `https://be-mainnet.constellationnetwork.io/addresses/${dagAddress}/balance`;
         let hasError = false;
@@ -34,6 +36,9 @@ export const checkWallet = {
         if (hasError) {
             clm.echo('You may continue and skip this check in the future');
             await promptHelper.doYouWishToContinue();
+        }
+        else {
+            clm.postStep('Collateral check PASSED')
         }
 
         configStore.setProjectFlag('skipCollateralCheck', true);
