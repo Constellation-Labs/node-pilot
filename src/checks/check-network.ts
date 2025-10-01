@@ -32,7 +32,7 @@ export const checkNetwork = {
         }
 
         configStore.setProjectFlag('duplicateNodeIdChecked', true);
-        clm.postStep('No duplicate Node ID found.');
+        clm.postStep('No duplicate Node found.');
     },
 
     async checkSeedList() {

@@ -2,9 +2,9 @@ import ora from "ora";
 
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
-import {shellService} from "./shell-service.js";
-import {TessellationLayer} from "../types.js";
 import {projectHelper} from "../helpers/project-helper.js";
+import {TessellationLayer} from "../types.js";
+import {shellService} from "./shell-service.js";
 
 export const dockerService = {
 

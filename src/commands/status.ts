@@ -6,9 +6,8 @@ import {checkLayers} from "../checks/check-layers.js";
 import {checkNetwork} from "../checks/check-network.js";
 import {checkNodeCtl} from "../checks/check-node-ctl.js";
 import {checkProject} from "../checks/check-project.js";
-import {keyFileHelper} from "../helpers/key-file-helper.js";
 import {checkWallet} from "../checks/check-wallet.js";
-import {configStore} from "../config-store.js";
+import {keyFileHelper} from "../helpers/key-file-helper.js";
 
 export default class Status extends Command {
 

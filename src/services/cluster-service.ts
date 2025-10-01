@@ -4,7 +4,6 @@ import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
 import {ClusterConsensusInfo, ClusterInfo, NodeInfo, TessellationLayer} from "../types.js";
 import {FastforwardService} from "./fastforward-service.js";
-import {archiverService} from "./archiver-service.js";
 
 export const clusterService = {
 
@@ -33,7 +32,11 @@ export const clusterService = {
         }
 
         await FastforwardService.synctoLatestSnapshot();
-        // await archiverService.syncToLatestSnapshot();
+        // await archiverService.syncToLatestSnapshot()
+        //     .catch(() => {
+        //         clm.warn(`Failed to download latest snapshots using Starchiver. Using fast forward to latest snapshot.`);
+        //         clusterService.fastForwardSnapshot();
+        //     })
     },
 
     async getClusterInfo(layer?: TessellationLayer): Promise<ClusterInfo[]> {

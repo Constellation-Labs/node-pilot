@@ -47,7 +47,7 @@ export const archiverService = {
                 const endOrdinal = parseName.length < 4 ? startOrdinal + 20_000 - 1 : Number(parseName.at(3)?.slice(1));
                 const distance = clusterOrdinal - endOrdinal;
                 const total = endOrdinal - startOrdinal + 1;
-                clm.postStep(`Cluster Ordinal: ${chalk.yellow(clusterOrdinal)}, Archive End Ordinal: ${chalk.yellow(endOrdinal)}, Total Archive Snapshots: ${chalk.yellow(total)}, Distance: ${chalk.yellow(distance)}`);
+                clm.debug(`Cluster Ordinal: ${chalk.yellow(clusterOrdinal)}, Archive End Ordinal: ${chalk.yellow(endOrdinal)}, Total Archive Snapshots: ${chalk.yellow(total)}, Distance: ${chalk.yellow(distance)}`);
                 return { clusterOrdinal, distance, endOrdinal, startOrdinal, total, url: remoteIndexMap[type] + '/' + filename };
         })
     },

@@ -42,8 +42,8 @@ If no command is entered, node-pilot will automatically perform a series of chec
 * [`cpilot config set NAME VALUE`](#cpilot-config-set-name-value)
 * [`cpilot help [COMMAND]`](#cpilot-help-command)
 * [`cpilot info`](#cpilot-info)
-* [`cpilot logs [LAYER]`](#cpilot-logs-layer)
-* [`cpilot restart`](#cpilot-restart)
+* [`cpilot logs LAYER`](#cpilot-logs-layer)
+* [`cpilot restart [LAYER]`](#cpilot-restart-layer)
 * [`cpilot shutdown`](#cpilot-shutdown)
 * [`cpilot status`](#cpilot-status)
 
@@ -148,13 +148,13 @@ EXAMPLES
 
 _See code: [src/commands/info.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.0.8/src/commands/info.ts)_
 
-## `cpilot logs [LAYER]`
+## `cpilot logs LAYER`
 
 view validator node runtime logs
 
 ```
 USAGE
-  $ cpilot logs [LAYER] [-f] [-n <value>]
+  $ cpilot logs LAYER [-f] [-n <value>]
 
 ARGUMENTS
   LAYER  network layer to view. e.g. gl0
@@ -172,13 +172,16 @@ EXAMPLES
 
 _See code: [src/commands/logs.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.0.8/src/commands/logs.ts)_
 
-## `cpilot restart`
+## `cpilot restart [LAYER]`
 
 A full shutdown of the validator node, then restart
 
 ```
 USAGE
-  $ cpilot restart
+  $ cpilot restart [LAYER]
+
+ARGUMENTS
+  LAYER  network layer to view. e.g. gl0
 
 DESCRIPTION
   A full shutdown of the validator node, then restart
