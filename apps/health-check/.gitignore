@@ -1,0 +1,5 @@
+/.idx
+/.vscode
+/node_modules
+/.idea
+.env
