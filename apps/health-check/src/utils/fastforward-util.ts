@@ -5,9 +5,9 @@ import fs from "node:fs";
 import 'json-bigint-patch';
 import path from "node:path";
 
-import {APP_ENV} from "../app-env";
-import {logger} from "../logger";
-import {CHUNK_SIZE} from "../types";
+import {APP_ENV} from "../app-env.js";
+import {logger} from "../logger.js";
+import {CHUNK_SIZE} from "../types.js";
 
 export class FastforwardUtil {
 

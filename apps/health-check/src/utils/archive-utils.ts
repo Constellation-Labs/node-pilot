@@ -5,11 +5,11 @@ import path from "node:path";
 
 import {APP_ENV} from "../app-env.js";
 import {logger} from "../logger.js";
-import {clusterUtils} from "./cluster-utils";
-import {FastforwardUtil} from "./fastforward-util";
-import {healUtils} from "./heal-utils";
+import {clusterUtils} from "./cluster-utils.js";
+import {FastforwardUtil} from "./fastforward-util.js";
+import {healUtils} from "./heal-utils.js";
 import {shellUtils} from "./shell-utils.js";
-import {storeUtils} from "./store-utils";
+import {storeUtils} from "./store-utils.js";
 
 // http://5.161.243.241:7777/hash.txt
 const remoteIndexMap = {

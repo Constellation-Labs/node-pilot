@@ -1,8 +1,8 @@
 import * as fs from "node:fs";
 import path from "node:path";
 
-import {APP_ENV} from "../app-env";
-import {storeUtils} from "./store-utils";
+import {APP_ENV} from "../app-env.js";
+import {storeUtils} from "./store-utils.js";
 
 export const backupUtils = {
 

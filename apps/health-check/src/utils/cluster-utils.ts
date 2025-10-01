@@ -4,7 +4,7 @@ import {APP_ENV} from "../app-env.js";
 import {logger} from "../logger.js";
 import {NodeInfo} from "../types.js";
 import {nodeUtils} from "./node-utils.js";
-import {shellUtils} from "./shell-utils";
+import {shellUtils} from "./shell-utils.js";
 import {storeUtils} from "./store-utils.js";
 
 export const clusterUtils = {
@@ -121,9 +121,7 @@ export const clusterUtils = {
     async hasHealableErrors() {
         const logFile = path.join(APP_ENV.PATH_LOGS, 'app.log');
 
-        const result = await shellUtils.runCommandWithOutput(`grep -i 'Global snapshot not found for ordinal' ${logFile}`).catch(() => '');
-
-        return result;
+        return shellUtils.runCommandWithOutput(`grep -i 'Global snapshot not found for ordinal' ${logFile}`).catch(() => '');
     },
 
     async makeSourceNodeRequest(path: string) {

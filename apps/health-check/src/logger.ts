@@ -2,7 +2,7 @@ import chalk from "chalk";
 import * as fs from "node:fs";
 import path from "node:path";
 
-import {APP_ENV} from "./app-env";
+import {APP_ENV} from "./app-env.js";
 
 export const logger = {
     debug (msg: string) {

@@ -1,4 +1,4 @@
-import {archiveUtils} from "./utils/archive-utils";
+import {archiveUtils} from "./utils/archive-utils.js";
 
 async function main() {
     await archiveUtils.checkForCorruptAndMissingSnapshots();

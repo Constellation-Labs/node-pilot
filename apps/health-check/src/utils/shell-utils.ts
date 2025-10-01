@@ -1,6 +1,6 @@
 import shell from "shelljs";
 
-import {logger} from "../logger";
+import {logger} from "../logger.js";
 
 export const shellUtils = {
     async runCommand (command: string, silent = false) {

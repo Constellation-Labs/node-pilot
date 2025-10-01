@@ -1,12 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import {APP_ENV} from "../app-env";
-import {logger} from "../logger";
-import {CHUNK_SIZE} from "../types";
-import {clusterUtils} from "./cluster-utils";
-import {shellUtils} from "./shell-utils";
-import {storeUtils} from "./store-utils";
+import {APP_ENV} from "../app-env.js";
+import {logger} from "../logger.js";
+import {CHUNK_SIZE} from "../types.js";
+import {clusterUtils} from "./cluster-utils.js";
+import {shellUtils} from "./shell-utils.js";
+import {storeUtils} from "./store-utils.js";
 
 export const healUtils = {
 

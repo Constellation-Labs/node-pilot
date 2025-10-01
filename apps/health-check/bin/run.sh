@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SCRIPT_PATH=$(realpath "${BASH_SOURCE[0]}")
+SCRIPT_DIR=$( cd -- "$( dirname -- "$SCRIPT_PATH" )" &> /dev/null && pwd )
 
 PATH_LOGS=${PATH_LOGS:-"/app/logs"}
 
