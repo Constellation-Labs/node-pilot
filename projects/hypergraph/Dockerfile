@@ -21,6 +21,10 @@ RUN apt-get update && apt-get install -y nodejs
 RUN node -v
 RUN npm -v
 
+# Create a directory for global npm packages
+RUN mkdir -p /home/node/.npm-global
+ENV NPM_CONFIG_PREFIX=/home/node/.npm-global
+ENV PATH=$PATH:/home/node/.npm-global/bin
 
 # Add app JARS
 RUN mkdir -p /app/jars
@@ -31,23 +35,12 @@ COPY dist/wallet.jar /app/jars/wallet.jar
 COPY dist/gl1.jar /app/jars/gl1.jar
 COPY dist/gl0.jar /app/jars/gl0.jar
 
-# Add Starchiver
-#RUN curl -fsSL https://raw.githubusercontent.com/StardustCollective/Starchive-Extractor/main/starchiverT3-ext.sh -o /app/starchiverT3-ext.sh
-#RUN chmod +x /app/starchiverT3-ext.sh
-#RUN apt-get install -y tmux tar coreutils pv bc
-
 # Add health-check
-COPY ./health-check /health-check
-RUN chmod +x /health-check/bin/run.sh
-RUN chmod +x /health-check/bin/hydrate.sh
+RUN npm install -g "@constellation-network/node-pilot-health-check"
 
 # Add entrypoint
 COPY ./entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
-
-
-
-
 
 WORKDIR /app
 

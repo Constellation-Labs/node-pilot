@@ -21,7 +21,7 @@ $ npm install -g @constellation-network/node-pilot
 $ cpilot COMMAND
 running command...
 $ cpilot (--version|-v)
-@constellation-network/node-pilot/0.0.8 darwin-arm64 node-v22.15.0
+@constellation-network/node-pilot/0.0.10 darwin-arm64 node-v22.15.0
 $ cpilot --help [COMMAND]
 USAGE
   $ cpilot COMMAND
@@ -62,7 +62,7 @@ EXAMPLES
   $ cpilot config
 ```
 
-_See code: [src/commands/config.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.0.8/src/commands/config.ts)_
+_See code: [src/commands/config.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.0.10/src/commands/config.ts)_
 
 ## `cpilot config get [NAME]`
 
@@ -86,7 +86,7 @@ EXAMPLES
   $ cpilot config get gl0:CL_PUBLIC_HTTP_PORT
 ```
 
-_See code: [src/commands/config/get.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.0.8/src/commands/config/get.ts)_
+_See code: [src/commands/config/get.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.0.10/src/commands/config/get.ts)_
 
 ## `cpilot config set NAME VALUE`
 
@@ -109,7 +109,7 @@ EXAMPLES
   $ cpilot config set gl0:CL_PUBLIC_HTTP_PORT 9000
 ```
 
-_See code: [src/commands/config/set.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.0.8/src/commands/config/set.ts)_
+_See code: [src/commands/config/set.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.0.10/src/commands/config/set.ts)_
 
 ## `cpilot help [COMMAND]`
 
@@ -146,7 +146,7 @@ EXAMPLES
   $ cpilot info
 ```
 
-_See code: [src/commands/info.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.0.8/src/commands/info.ts)_
+_See code: [src/commands/info.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.0.10/src/commands/info.ts)_
 
 ## `cpilot logs LAYER`
 
@@ -170,7 +170,7 @@ EXAMPLES
   $ cpilot logs
 ```
 
-_See code: [src/commands/logs.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.0.8/src/commands/logs.ts)_
+_See code: [src/commands/logs.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.0.10/src/commands/logs.ts)_
 
 ## `cpilot restart [LAYER]`
 
@@ -178,10 +178,18 @@ A full shutdown of the validator node, then restart
 
 ```
 USAGE
-  $ cpilot restart [LAYER]
+  $ cpilot restart [LAYER] [-p ] [--autostart] [--update]
 
 ARGUMENTS
-  LAYER  network layer to view. e.g. gl0
+  LAYER  network layer to restart. e.g. gl0
+
+FLAGS
+  --autostart  restart each running project if it has been stopped
+  --update     update each project if a new version is available
+
+GLOBAL FLAGS
+  -p, --project=<option>  Specify the project name to use
+                          <options: >
 
 DESCRIPTION
   A full shutdown of the validator node, then restart
@@ -190,7 +198,7 @@ EXAMPLES
   $ cpilot restart
 ```
 
-_See code: [src/commands/restart.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.0.8/src/commands/restart.ts)_
+_See code: [src/commands/restart.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.0.10/src/commands/restart.ts)_
 
 ## `cpilot shutdown`
 
@@ -207,7 +215,7 @@ EXAMPLES
   $ cpilot shutdown
 ```
 
-_See code: [src/commands/shutdown.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.0.8/src/commands/shutdown.ts)_
+_See code: [src/commands/shutdown.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.0.10/src/commands/shutdown.ts)_
 
 ## `cpilot status`
 
@@ -221,5 +229,5 @@ DESCRIPTION
   Display node status and configuration settings
 ```
 
-_See code: [src/commands/status.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.0.8/src/commands/status.ts)_
+_See code: [src/commands/status.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.0.10/src/commands/status.ts)_
 <!-- commandsstop -->

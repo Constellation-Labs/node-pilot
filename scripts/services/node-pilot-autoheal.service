@@ -1,0 +1,12 @@
+[Unit]
+Description=Constellation node pilot docker container auto heal service
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=%h/.node-pilot/scripts/autoheal.sh
+Restart=always
+RestartSec=15s
+
+[Install]
+WantedBy=multi-user.target

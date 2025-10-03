@@ -1,6 +1,7 @@
 import chalk from "chalk";
 
 import {configStore} from "../config-store.js";
+import {systemdService} from "../services/systemd-service.js";
 import {checkDependencies} from "./check-dependencies.js";
 import {checkHardware} from "./check-hardware.js";
 
@@ -20,5 +21,6 @@ export const checkInitialSetup = {
         console.log(chalk.whiteBright(" ****************************************"));
 
         await checkHardware.systemRequirements();
+        await systemdService.install();
     },
 };

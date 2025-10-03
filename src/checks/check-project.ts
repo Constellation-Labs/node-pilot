@@ -14,6 +14,13 @@ import {checkNetwork} from "./check-network.js";
 
 export const checkProject = {
 
+    async hasVersionChanged() {
+        const clusterVersion = await clusterService.getReleaseVersion();
+
+        const rInfo = await configHelper.getReleaseInfo();
+
+        return !rInfo || (rInfo.version !== clusterVersion);
+    },
     async projectInstallation() {
 
         let updateNetworkType = false;
@@ -39,6 +46,7 @@ export const checkProject = {
             await promptHelper.configureJavaMemoryArguments();
         }
     },
+
     async releaseVersion() {
 
         const nInfo = configStore.getNetworkInfo();
@@ -100,13 +108,12 @@ export const checkProject = {
     async runInstall() {
 
         const nInfo = configStore.getNetworkInfo();
-        const node = await clusterService.getClusterNodeInfo();
-        const NODE_URL = `http://${node.host}:${node.publicPort}`;
+        const clusterVersion = await clusterService.getReleaseVersion();
 
         let rInfo = await configHelper.getReleaseInfo();
 
-        if (rInfo && rInfo.network === nInfo.type && rInfo.version === node.version) {
-            clm.postStep(`Network files are already installed for ${nInfo.type} version ${node.version}`);
+        if (rInfo && rInfo.network === nInfo.type && rInfo.version === clusterVersion) {
+            clm.postStep(`Network files are already installed for ${nInfo.type} version ${clusterVersion}`);
             return false;
         }
 
@@ -128,8 +135,11 @@ export const checkProject = {
             clm.preStep('Running install script...');
         }
 
+        // const node = await clusterService.getClusterNodeInfo();
+        // const NODE_URL = `http://${node.host}:${node.publicPort}`;
+
         // NOTE: may be different for metagraphs
-        await shellService.runProjectCommand(`scripts/install.sh ${nInfo.type}`, { NODE_URL }, silent)
+        await shellService.runProjectCommand(`scripts/install.sh ${nInfo.type}`, undefined, silent)
             .catch(() => {
                 spinner.stop();
                 if (silent) {

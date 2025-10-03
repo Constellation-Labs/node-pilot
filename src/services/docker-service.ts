@@ -34,6 +34,7 @@ export const dockerService = {
 
     async dockerDown() {
         await run('down');
+        configStore.setProjectStatusToRunning(false);
     },
 
     async dockerRestart(layer: TessellationLayer) {
@@ -51,15 +52,13 @@ export const dockerService = {
         }
 
         await projectHelper.generateLayerEnvFiles();
-
-        // const userId = await shellService.runCommandWithOutput('echo "$(id -u):$(id -g)"')
-        // console.log('Setting DOCKER_USER_ID to', userId);
-        // configStore.setDockerEnvInfo({ DOCKER_USER_ID: userId });
         await run('up -d');
+
+        configStore.setProjectStatusToRunning(true);
     },
 
     async isRunning() {
-        return shellService.runCommand('docker ps | grep entrypoint.sh', undefined, true).then(Boolean).catch(() => false);
+        return shellService.runProjectCommand('docker compose ps -q | grep .', undefined, true).then(Boolean).catch(() => false);
     }
 };
 

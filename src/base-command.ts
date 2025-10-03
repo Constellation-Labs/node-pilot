@@ -17,7 +17,7 @@ export abstract class BaseCommand extends Command {
     checkProject(flags: { project?: string }) {
         configHelper.assertProject('No project found. ');
         if (flags.project) {
-            configStore.changeProjectStore(flags.project);
+            configStore.setActiveProject(flags.project);
         }
     }
 }

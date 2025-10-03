@@ -1,0 +1,13 @@
+[Unit]
+Description=Constellation Node Pilot Updater Service
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStartPre=%h/.node-pilot/scripts/update_logger.sh
+ExecStart=cpilot restart --update
+Restart=always
+RestartSec=5m
+
+[Install]
+WantedBy=multi-user.target

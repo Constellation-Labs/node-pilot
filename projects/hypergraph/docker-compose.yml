@@ -9,7 +9,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
   gl0:
     image: constellationnetwork/tessellation${CL_DOCKER_CORE_REPO:-}:${DOCKER_IMAGE_VERSION:-latest}
-    container_name: gl0
     networks:
       - tessellation-network
     restart: unless-stopped
@@ -24,7 +23,7 @@ services:
       - ./app-data/gl0-logs:/app/logs
       - ./app-data/gl0-data:/app/data
     healthcheck:
-      test: ["CMD", "/health-check/bin/run.sh"]
+      test: ["CMD", "cpilotHC"]
       interval: 15s
       retries: 1
       timeout: 15s
@@ -34,7 +33,6 @@ services:
       autoheal: "true"
   gl1:
     image: constellationnetwork/tessellation${CL_DOCKER_CORE_REPO:-}:${DOCKER_IMAGE_VERSION:-latest}
-    container_name: gl1
     restart: unless-stopped
     networks:
       - tessellation-network

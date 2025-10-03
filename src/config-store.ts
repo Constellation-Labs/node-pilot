@@ -24,14 +24,14 @@ class ConfigStore {
         const appDir = path.join(os.homedir(), '.node-pilot');
 
         if (!fs.existsSync(appDir)) {
-            fs.mkdirSync(appDir, {recursive: true});
+            fs.mkdirSync(path.join(appDir, 'logs'), {recursive: true});
         }
 
         this.pilotStore = new JSONStorage(path.join(appDir,'config'));
 
         const appInfo = this.pilotStore.getItem('pilot') as PilotInfo;
         if (!appInfo) {
-            this.pilotStore.setItem('pilot', { appDir, project: 'undefined', projects: [] });
+            this.pilotStore.setItem('pilot', { appDir, project: 'undefined', projects: [], running: [] } as PilotInfo);
         }
 
         const { project } = this.pilotStore.getItem('pilot') as PilotInfo;
@@ -68,17 +68,9 @@ class ConfigStore {
         this.setProjectInfo({ name, projectDir })
     }
 
-    changeProjectStore(name: string) {
-        const { appDir, project, projects }  = this.pilotStore.getItem('pilot') as PilotInfo;
-
-        if (projects && projects.includes(name)) {
-            if (project === name) return;
-            this.projectStore = new JSONStorage(path.join(appDir, name, 'config'));
-            this.setPilotInfo({ project: name });
-        }
-        else {
-            throw new Error(`Project ${name} doesn't exist.`);
-        }
+    getActiveProject() {
+        const { project }  = this.pilotStore.getItem('pilot') as PilotInfo;
+        return project;
     }
 
     getAppDir(): string {
@@ -125,6 +117,11 @@ class ConfigStore {
         return projects;
     }
 
+    getRunningProjects(): string[] {
+        const { running }  = this.pilotStore.getItem('pilot') as PilotInfo;
+        return running;
+    }
+
     getSystemInfo(): SystemInfo {
         return this.pilotStore.getItem('system');
     }
@@ -139,10 +136,19 @@ class ConfigStore {
         return projects.length > 0;
     }
 
-    // setCurrentEnvNetworkInfo(info: Partial<EnvNetworkInfo>) {
-    //     const {type} = this.getNetworkInfo();
-    //     this.setEnvNetworkInfo(type, info);
-    // }
+    setActiveProject(name: string) {
+        const { appDir, project, projects }  = this.pilotStore.getItem('pilot') as PilotInfo;
+
+        if (projects && projects.includes(name)) {
+            if (project === name) return;
+            this.projectStore = new JSONStorage(path.join(appDir, name, 'config'));
+            this.setPilotInfo({ project: name });
+        }
+        else {
+            throw new Error(`Project ${name} doesn't exist.`);
+        }
+    }
+
 
     setClusterStats(info: Partial<ClusterStats>) {
         const oldInfo = this.projectStore.getItem('cluster-stats');
@@ -189,6 +195,19 @@ class ConfigStore {
         this.projectStore.setItem('project', { ...oldInfo, ...info });
     }
 
+    setProjectStatusToRunning(isRunning: boolean) {
+        const { project, running }  = this.pilotStore.getItem('pilot') as PilotInfo;
+        if (isRunning) {
+            if (running.includes(project)) return;
+            this.setPilotInfo({ running: [...running, project] });
+        }
+        else {
+            if (!running.includes(project)) return;
+            running.splice(running.indexOf(project), 1);
+            this.setPilotInfo({ running });
+        }
+    }
+
     setSystemInfo(info: Partial<SystemInfo>) {
         const oldInfo = this.projectStore.getItem('system');
         this.pilotStore.setItem('system', { ...oldInfo, ...info });
@@ -214,6 +233,7 @@ type PilotInfo = {
     appDir: string;
     project: string;
     projects: string[];
+    running: string[];
 }
 
 export type EnvInfo = EnvKeyInfo & {
