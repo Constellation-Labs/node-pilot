@@ -2,6 +2,7 @@
 import chalk from "chalk";
 import * as fs from "node:fs";
 import path from "node:path";
+import {fileURLToPath} from "node:url";
 
 import {APP_ENV} from "../app-env.js";
 import {logger} from "../logger.js";
@@ -144,8 +145,7 @@ export const archiveUtils = {
 
         storeUtils.setArchiveInfo({isRunning: true});
 
-        // eslint-disable-next-line no-undef
-        const hydrateSH = path.resolve(__dirname, '../../bin/hydrate.sh');
+        const hydrateSH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), `../../bin/hydrate.sh`);
         await shellUtils.runCommand(hydrateSH);
     },
 

@@ -34,8 +34,6 @@ export const clusterUtils = {
         storeUtils.setNodeStatusInfo({ clusterOrdinal, ordinal });
 
         logger.log(`Checking local snapshot distance from cluster: ${clusterOrdinal - ordinal}`);
-        // logger.debug(`    Current ordinal: ${ordinal}`);
-        // logger.debug(`    Cluster ordinal: ${clusterOrdinal}`);
 
         if (ordinal !== clusterOrdinal) {
             logger.log(`    Current ordinal: ${ordinal}`);
