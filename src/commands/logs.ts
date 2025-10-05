@@ -36,7 +36,7 @@ export default class Logs extends Command {
         }
 
         const {projectDir} = configStore.getProjectInfo();
-        const logPath = path.join(projectDir, 'app-data', `${args.layer}-logs`, 'app.log');
+        const logPath = path.join(projectDir, args.layer, 'logs', 'app.log');
         await shellService.runCommand(`tail ${tailFlag} ${logPath}`).catch(()=> 1);
     }
 }

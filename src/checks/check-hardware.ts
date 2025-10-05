@@ -59,7 +59,7 @@ export const checkHardware = {
             await promptHelper.doYouWishToContinue('n');
         }
 
-        configStore.setSystemInfo({ cores: numOfCores, disk: totalSpaceGB, memory: totalMemoryGB, platform: os.platform() });
+        configStore.setSystemInfo({ cores: numOfCores, disk: totalSpaceGB, memory: totalMemoryGB, platform: os.platform(), user: os.userInfo().username });
 
     }
 }

@@ -36,7 +36,10 @@ COPY dist/gl1.jar /app/jars/gl1.jar
 COPY dist/gl0.jar /app/jars/gl0.jar
 
 # Add health-check
-RUN npm install -g "@constellation-network/node-pilot-health-check"
+#COPY ./health-check /health-check
+#RUN chmod +x /health-check/bin/run.sh
+#RUN chmod +x /health-check/bin/hydrate.sh
+RUN npm install -g "@constellation-network/node-pilot-health-check@latest"
 
 # Add entrypoint
 COPY ./entrypoint.sh /app/entrypoint.sh

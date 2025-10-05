@@ -86,8 +86,8 @@ export const projectHelper = {
 
         const {projectDir} = configStore.getProjectInfo();
 
-        // Create app-data folders for fast forward feature before Docker does
-        const gl0DataDir = path.join(projectDir,'app-data','gl0-data');
+        // Create gl0 folders for fast forward feature before Docker does
+        const gl0DataDir = path.join(projectDir,'gl0','data');
         fs.mkdirSync(path.join(gl0DataDir,'incremental_snapshot'), {recursive: true});
         fs.mkdirSync(path.join(gl0DataDir,'snapshot_info'));
         fs.mkdirSync(path.join(gl0DataDir,'tmp'));

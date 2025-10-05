@@ -321,6 +321,7 @@ export type SystemInfo = {
     isDockerInstalled: boolean;
     memory: string;
     platform: string;
+    user: string;
 }
 
 export type NetworkType = 'integrationnet' | 'mainnet' | 'testnet';

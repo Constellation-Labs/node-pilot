@@ -88,7 +88,7 @@ check_node_pilot() {
     return
   fi
   echo "Installing Node Pilot..."
-  npm install -g @constellation-network/node-pilot
+  npm install -g @constellation-network/node-pilot@latest
   echo "✅ Node Pilot installed: $(cpilot --version)"
   echo ""
   echo "Simply, run 'cpilot' to get started"

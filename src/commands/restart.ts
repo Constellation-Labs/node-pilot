@@ -28,24 +28,6 @@ export default class Restart extends BaseCommand {
 
         configHelper.assertProject('No project found. ');
 
-        if (!await dockerService.isRunning()) {
-            this.error('The validator node is not running.');
-        }
-
-        if (args && args.layer) {
-            const {layersToRun} = configStore.getProjectInfo();
-            const layer = args.layer as TessellationLayer;
-            if (!layersToRun.includes(layer)) {
-                this.error(`Invalid layer: ${layer}. Available layers: ${layersToRun.join(',')}`);
-            }
-
-            await nodeService.leaveCluster(layer);
-            await nodeService.pollForLayersState([layer], 'Offline');
-            clm.preStep(`Restarting ${layer.toUpperCase()}...`);
-            await dockerService.dockerRestart(layer);
-            return;
-        }
-
         if (flags.update) {
             const project = configStore.getActiveProject();
             for (const project of configStore.getRunningProjects()) {
@@ -70,6 +52,24 @@ export default class Restart extends BaseCommand {
             }
 
             configStore.setActiveProject(project);
+            return;
+        }
+
+        if (!await dockerService.isRunning()) {
+            this.error('The validator node is not running.');
+        }
+
+        if (args && args.layer) {
+            const {layersToRun} = configStore.getProjectInfo();
+            const layer = args.layer as TessellationLayer;
+            if (!layersToRun.includes(layer)) {
+                this.error(`Invalid layer: ${layer}. Available layers: ${layersToRun.join(',')}`);
+            }
+
+            await nodeService.leaveCluster(layer);
+            await nodeService.pollForLayersState([layer], 'Offline');
+            clm.preStep(`Restarting ${layer.toUpperCase()}...`);
+            await dockerService.dockerRestart(layer);
             return;
         }
 

@@ -18,16 +18,17 @@ services:
       - "9000:9000"  # Public HTTP
       - "9001:9001"  # P2P HTTP
     volumes:
+      - ./gl0/data:/app/data
+      - ./gl0/logs:/app/logs
       - ./key.p12:/app/key.p12:ro
       - ./seedlist:/app/seedlist:ro
-      - ./app-data/gl0-logs:/app/logs
-      - ./app-data/gl0-data:/app/data
     healthcheck:
       test: ["CMD", "cpilotHC"]
+#      test: ["CMD", "/health-check/bin/run.sh"]
       interval: 15s
       retries: 1
       timeout: 15s
-      start_period: 30s
+      start_period: 60s
     profiles: ["gl0"]
     labels:
       autoheal: "true"
@@ -42,9 +43,9 @@ services:
       - "9010:9010"  # Public HTTP
       - "9011:9011"  # P2P HTTP
     volumes:
+      - ./gl1/data:/app/data
+      - ./gl1/logs:/app/logs
       - ./key.p12:/app/key.p12:ro
-      - ./app-data/gl1-logs:/app/logs
-      - ./app-data/gl1-data:/app/data
 #    healthcheck:
 #      test: ["CMD", "/app/internal-health-check.sh"]
 #      interval: 3s
