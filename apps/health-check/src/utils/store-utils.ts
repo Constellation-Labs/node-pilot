@@ -1,10 +1,10 @@
 import {JSONStorage} from "node-localstorage";
-import os from "node:os";
 import path from "node:path";
 
+import {APP_ENV} from "../app-env.js";
 import {ArchiveInfo, BackupInfo, NodeStatusInfo, TimerInfo} from "../types.js";
 
-const store = new JSONStorage(path.join(os.homedir(),'hc-config'));
+const store = new JSONStorage(path.resolve(APP_ENV.PATH_DATA,'health-check'));
 
 export const storeUtils = {
 

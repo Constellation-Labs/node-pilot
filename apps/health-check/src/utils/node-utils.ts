@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+
 import {APP_ENV} from "../app-env.js";
 import {logger} from "../logger.js";
 import {NodeInfo, NodeState} from "../types.js";
@@ -13,6 +16,7 @@ const ValidStatesAfterReady = new Set([
 ]);
 
 const OutOfClusterStates = new Set([
+    NodeState.Offline,
     NodeState.ReadyToJoin,
     NodeState.SessionStarted,
     NodeState.SessionStarting,
@@ -92,7 +96,25 @@ export const nodeUtils = {
     },
 
     async getNodeLatestOrdinal(): Promise<number> {
-        return this.makeNodeRequest(`${APP_ENV.SNAPSHOT_URL_PATH}/latest`).then(i => i.value.ordinal);
+        return this.makeNodeRequest(`${APP_ENV.SNAPSHOT_URL_PATH}/latest`)
+            .then(info => {
+                if (info.message && info.message === "Node is not ready yet") {
+                    throw new Error('Node is no longer at latest');
+                }
+
+                return info.value.ordinal;
+            });
+    },
+
+    getNodeLatestOrdinalOnDisk() {
+
+        const dataDir = path.join(APP_ENV.PATH_DATA, 'incremental_snapshot', 'ordinal');
+
+        const chunk = fs.readdirSync(dataDir).sort().pop() as string;
+
+        const ordinal = fs.readdirSync(path.join(dataDir, chunk)).sort().pop() as string;
+
+        return Number(ordinal);
     },
 
     async getNodeOrdinalHash(ordinal: number): Promise<string> {
@@ -152,8 +174,12 @@ export const nodeUtils = {
         return fetch(`http://localhost:${APP_ENV.CL_PUBLIC_HTTP_PORT}/${path}`)
             .then(d => d.json())
             .catch(error => {
-                logger.error(`Local node is unresponsive: ${error}`);
-                throw new Error('RESTART_REQUIRED');
+                const {hasJoined = false} = storeUtils.getNodeStatusInfo();
+                if (hasJoined) {
+                    throw new Error('RESTART_REQUIRED');
+                }
+
+                throw new Error(`Local node is unresponsive: ${error}`);
             });
     },
 }

@@ -3,7 +3,8 @@ Description=Constellation Network node auto_restart service
 After=multi-user.target
 
 [Service]
-Type=Simple
+Type=simple
+User=ubuntu
 ExecStartPre=%h/.node-pilot/scripts/restart_logger.sh
 ExecStart=cpilot restart --autostart
 

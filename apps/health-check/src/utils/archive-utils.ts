@@ -77,17 +77,18 @@ export const archiveUtils = {
             .then(txt => {
                 const lines = txt.trim().split('\n');
                 const archives: ArchiveInfo[] = [];
-                let oldestOrdinal = clusterOrdinal;
+                let oldestOrdinal = Number.MAX_SAFE_INTEGER;
                 let newestOrdinal = 0;
                 for (const line of lines.reverse()) {
                     const filename = line.split(' ')[1];
                     const parseName = filename.split('.')[0].split('-');
                     const startOrdinal = Number(parseName.at(1)?.slice(1));
                     const endOrdinal = parseName.length < 4 ? startOrdinal + 20_000 - 1 : Number(parseName.at(3)?.slice(1));
-                    logger.log(`Cluster: ${clusterOrdinal}, oldest: ${oldestOrdinal}, newest: ${newestOrdinal}, start: ${startOrdinal}, end: ${endOrdinal}, filename: ${filename}`);
                     oldestOrdinal = Math.min(oldestOrdinal, startOrdinal);
                     newestOrdinal = Math.max(newestOrdinal, endOrdinal);
-                    if (oldestOrdinal < ordinal) {
+                    logger.log(`Cluster: ${clusterOrdinal}, oldest: ${oldestOrdinal}, newest: ${newestOrdinal}, start: ${startOrdinal}, end: ${endOrdinal}, filename: ${filename}`);
+                    if (endOrdinal < ordinal) {
+                        logger.log(`endOrdinal < ordinal, ${endOrdinal} < ${ordinal}, skipping...`);
                         break;
                     }
 

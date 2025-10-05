@@ -33,16 +33,15 @@ export const clusterUtils = {
         const clusterOrdinal = await this.getSourceNodeLatestOrdinal();
         storeUtils.setNodeStatusInfo({ clusterOrdinal, ordinal });
 
-        logger.log(`Checking local snapshot distance from cluster: ${clusterOrdinal - ordinal}`);
+        logger.log(`Checking local snapshot ${ordinal} distance from cluster: ${clusterOrdinal - ordinal}`);
 
         if (ordinal !== clusterOrdinal) {
-            logger.log(`    Current ordinal: ${ordinal}`);
-            logger.log(`    Cluster ordinal: ${clusterOrdinal}`);
+            logger.log(`    Cluster: ${clusterOrdinal}`);
 
             const errors = await this.hasHealableErrors();
 
             if (errors) {
-                logger.log('Detected healable errors in logs...\n' + errors);
+                logger.log('Detected healable errors in logs...\n    ' + errors);
                 await nodeUtils.leaveCluster();
                 throw new Error('checkLatestOrdinals: RESTART_REQUIRED');
             }
@@ -126,8 +125,7 @@ export const clusterUtils = {
         return fetch(`http://${APP_ENV.CL_L0_PEER_HTTP_HOST}:${APP_ENV.CL_L0_PEER_HTTP_PORT}/${path}`)
             .then(res =>  res.json())
             .catch(() => {
-                logger.warn(`Failed to fetch from source at ${APP_ENV.CL_L0_PEER_HTTP_HOST}:${APP_ENV.CL_L0_PEER_HTTP_PORT}.`);
-                throw new Error('Unable to connect');
+                throw new Error(`Unable to connect to source node at ${APP_ENV.CL_L0_PEER_HTTP_HOST}:${APP_ENV.CL_L0_PEER_HTTP_PORT}.`);
             })
     }
 }
