@@ -23,8 +23,8 @@ export class FastforwardService {
         const {type} = configStore.getNetworkInfo();
 
         this.network = type;
-        this.tmpDir = path.join(projectDir, 'app-data', 'tmp');
-        this.dataDir = path.join(projectDir, 'app-data', 'gl0-data'); // gl0
+        this.tmpDir = path.join(projectDir, 'gl0', 'tmp');
+        this.dataDir = path.join(projectDir, 'gl0', 'data');
 
         fs.mkdirSync(this.tmpDir, {recursive: true});
         fs.mkdirSync(this.dataDir, {recursive: true});
@@ -37,7 +37,19 @@ export class FastforwardService {
 
     static async synctoLatestSnapshot() {
         const ffs = new FastforwardService();
-        await ffs.runFastForwardSnapshot();
+        await ffs.runFastForwardSnapshot().catch(() => {
+
+            const {projectDir} = configStore.getProjectInfo();
+
+            const dataDir = path.join(projectDir, 'gl0', 'data', 'incremental_snapshot', 'ordinal');
+
+            if (fs.existsSync(dataDir) && fs.readdirSync(dataDir).length > 0) {
+                clm.warn('Failed to fast forward to latest snapshot. Skipping...');
+                return;
+            }
+
+            clm.error('Failed to fast forward to latest snapshot. Please try again later.');
+        })
     }
 
     async runFastForwardSnapshot() {
@@ -113,6 +125,12 @@ export class FastforwardService {
         fs.mkdirSync(ordinalDir, { recursive: true });
 
         const destOrdinalFile = path.join(ordinalDir, ordinal);
+
+        if (fs.existsSync(destOrdinalFile)) {
+            clm.warn(`Snapshot ${destOrdinalFile} already exists. Skipping...`);
+            return;
+        }
+
         fs.copyFileSync(ordinalFile, destOrdinalFile);
 
         const hashFile = path.join(hashDir, hash);

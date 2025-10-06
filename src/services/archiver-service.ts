@@ -20,7 +20,7 @@ export const archiverService = {
     async checkLogsForMissingSnapshots() {
         const {projectDir} = configStore.getProjectInfo();
 
-        const dataDir = path.join(projectDir, 'app-data', 'gl0-logs', 'app.log');
+        const dataDir = path.join(projectDir, 'gl0', 'logs', 'app.log');
         const result = await shellService.runCommandWithOutput(`grep -i 'Global snapshot not found for ordinal' ${dataDir}`).catch(() => '');
         let oldestOrdinal = Number.MAX_SAFE_INTEGER;
         for (const line of result.split('\n')) {
@@ -55,7 +55,7 @@ export const archiverService = {
     getDownloadedSnapshotRange() {
 
         const {projectDir} = configStore.getProjectInfo();
-        const dataDir = path.join(projectDir, 'app-data', 'gl0-data', 'incremental_snapshot', 'ordinal');
+        const dataDir = path.join(projectDir, 'gl0', 'data', 'incremental_snapshot', 'ordinal');
         const result = { chunkOrdinal: 0, endOrdinal: 0, startOrdinal: 0 };
 
         if (!fs.existsSync(dataDir)) {
@@ -114,7 +114,7 @@ export const archiverService = {
         }
 
         const {projectDir} = configStore.getProjectInfo();
-        const dataDir = path.join(projectDir, 'app-data', 'gl0-data');
+        const dataDir = path.join(projectDir, 'gl0', 'data');
         fs.mkdirSync(dataDir, {recursive: true});
 
         clm.preStep(`Downloading latest snapshot archive ${chalk.yellow(remoteArchiveStartOrdinal)}-${chalk.yellow(remoteArchiveEndOrdinal)}; distance from cluster: ${chalk.yellow(archiveDistance)}\nCurrent oldest local ordinal: ${chalk.yellow(localStartOrdinal)}, Latest cluster ordinal: ${chalk.yellow(clusterOrdinal)}`);

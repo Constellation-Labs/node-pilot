@@ -23,6 +23,8 @@ export const systemdService = {
             clm.error(`Node Pilot services's folder not found: ${projectFolder}`);
         }
 
+        clm.preStep('Installing Node Pilot system services...');
+
         const restarterPath = path.join(INSTALL_PATH, 'node-pilot-restarter.service');
         const updaterPath = path.join(INSTALL_PATH, 'node-pilot-updater.service');
 
@@ -30,29 +32,27 @@ export const systemdService = {
         let updaterInstalled = false;
 
         if (!fs.existsSync(restarterPath)) {
-            fs.cpSync(path.join(projectFolder, 'node-pilot-restarter.service'), path.join(INSTALL_PATH, 'node-pilot-restarter.service'));
+            await shellService.runCommand(`sudo cp ${path.join(projectFolder, 'node-pilot-restarter.service')} ${restarterPath}`);
             clm.step('Node Pilot restarter service installed successfully.');
             restarterInstalled = true;
         }
 
         if(!fs.existsSync(updaterPath)) {
-            fs.cpSync(path.join(projectFolder, 'node-pilot-updater.service'), path.join(INSTALL_PATH, 'node-pilot-updater.service'));
+            await shellService.runCommand(`sudo cp ${path.join(projectFolder, 'node-pilot-updater.service')} ${updaterPath}`);
             clm.step('Node Pilot updater service installed successfully.');
             updaterInstalled = true;
         }
 
         if (restarterInstalled || updaterInstalled) {
-            await shellService.runCommand('systemctl daemon-reload');
+            await shellService.runCommand('sudo systemctl daemon-reload');
         }
 
-        if(restarterInstalled) {
-            await shellService.runCommand('systemctl enable node-pilot-restarter.service');
-            clm.step('Node Pilot restarter service enabled successfully.');
-        }
+        await shellService.runCommand('sudo systemctl enable node-pilot-restarter.service');
+        await shellService.runCommand('sudo systemctl start node-pilot-restarter.service');
+        clm.postStep('\nNode Pilot restarter service started successfully.');
 
-        if(updaterInstalled) {
-            await shellService.runCommand('systemctl enable node-pilot-updater.service');
-            clm.step('Node Pilot updater service enabled successfully.');
-        }
+        await shellService.runCommand('sudo systemctl enable node-pilot-updater.service');
+        await shellService.runCommand('sudo systemctl start node-pilot-updater.service');
+        clm.postStep('\nNode Pilot updater service started successfully.');
     }
 }
