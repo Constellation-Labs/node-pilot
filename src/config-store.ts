@@ -31,7 +31,7 @@ class ConfigStore {
 
         const appInfo = this.pilotStore.getItem('pilot') as PilotInfo;
         if (!appInfo) {
-            this.pilotStore.setItem('pilot', { appDir, project: 'undefined', projects: [], running: [] } as PilotInfo);
+            this.pilotStore.setItem('pilot', { appDir, project: 'undefined', projects: [], restarting: false, running: [] } as PilotInfo);
         }
 
         const { project } = this.pilotStore.getItem('pilot') as PilotInfo;
@@ -136,6 +136,12 @@ class ConfigStore {
         return projects.length > 0;
     }
 
+    isRestarting() {
+        const {restarting}  = this.pilotStore.getItem('pilot') as PilotInfo;
+        return restarting;
+    }
+
+
     setActiveProject(name: string) {
         const { appDir, project, projects }  = this.pilotStore.getItem('pilot') as PilotInfo;
 
@@ -148,7 +154,6 @@ class ConfigStore {
             throw new Error(`Project ${name} doesn't exist.`);
         }
     }
-
 
     setClusterStats(info: Partial<ClusterStats>) {
         const oldInfo = this.projectStore.getItem('cluster-stats');
@@ -176,6 +181,10 @@ class ConfigStore {
         let networks = this.projectStore.getItem('network-env');
         if (!networks) networks = {};
         this.projectStore.setItem('network-env', { ...networks, [network]: { ...networks[network], ...info } } );
+    }
+
+    setIsRestarting(val: boolean) {
+        this.setPilotInfo({restarting: val})
     }
 
     setNetworkInfo(info: Partial<NetworkInfo>) {
@@ -233,6 +242,7 @@ type PilotInfo = {
     appDir: string;
     project: string;
     projects: string[];
+    restarting: boolean;
     running: string[];
 }
 

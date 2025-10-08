@@ -17,10 +17,12 @@ After=docker.service
 Wants=docker.service
 
 [Service]
-ExecStartPre=/bin/sleep 300
 ExecStart=$WORKING_DIR/restart-unhealthy.sh
 Restart=always
 RestartSec=60s
+
+[Install]
+WantedBy=docker.service
 EOF
 
 cat << EOF > $WORKING_DIR/restart-unhealthy.sh
@@ -48,7 +50,6 @@ Description=Constellation Node Pilot Updater Service
 After=default.target
 
 [Service]
-ExecStartPre=/bin/sleep 300
 ExecStart=$CPILOT restart --update
 Restart=always
 RestartSec=5m
