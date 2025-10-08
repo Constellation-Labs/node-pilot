@@ -5,6 +5,7 @@ import {checkProject} from "../checks/check-project.js";
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
 import {configHelper} from "../helpers/config-helper.js";
+import {serviceLog} from "../helpers/service-log.js";
 import {dockerService} from "../services/docker-service.js";
 import {nodeService} from "../services/node-service.js";
 import {TessellationLayer} from "../types.js";
@@ -29,11 +30,15 @@ export default class Restart extends BaseCommand {
         configHelper.assertProject('No project found. ');
 
         if (flags.update) {
+            serviceLog.log('Executing "cpilot restart --update" at ' + new Date().toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}));
             const project = configStore.getActiveProject();
-            for (const project of configStore.getRunningProjects()) {
+            const activeProjects = configStore.getRunningProjects();
+            serviceLog.log(`    Active projects: ${activeProjects.join(', ')}...`);
+            for (const project of activeProjects) {
                 configStore.setActiveProject(project);
                 // eslint-disable-next-line no-await-in-loop
                 if(await checkProject.hasVersionChanged()) {
+                    serviceLog.log('    ' + project + ' version has changed. Restarting...');
                     // eslint-disable-next-line no-await-in-loop
                     await this.restart();
                 }
@@ -44,8 +49,12 @@ export default class Restart extends BaseCommand {
         }
 
         if (flags.autostart) {
+            serviceLog.log('Executing "cpilot restart --autostart" at ' + new Date().toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}));
             const project = configStore.getActiveProject();
-            for (const project of configStore.getRunningProjects()) {
+            const activeProjects = configStore.getRunningProjects();
+            serviceLog.log(`    Active projects: ${activeProjects.join(', ')}...`);
+            for (const project of activeProjects) {
+                serviceLog.log('    ' + project + ' is restarting...');
                 configStore.setActiveProject(project);
                 // eslint-disable-next-line no-await-in-loop
                 await this.restart();
