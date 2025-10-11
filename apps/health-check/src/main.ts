@@ -66,5 +66,6 @@ function getUptime(startTime: number) {
     const hours = Math.floor(upTimeSec / 3600);
     const minutes = Math.floor((upTimeSec % 3600) / 60);
     const seconds = upTimeSec % 60;
+    if (hours < 1 && minutes < 1) return `${seconds}s`;
     return hours > 0 ? `${hours}h ${minutes}m ${seconds}s` : `${minutes}m ${seconds}s`;
 }

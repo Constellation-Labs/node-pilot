@@ -17,6 +17,7 @@ export const clusterUtils = {
 
         if (clusterSession !== nodeStatusInfo.clusterSession) {
             logger.error(`Session fork detected. Current session: ${clusterSession}, Node session: ${nodeStatusInfo.clusterSession}`);
+            storeUtils.setNodeStatusInfo({error: 'cluster:forked'});
             throw new Error('RESTART_REQUIRED');
         }
 
@@ -26,7 +27,7 @@ export const clusterUtils = {
     async checkLatestOrdinals() {
         const layer = APP_ENV.CL_TESSELATION_LAYER;
 
-        // Not sure how to check gl1. Will need to revisit this.
+        // Not sure how to check metagraphs. Will need to revisit this.
         if (layer !== 'gl0') return;
 
         const ordinal = await nodeUtils.getNodeLatestOrdinal();
@@ -42,12 +43,14 @@ export const clusterUtils = {
 
             if (errors) {
                 logger.log('Detected healable errors in logs...\n    ' + errors);
+                storeUtils.setNodeStatusInfo({error: 'missing snapshot'});
                 await nodeUtils.leaveCluster();
                 throw new Error('checkLatestOrdinals: RESTART_REQUIRED');
             }
 
             if (ordinal + 20 < clusterOrdinal) {
                 logger.error(`Node ordinal is being left too far behind - Leaving Cluster...`);
+                storeUtils.setNodeStatusInfo({error: 'lagging behind'});
                 await nodeUtils.leaveCluster();
                 throw new Error('checkLatestOrdinals: RESTART_REQUIRED');
             }
@@ -84,9 +87,27 @@ export const clusterUtils = {
         logger.debug(`  Source(${APP_ENV.CL_L0_PEER_HTTP_HOST}): ${sourceNodeOrdinalHash}`);
 
         if (nodeOrdinalHash !== sourceNodeOrdinalHash) {
+            storeUtils.setNodeStatusInfo({error: 'hash mismatch:forked'});
             await nodeUtils.leaveCluster();
             throw new Error(`Hash mismatch detected at ordinal ${ordinalToCheck} - Node: ${nodeOrdinalHash}, Source: ${sourceNodeOrdinalHash} - Leaving Cluster...`);
         }
+    },
+
+    async getClusterConsensusPeers() {
+        const lbUrl = APP_ENV.CL_LB;
+        if (lbUrl && APP_ENV.CL_TESSELATION_LAYER === 'gl0') {
+            return fetch(`${lbUrl}/consensus/latest/peers`)
+                .then(async res => {
+                    const result: { key: number, peers: { ip: string }[] } = await res.json();
+                    return { includesSourceNode: result.peers.some(p => p.ip.includes(APP_ENV.CL_L0_PEER_HTTP_HOST)), ordinal: result.key, peerCount: result.peers.length };
+                })
+                .catch(() => {
+                    logger.warn(`Failed to fetch consensus/latest/peers from ${lbUrl}.`)
+                    return { includesSourceNode: false, ordinal: 0, peerCount: 0 };
+                })
+        }
+
+        return { includesSourceNode: false, ordinal: -1, peerCount: -1 };
     },
 
     async getClusterNodeInfo(): Promise<NodeInfo> {
@@ -122,10 +143,10 @@ export const clusterUtils = {
     },
 
     async makeSourceNodeRequest(path: string) {
-        return fetch(`http://${APP_ENV.CL_L0_PEER_HTTP_HOST}:${APP_ENV.CL_L0_PEER_HTTP_PORT}/${path}`)
+        return fetch(`http://${APP_ENV.CL_L0_PEER_HTTP_HOST}:${APP_ENV.CL_PUBLIC_HTTP_PORT}/${path}`)
             .then(res =>  res.json())
             .catch(() => {
-                throw new Error(`Unable to connect to source node at ${APP_ENV.CL_L0_PEER_HTTP_HOST}:${APP_ENV.CL_L0_PEER_HTTP_PORT}.`);
+                throw new Error(`Unable to connect to source node at ${APP_ENV.CL_L0_PEER_HTTP_HOST}:${APP_ENV.CL_PUBLIC_HTTP_PORT}.`);
             })
     }
 }

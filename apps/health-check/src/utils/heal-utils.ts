@@ -45,6 +45,7 @@ export const healUtils = {
 
     async removeSnapshotsAfterCorruptOrdinal(ordinal: number) {
         const clusterOrdinal = await clusterUtils.getSourceNodeLatestOrdinal();
+        // Only remove snapshots from latest archive chunk
         logger.log(`Checking for reasonable distance between ${clusterOrdinal} - ${ordinal}:  ${clusterOrdinal - ordinal} < 10_000`);
         if (clusterOrdinal - ordinal > 10_000) {
             const chunk = Math.floor(Number(ordinal) / CHUNK_SIZE) * CHUNK_SIZE;

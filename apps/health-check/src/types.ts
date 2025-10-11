@@ -24,7 +24,7 @@ export enum NodeState {
     SessionStarting = 'SessionStarting',
     StartingSession = 'StartingSession',
     Unavailable = 'Unavailable',
-    WaitingForDownload = 'WaitingForDownload',
+    WaitingForDownload = 'WaitingForDownload'
 }
 
 export type NodeInfo = {
@@ -43,18 +43,21 @@ export type NodeInfo = {
 export type NodeStatusInfo = {
     clusterOrdinal: number;
     clusterSession: string;
+    clusterState: string;
+    error: string;
     hasJoined: boolean;
     inConsensus: boolean;
     inNetwork: boolean;
     ordinal: number;
+    pilotSession: string;
     session: string;
     state: string;
+    unavailableCount: number;
 }
 
 export type TimerInfo = {
     fatal: boolean;
     isHydrateRunning: boolean;
-    lastSession: string;
     lastState: string;
     observingStartTime: number;
     waitForDownloadStartTime: number;

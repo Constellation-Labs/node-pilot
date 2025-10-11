@@ -30,6 +30,7 @@ export const nodeUtils = {
         const {hasJoined = false} = storeUtils.getNodeStatusInfo();
         if (hasJoined && !ValidStatesAfterReady.has(state)) {
             logger.error(`${serviceName} is unhealthy. State: ${state}`);
+            storeUtils.setNodeStatusInfo({error: 'unrecoverable state'});
             throw new Error('RESTART_REQUIRED');
         }
     },
@@ -38,8 +39,31 @@ export const nodeUtils = {
 
         const {clusterSession, session, state} = await this.getNodeInfo();
 
-        storeUtils.setNodeStatusInfo({clusterSession, session, state});
+        storeUtils.setNodeStatusInfo({session, state});
         storeUtils.setLastState(state);
+
+        let clusterState = 'Ready';
+        if (state !== NodeState.Ready) {
+            // Check for cluster health
+            const peerInfo = await clusterUtils.getClusterConsensusPeers();
+
+            if (peerInfo.peerCount > 0) {
+                if (peerInfo.peerCount === 0) {
+                    logger.warn(`Cluster is unhealthy. Peer count: ${peerInfo.peerCount}`);
+                    clusterState = 'Offline'
+                } else if (peerInfo.peerCount < 4) {
+                    logger.warn(`Cluster is unhealthy. Peer count: ${peerInfo.peerCount}`);
+                    clusterState = 'Restarting'
+                } else if (peerInfo.includesSourceNode) {
+                    clusterState = 'Ready';
+                }
+                else {
+                    clusterState = 'WaitingForSourceNode'
+                }
+            }
+        }
+
+        storeUtils.setNodeStatusInfo({clusterState});
 
         let {hasJoined = false} = storeUtils.getNodeStatusInfo();
 
@@ -50,11 +74,11 @@ export const nodeUtils = {
         }
 
         if (!hasJoined) {
-            const {isHydrateRunning, lastSession = '0' } = storeUtils.getTimerInfo();
+            const {isHydrateRunning} = storeUtils.getTimerInfo();
+            const {pilotSession='0'} = storeUtils.getNodeStatusInfo();
             if (state === 'Ready') {
                 logger.log(`Node has joined the cluster. Current state: ${state}.`);
-                storeUtils.setTimerInfo({lastSession: APP_ENV.NODE_PILOT_SESSION});
-                storeUtils.setNodeStatusInfo({hasJoined: true});
+                storeUtils.setNodeStatusInfo({clusterSession, error: '', hasJoined: true, pilotSession: APP_ENV.NODE_PILOT_SESSION});
                 const { fatal: hadFatal = false } = storeUtils.getTimerInfo();
                 if (hadFatal) {
                     logger.fatal(`Node has recovered`);
@@ -65,8 +89,8 @@ export const nodeUtils = {
                 }
             }
             else if (state === 'ReadyToJoin') {
-                logger.log(`Node is ready to join the cluster. Current state: ${state}. Last session: ${lastSession}. Node Pilot session: ${APP_ENV.NODE_PILOT_SESSION}`);
-                if (lastSession === APP_ENV.NODE_PILOT_SESSION) {
+                logger.log(`Node is ready to join the cluster. Current state: ${state}. Last session: ${pilotSession}. Node Pilot session: ${APP_ENV.NODE_PILOT_SESSION}`);
+                if (pilotSession === APP_ENV.NODE_PILOT_SESSION) {
                     const {isRunning} = storeUtils.getArchiveInfo();
                     if (isRunning) {
                         logger.log(`Hydrate is running.`);
@@ -75,14 +99,19 @@ export const nodeUtils = {
                         storeUtils.setTimerInfo({isHydrateRunning: false});
 
                         logger.log(`Initiating auto join...`);
+                        storeUtils.setNodeStatusInfo({state: 'JoiningCluster'});
                         const nodeInfo = await clusterUtils.getClusterNodeInfo();
                         await nodeUtils.joinCluster(nodeInfo);
                     }
                     else {
                         storeUtils.setTimerInfo({isHydrateRunning: true});
+                        storeUtils.setNodeStatusInfo({state: 'HydratingSnapshots'});
                         await archiveUtils.runHydrate();
                     }
 
+                }
+                else {
+                    storeUtils.setNodeStatusInfo({hasJoined: false, pilotSession: APP_ENV.NODE_PILOT_SESSION});
                 }
             }
         }
@@ -143,7 +172,7 @@ export const nodeUtils = {
 
     async leaveCluster() {
 
-        storeUtils.setTimerInfo({lastSession: APP_ENV.NODE_PILOT_SESSION});
+        storeUtils.setNodeStatusInfo({pilotSession: APP_ENV.NODE_PILOT_SESSION});
 
         const state = await this.getCurrentState();
 
@@ -174,12 +203,19 @@ export const nodeUtils = {
         return fetch(`http://localhost:${APP_ENV.CL_PUBLIC_HTTP_PORT}/${path}`)
             .then(d => d.json())
             .catch(error => {
-                const {hasJoined = false} = storeUtils.getNodeStatusInfo();
-                if (hasJoined) {
+                logger.error(`Local node is unresponsive - ${error}`);
+
+                let {unavailableCount=0} = storeUtils.getNodeStatusInfo();
+
+                unavailableCount++;
+
+                if (unavailableCount > 4) {
                     throw new Error('RESTART_REQUIRED');
                 }
 
-                throw new Error(`Local node is unresponsive: ${error}`);
+                storeUtils.setNodeStatusInfo({unavailableCount});
+
+                throw new Error(`Local node is unresponsive (${unavailableCount}): ${error}`);
             });
     },
 }

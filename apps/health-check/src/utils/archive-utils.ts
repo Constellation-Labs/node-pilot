@@ -32,8 +32,8 @@ export const archiveUtils = {
         let ordinal = await healUtils.detectCorruptSnapshotsFromLogs();
         if (ordinal > 0) {
             logger.log('Corrupt snapshot detected at ordinal: ' + ordinal);
-            // Need to skip over corrupt snapshots from Starchiver
-            // remove all snapshots after an ordinal?
+            // Remove corrupt snapshots from archive. Fallback to fast-forward strategy.
+            await healUtils.removeSnapshotsAfterCorruptOrdinal(ordinal);
             await FastforwardUtil.synctoLatestSnapshot();
             return;
         }
@@ -64,7 +64,9 @@ export const archiveUtils = {
         }
         catch {
             logger.error('Error downloading archive.')
+            // Archive is not available. Remove corrupt snapshots from archive. Fallback to fast-forward strategy.
             await healUtils.removeSnapshotsAfterCorruptOrdinal(ordinal);
+            await FastforwardUtil.synctoLatestSnapshot();
         }
     },
 
