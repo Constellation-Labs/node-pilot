@@ -3,6 +3,7 @@ import chalk from "chalk";
 
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
+import {StatusTable} from "../helpers/status-table.js";
 import {dockerService} from "../services/docker-service.js";
 import {nodeService} from "../services/node-service.js";
 import {TessellationLayer} from "../types.js";
@@ -71,18 +72,7 @@ export const checkLayers = {
     },
 
     async layersStatus() {
-        const {layersToRun} = configStore.getProjectInfo();
-        const promises = layersToRun.map(l => nodeService.getNodeInfo(l));
-        const results = await Promise.all(promises);
-        const states = results.map(r => r.state);
-
-        clm.preStep("-----------------------");
-        clm.preStep(" VALIDATOR NODE STATUS ");
-        clm.preStep("-----------------------");
-        for (const [i, layer] of layersToRun.entries()) {
-            const state = states[i];
-            clm.step(` "${layer.toUpperCase()}" is "${state}"`);
-        }
+        await StatusTable.run();
     },
 
     async nodeReadyToJoin(layer: TessellationLayer) {

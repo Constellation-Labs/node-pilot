@@ -7,6 +7,7 @@ import path from "node:path";
 
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
+import {promptHelper} from "../helpers/prompt-helper.js";
 
 const CHUNK_SIZE = 20_000;
 
@@ -29,15 +30,17 @@ export class FastforwardService {
         fs.mkdirSync(this.tmpDir, {recursive: true});
         fs.mkdirSync(this.dataDir, {recursive: true});
 
-        const env = configStore.getEnvNetworkInfo(type);
+        // const env = configStore.getEnvNetworkInfo(type);
 
-        // this.lbUrl = `https://l0-lb-${this.network}.constellationnetwork.io`;
-        this.lbUrl = `http://${env.CL_L0_PEER_HTTP_HOST}:${env.CL_L0_PEER_HTTP_PORT}`;
+        this.lbUrl = `https://l0-lb-${this.network}.constellationnetwork.io`;
+        // this.lbUrl = `http://${env.CL_L0_PEER_HTTP_HOST}:${env.CL_L0_PEER_HTTP_PORT}`;
     }
 
     static async synctoLatestSnapshot() {
         const ffs = new FastforwardService();
-        await ffs.runFastForwardSnapshot().catch(() => {
+        await ffs.runFastForwardSnapshot().catch(async (error) => {
+
+            clm.debug(error);
 
             const {projectDir} = configStore.getProjectInfo();
 
@@ -45,6 +48,7 @@ export class FastforwardService {
 
             if (fs.existsSync(dataDir) && fs.readdirSync(dataDir).length > 0) {
                 clm.warn('Failed to fast forward to latest snapshot. Skipping...');
+                await promptHelper.doYouWishToContinue();
                 return;
             }
 
@@ -65,8 +69,12 @@ export class FastforwardService {
 
         const snapshotInfoDir = path.join(this.dataDir, 'snapshot_info');
         fs.mkdirSync(snapshotInfoDir, { recursive: true });
-        fs.writeFileSync(path.join(snapshotInfoDir, ordinal.toString()), compressedSnapshotInfo);
 
+        const ordinalDir = path.join(snapshotInfoDir, ordinal.toString());
+        clm.debug('Saving compressedSnapshotInfo to: ' + ordinalDir);
+        fs.writeFileSync(ordinalDir, compressedSnapshotInfo);
+
+        clm.debug('Saving compressedSnapshotIncremental to: ' + this.tmpDir);
         fs.writeFileSync(path.join(this.tmpDir, ordinal.toString() + '.c'), compressedSnapshotIncremental);
 
         await this.saveSnapshotFiles(ordinal.toString(), hash);
@@ -131,11 +139,14 @@ export class FastforwardService {
             return;
         }
 
+        clm.debug(`Saving snapshot ${ordinal} to ${destOrdinalFile}`);
         fs.copyFileSync(ordinalFile, destOrdinalFile);
 
         const hashFile = path.join(hashDir, hash);
+        clm.debug(`Saving hashFile to ${hashFile}`);
         fs.linkSync(destOrdinalFile, hashFile);
 
+        clm.debug(`Saving snapshot version to ${path.join(this.dataDir, 'snapshot-version')}`);
         fs.writeFileSync(path.join(this.dataDir, 'snapshot-version'), `${this.network}:${ordinal}`);
     }
 }

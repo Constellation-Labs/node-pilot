@@ -103,6 +103,11 @@ download_asset() {
 
   # Download the asset
   echo "$ASSET_NAME -> $OUTPUT_NAME"
+#  DEBUG=${DEBUG:-false}
+#  SILENT="-s"
+#  if [ "$DEBUG" = "true" ]; then
+#    SILENT="-#"
+#  fi
   curl -# -L -H "Accept: application/octet-stream" -o "$OUTPUT_DIR/$OUTPUT_NAME" "$DOWNLOAD_URL"
 
   if [ $? -ne 0 ]; then

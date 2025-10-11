@@ -19,6 +19,7 @@ export const nodeService = {
         return fetch(`http://localhost:${portInfo.PUBLIC}/node/info`)
             .then(res => {
                 if (res.ok) return res.json().then(i => ({...i, layer}));
+                clm.warn(`Failed to get node info from ${res.url} (${res.status})`);
                 throw new Error(`Failed`);
             })
             .catch(() => ({layer, state: "Unavailable"}));
@@ -81,7 +82,7 @@ export const nodeService = {
 
         await shellService.execDockerShell(layer, `curl -X POST '${url}' -H 'Content-Type: application/json' --data '${body}'` )
 
-        await this.pollForState(layer, 'Ready');
+        // await this.pollForState(layer, 'Ready');
     },
 
     async leaveCluster(layer: TessellationLayer): Promise<boolean> {
@@ -136,7 +137,7 @@ export const nodeService = {
 
         await sleep(1);
 
-        for (let i = 1; i <= 60; i++) {
+        for (let i = 1; i <= 24; i++) {
             // eslint-disable-next-line no-await-in-loop
             const { state } = await this.getNodeInfo(layer);
 
@@ -161,7 +162,7 @@ export const nodeService = {
             await sleep(5);
         }
 
-        clm.warn(`${layer} is not ${expectedState} after 5 minutes`);
+        clm.warn(`${layer} is not ${expectedState} after 2 minutes`);
         return false;
     }
 };

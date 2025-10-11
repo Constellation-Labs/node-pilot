@@ -30,7 +30,7 @@ export default class Info extends Command {
         configHelper.showEnvInfo('Node ID', projectInfo.nodeId);
 
         // Layers to Run
-        configHelper.showEnvInfo('Layers to Run', projectInfo.layersToRun.join(', '));
+        configHelper.showEnvInfo('Layers to Run', projectInfo.layersToRun?.join(', '));
 
         // Network type
         configHelper.showEnvInfo('Network', networkInfo.type);

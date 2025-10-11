@@ -11,7 +11,7 @@ check_java_home() {
         JAVA_HOME_LINE='export JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(which java)")")")"'
         echo "JAVA_HOME is not set. Attempting to set automatically"
         echo "Please ensure the following line is in your ~/.bashrc or ~/.zshrc file:"
-        echo "Script will attempt to now add it for you and run it, but this only adds to .bashrc" 
+        echo "Script will attempt to now add it for you and run it, but this only adds to .bashrc"
         echo $JAVA_HOME_LINE
         echo "$JAVA_HOME_LINE" >> $HOME/.bashrc
         echo "Adding JAVA_HOME to current environment"
@@ -215,94 +215,6 @@ check_curl() {
   return 0
 }
 
-# Check and install Docker Engine
-check_docker() {
-#  echo "Checking for Docker..."
-  if command -v docker >/dev/null 2>&1; then
-    echo "✅ Docker is already installed."
-    return 0
-  fi
-  
-  echo "⚠️ Docker not found. Will attempt to install Docker."
-  
-  case "$(uname)" in
-    Linux)
-      if command -v apt >/dev/null 2>&1; then
-        echo "Installing Docker using script..."
-        curl -fsSL https://get.docker.com -o get-docker.sh
-        sudo sh ./get-docker.sh
-        sudo usermod -aG docker $USER
-        echo "Docker installed. You may need to log out and back in for group changes to take effect."
-      else
-        echo "⚠️ Unsupported Linux distribution. Please install Docker manually."
-        return 1
-      fi
-      ;;
-    Darwin)
-        echo "Please install Docker Desktop manually from https://www.docker.com/products/docker-desktop"
-        return 1
-      ;;
-    MINGW*|MSYS*|CYGWIN*)
-      echo "On Windows, please install Docker Desktop manually from https://www.docker.com/products/docker-desktop"
-      return 1
-      ;;
-    *)
-      echo "⚠️ Unsupported OS: $(uname). Please install Docker manually."
-      return 1
-      ;;
-  esac
-  
-  echo "✅ Docker installation complete."
-  return 0
-}
-
-# Check and install Node.js
-check_node() {
-#  echo "Checking for Node.js..."
-  if [ -d "$HOME/.nvm" ]; then
-    echo "✅ Node.js is already installed."
-    return 0
-  fi
-  
-  echo "⚠️ Node.js not found. Will attempt to install Node.js."
-  
-  case "$(uname)" in
-    Linux)
-      echo "Installing Node.js using nvm..."
-      # NPM
-      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-
-      # Load nvm without needing to open a new terminal
-      export NVM_DIR="$HOME/.nvm"
-      [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-      [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-      # Install node
-      nvm install 22
-
-      # Verify installation
-      echo "Node version: $(node -v)"
-      echo "NPM version: $(npm -v)"
-      echo "NPX version: $(npx -v)"
-      ;;
-    Darwin)
-      if command -v brew >/dev/null 2>&1; then
-        echo "Installing Node.js using Homebrew..."
-        brew install node
-      else
-        echo "⚠️ Homebrew not found. Please install Node.js manually."
-        return 1
-      fi
-      ;;
-    *)
-      echo "⚠️ No Node.js installation needed for this OS: $(uname)"
-      return 0
-      ;;
-  esac
-  
-  echo "✅ Node.js installation complete."
-  return 0
-}
 
 # Run all checks
 echo "🔍 Checking and installing required dependencies..."
@@ -311,7 +223,5 @@ check_java_home
 check_jq
 check_wget
 check_curl
-check_docker
-check_node
 
 echo "All dependency checks completed."

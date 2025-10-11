@@ -1,6 +1,4 @@
 import {input, select} from "@inquirer/prompts";
-import chalk from "chalk";
-import ora from 'ora';
 
 import {clm} from "../clm.js";
 import {configStore, NetworkType} from "../config-store.js";
@@ -123,35 +121,35 @@ export const checkProject = {
             await dockerService.dockerDown();
         }
 
-        const silent = !process.env.DEBUG;
-
-        const spinner = ora('Running install script...');
-
-        if (silent) {
-            spinner.start();
-            spinner.color = 'green';
-        }
-        else {
+        // const silent = !process.env.DEBUG;
+        //
+        // const spinner = ora('');
+        //
+        // if (silent) {
+        //     spinner.start();
+        //     spinner.color = 'green';
+        // }
+        // else {
             clm.preStep('Running install script...');
-        }
+        // }
 
         // const node = await clusterService.getClusterNodeInfo();
         // const NODE_URL = `http://${node.host}:${node.publicPort}`;
 
         // NOTE: may be different for metagraphs
-        await shellService.runProjectCommand(`scripts/install.sh ${nInfo.type}`, undefined, silent)
+        await shellService.runProjectCommand(`scripts/install.sh ${nInfo.type}`, undefined, false)
             .catch(() => {
-                spinner.stop();
-                if (silent) {
-                    clm.error(`Install script failed. run: ${chalk.cyan("DEBUG=true cpilot")} for more details`);
-                }
+                // spinner.stop();
+                // if (silent) {
+                //     clm.error(`Install script failed. run: ${chalk.cyan("DEBUG=true cpilot")} for more details`);
+                // }
 
                 clm.error('Install script failed. Please run cpilot again after correcting the error');
             });
 
-        if (silent) {
-            spinner.stop();
-        }
+        // if (silent) {
+        //     spinner.stop();
+        // }
 
         rInfo = await configHelper.getReleaseInfo();
 

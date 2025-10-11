@@ -33,7 +33,7 @@ export default class Restart extends BaseCommand {
             serviceLog.log('Executing "cpilot restart --update" at ' + new Date().toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}));
             const project = configStore.getActiveProject();
             const activeProjects = configStore.getRunningProjects();
-            serviceLog.log(`    Active projects: ${activeProjects.join(', ')}...`);
+            // serviceLog.log(`    Active projects: ${activeProjects.join(', ')}...`);
             for (const project of activeProjects) {
                 configStore.setActiveProject(project);
                 // eslint-disable-next-line no-await-in-loop
@@ -52,7 +52,7 @@ export default class Restart extends BaseCommand {
             serviceLog.log('Executing "cpilot restart --autostart" at ' + new Date().toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}));
             const project = configStore.getActiveProject();
             const activeProjects = configStore.getRunningProjects();
-            serviceLog.log(`    Active projects: ${activeProjects.join(', ')}...`);
+            // serviceLog.log(`    Active projects: ${activeProjects.join(', ')}...`);
             for (const project of activeProjects) {
                 serviceLog.log('    ' + project + ' is restarting...');
                 configStore.setActiveProject(project);

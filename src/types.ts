@@ -44,14 +44,14 @@ export type ClusterStats = {
     total: number;
 }
 
-export type NodeStatusInfo = {
-    clusterSession: string;
-    id: string;
-    inConsensus: boolean;
-    inNetwork: boolean;
-    ip: string;
-    session: string;
-}
+// export type NodeStatusInfo = {
+//     clusterSession: string;
+//     id: string;
+//     inConsensus: boolean;
+//     inNetwork: boolean;
+//     ip: string;
+//     session: string;
+// }
 
 export type NodeDiagnosticInfo = {
     collateral: number;

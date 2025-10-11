@@ -2,7 +2,6 @@
 
 # Check and install Node.js
 check_node() {
-  echo "Checking for Node 22 or later..."
   if command -v node >/dev/null 2>&1; then
       NODE_VERSION=$(node -v | sed 's/v//;s/\..*//')  # Extract major version number
       if [ "$NODE_VERSION" -ge 22 ]; then
@@ -34,30 +33,12 @@ check_node() {
 
 install_node() {
 
-  if [ -d "$HOME/.nvm" ]; then
-      # Install node
-      nvm install 22
-
-      # Verify installation
-      echo "Node version: $(node -v)"
-      echo "NPM version: $(npm -v)"
-      echo "NPX version: $(npx -v)"
-    return 0
-  fi
-
   case "$(uname)" in
     Linux)
-      echo "Installing Node.js using nvm..."
-      # NPM
-      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+      echo "Installing Node.js..."
 
-      # Load nvm without needing to open a new terminal
-      export NVM_DIR="$HOME/.nvm"
-      [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-      [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-      # Install node
-      nvm install 22
+       curl -sL https://deb.nodesource.com/setup_22.x | sudo bash
+       sudo apt-get install nodejs -y
 
       # Verify installation
       echo "Node version: $(node -v)"
@@ -88,7 +69,7 @@ check_node_pilot() {
     return
   fi
   echo "Installing Node Pilot..."
-  npm install -g @constellation-network/node-pilot@latest
+  sudo npm install -g @constellation-network/node-pilot@latest
   echo "✅ Node Pilot installed: $(cpilot --version)"
   echo ""
   echo "Simply, run 'cpilot' to get started"

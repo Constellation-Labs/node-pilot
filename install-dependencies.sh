@@ -3,6 +3,32 @@
 # Break on any error
 set -e
 
+check_acl() {
+#    echo "Checking if ACL is enabled on filesystem"
+  if [[ "$(getfacl . | grep 'mask:')" != "" ]]; then
+      echo "✅ ACL is enabled on filesystem."
+      return 0
+  else
+      echo "⚠️ ACL is not enabled on filesystem. Attempting to enable it now."
+      if [[ "$(uname)" == "Linux" ]]; then
+          if command -v apt >/dev/null 2>&1; then
+              echo "Enabling ACL using apt..."
+              sudo apt install -y acl
+          else
+              echo "⚠️ Unsupported Linux distribution. Please enable ACL manually."
+              return 1
+          fi
+          echo "✅ ACL installation complete. "
+      elif [[ "$(uname)" == "Darwin" ]]; then
+          echo "⚠️ macOS does not support enabling ACL via this script. Please ensure ACL is enabled manually."
+          return 1
+      else
+          echo "⚠️ Unsupported OS: $(uname). Please enable ACL manually."
+          return 1
+      fi
+  fi
+}
+
 # Check and install curl
 check_curl() {
 #  echo "Checking for curl..."
@@ -62,16 +88,10 @@ check_docker() {
   
   case "$(uname)" in
     Linux)
-      if command -v apt >/dev/null 2>&1; then
-        echo "Installing Docker using script..."
-        curl -fsSL https://get.docker.com -o get-docker.sh
-        sudo sh ./get-docker.sh
-        sudo usermod -aG docker $USER
-        echo "Docker installed. You may need to log out and back in for group changes to take effect."
-      else
-        echo "⚠️ Unsupported Linux distribution. Please install Docker manually."
-        return 1
-      fi
+      echo "Installing Docker using script..."
+      curl -fsSL https://get.docker.com | sudo sh
+      sudo usermod -aG docker $USER
+      echo "Docker installed. You NEED to log out and log back in for the changes to take effect."
       ;;
     Darwin)
         echo "Please install Docker Desktop manually from https://www.docker.com/products/docker-desktop"
@@ -94,5 +114,6 @@ check_docker() {
 
 # Run all checks
 echo "🔍 Checking and installing required dependencies..."
+check_acl
 check_curl
 check_docker

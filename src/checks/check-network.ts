@@ -11,6 +11,13 @@ import {shellService} from "../services/shell-service.js";
 
 export const checkNetwork = {
 
+    checkExternalIpAddress() {
+        const {CL_EXTERNAL_IP} = configStore.getEnvInfo();
+        if (!CL_EXTERNAL_IP) {
+            return this.configureIpAddress();
+        }
+    },
+
     async checkForExistingNodeIdInCluster() {
 
         if(configStore.hasProjectFlag('duplicateNodeIdChecked')) {

@@ -3,10 +3,10 @@ networks:
     driver: bridge
 
 services:
-  autoheal:
-    image: willfarrell/autoheal
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+#  autoheal:
+#    image: willfarrell/autoheal
+#    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock
   gl0:
     image: constellationnetwork/tessellation${CL_DOCKER_CORE_REPO:-}:${DOCKER_IMAGE_VERSION:-latest}
     networks:
@@ -30,8 +30,8 @@ services:
       timeout: 15s
       start_period: 60s
     profiles: ["gl0"]
-    labels:
-      autoheal: "true"
+#    labels:
+#      autoheal: "true"
   gl1:
     image: constellationnetwork/tessellation${CL_DOCKER_CORE_REPO:-}:${DOCKER_IMAGE_VERSION:-latest}
     restart: unless-stopped
@@ -46,10 +46,11 @@ services:
       - ./gl1/data:/app/data
       - ./gl1/logs:/app/logs
       - ./key.p12:/app/key.p12:ro
-#    healthcheck:
-#      test: ["CMD", "/app/internal-health-check.sh"]
-#      interval: 3s
-#      timeout: 5s
-#      retries: 5
-#      start_period: 10s
+    healthcheck:
+      test: ["CMD", "cpilotHC"]
+#      test: ["CMD", "/health-check/bin/run.sh"]
+      interval: 15s
+      retries: 1
+      timeout: 15s
+      start_period: 60s
     profiles: ["gl1"]

@@ -25,6 +25,7 @@ export async function checkInstallationAndConfigurationStatus() {
 
     await checkInitialSetup.firstTimeRun();
     await checkProject.projectInstallation();
+    await checkNetwork.checkExternalIpAddress();
     await checkNetwork.isNetworkConnectable();
     await checkProject.releaseVersion();
     await checkNodeCtl.check4Migration();
