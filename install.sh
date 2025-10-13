@@ -64,6 +64,56 @@ install_node() {
   return 0
 }
 
+DOCKER_INSTALLED=false
+
+# Check and install Docker Engine
+check_docker() {
+#  echo "Checking for Docker..."
+  if command -v docker >/dev/null 2>&1; then
+    echo "✅ Docker is already installed."
+    return 0
+  fi
+
+  echo ""
+  echo "⚠️ Docker not found. Will attempt to install Docker."
+  echo ""
+
+  case "$(uname)" in
+    Linux)
+      echo "Installing Docker using script..."
+      curl -fsSL https://get.docker.com | sudo sh
+      sudo usermod -aG docker $USER
+      export DOCKER_INSTALLED=true
+      ;;
+    Darwin)
+        echo "Please install Docker Desktop manually from https://www.docker.com/products/docker-desktop"
+        return 1
+      ;;
+    MINGW*|MSYS*|CYGWIN*)
+      echo "On Windows, please install Docker Desktop manually from https://www.docker.com/products/docker-desktop"
+      return 1
+      ;;
+    *)
+      echo "⚠️ Unsupported OS: $(uname). Please install Docker manually."
+      return 1
+      ;;
+  esac
+
+  echo "✅ Docker installation complete."
+  return 0
+}
+
+check_system_update() {
+  echo ""
+  echo "Checking for system updates..."
+  echo ""
+
+  if [ "$(uname)" = "Linux" ]; then
+    sudo apt-get update && sudo apt-get upgrade -y
+    echo "System packages updated."
+  fi
+}
+
 check_node_pilot() {
   if ! check_node; then
     return
@@ -71,9 +121,28 @@ check_node_pilot() {
   echo "Installing Node Pilot..."
   sudo npm install -g @constellation-network/node-pilot@latest
   echo "✅ Node Pilot installed: $(cpilot --version)"
-  echo ""
-  echo "Simply, run 'cpilot' to get started"
 }
 
 check_node_pilot
+check_docker
+check_system_update
 
+if [ -f /var/run/reboot-required ]; then
+  echo ""
+  echo "⚠️ A system reboot is required to complete updates. Please reboot your system."
+  echo "Then run 'cpilot' to get started"
+  echo "Would you like to reboot now? (y/n)"
+  read -r response
+  if [[ ! "$response" =~ ^[Yy]$ ]]; then
+    echo "Reboot skipped. Please reboot manually to proceed."
+    exit 0
+  fi
+  sudo reboot
+elif [ "$DOCKER_INSTALLED" = true ]; then
+  echo ""
+  echo "⚠️ Log out and log back in for Docker permissions to take effect."
+  echo "Then run 'cpilot' to get started"
+else
+  echo ""
+  echo "Run 'cpilot' to get started"
+fi

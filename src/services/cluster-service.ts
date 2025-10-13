@@ -9,17 +9,17 @@ export const clusterService = {
 
     async fastForwardSnapshot(): Promise<void> {
 
-        const { fastForward } = configStore.getProjectInfo();
-
-        if (fastForward === false) {
-            return;
-        }
+        // const { fastForward } = configStore.getProjectInfo();
+        //
+        // if (fastForward === false) {
+        //     return;
+        // }
 
         if (!configStore.getProjectInfo().layersToRun.includes('gl0')) {
             return;
         }
 
-        if(fastForward === undefined) {
+        // if(fastForward === undefined) {
             const answer = await input({
                 default: 'y', message: 'Do you want to use the snapshot fast forward feature? (y/n): '
             })
@@ -29,14 +29,9 @@ export const clusterService = {
             }
 
             configStore.setProjectInfo({fastForward: true})
-        }
+        // }
 
         await FastforwardService.synctoLatestSnapshot();
-        // await archiverService.syncToLatestSnapshot()
-        //     .catch(() => {
-        //         clm.warn(`Failed to download latest snapshots using Starchiver. Using fast forward to latest snapshot.`);
-        //         clusterService.fastForwardSnapshot();
-        //     })
     },
 
     async getClusterInfo(layer?: TessellationLayer): Promise<ClusterInfo[]> {

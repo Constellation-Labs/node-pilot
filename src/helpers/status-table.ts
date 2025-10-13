@@ -1,13 +1,14 @@
 
 
 import { createPrompt, useKeypress } from '@inquirer/core';
+import chalk from "chalk";
 import fs from "node:fs";
 import os from "node:os";
 import ttyTable from "tty-table";
 
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
-import {NodeStatusInfo, statusTableHeader} from "./status-table-helper.js";
+import {formatTimeAgo, NodeStatusInfo, statusTableHeader} from "./status-table-helper.js";
 
 export class StatusTable {
     private alreadyRendered = false;
@@ -65,6 +66,7 @@ export class StatusTable {
 
         const projects = this.getProjectInfo();
         const values: Record<string, Record<string, number | string>> = {};
+        const err = { date: '', layer: '', msg:'', timeAgo: '' }
 
         while (true) {
             const rows = [];
@@ -88,9 +90,19 @@ export class StatusTable {
                     n.error || '-'
                 ])
                 values[p.layer].ordinal = n.ordinal;
+                if ((p.layer === 'gl0' || p.layer === 'ml0') && n.lastError) {
+                    err.layer = p.layer.toUpperCase();
+                    err.msg = n.lastError;
+                    err.date = new Date(n.errorDate).toISOString();
+                    err.timeAgo = formatTimeAgo(Date.now() - n.errorDate) || '';
+                }
             }
 
-            this.render(rows);
+            this.render(rows, err.msg !== '');
+
+            if (err.msg) {
+                process.stdout.write(chalk.green(`   AUTO HEALED (${err.timeAgo}): `) + chalk.red(`${err.layer}:${err.msg} - ${err.date}\n`));
+            }
 
             process.stdout.write("   * press any key to cancel")
 
@@ -99,7 +111,7 @@ export class StatusTable {
         }
     }
 
-    private render (rows: string[][]) {
+    private render (rows: string[][], hasError = false) {
         const header = [...statusTableHeader];
 
         // const emptyColumns = Array.from({length: rows[0].length}).fill(0) as number[];
@@ -127,7 +139,7 @@ export class StatusTable {
         // wipe existing if already rendered
         if (this.alreadyRendered) {
             // move cursor up number to the top of the previous print before deleting
-            console.log(`\u001B[${this.previousHeight + 3}A`)
+            console.log(`\u001B[${this.previousHeight + (hasError?4:3)}A`)
 
             // delete to end of terminal
             console.log("\u001B[0J")

@@ -52,9 +52,11 @@ export type NodeStatusInfo = {
     hasJoined: boolean;
     inConsensus: boolean;
     inNetwork: boolean;
+    lastError: string;
     memUsage: string;
     ordinal: number;
     pilotSession: string;
+    rebootRequired: boolean;
     session: string;
     state: string;
     unavailableCount: number;

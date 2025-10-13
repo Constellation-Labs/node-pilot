@@ -55,11 +55,21 @@ export const checkUtils = {
 
         const results = await shellUtils.runCommandWithOutput('ps -eo %mem,%cpu,rss,command | grep java | grep Xms');
         const metrics = results.split('\n')[0].split(/\s+/);
+        const cpuCount = os.cpus().length;
+        const cpuUsage = Number(metrics[1]) / cpuCount;
         const memGB = (Number(metrics[2]) / (1024*1024));
         const maxMem = APP_ENV.CL_DOCKER_JAVA_OPTS.split(' ')[1].slice(4,-1);
         const memPercent = (memGB / Number(maxMem)) * 100;
         const memUsage = `${memPercent.toFixed(0)}% (${memGB.toFixed(1)}/${maxMem})`;
+
         storeUtils.setNodeStatusInfo({cpuUsage: metrics[1] + '%', memUsage});
+
+        if (memPercent > 100 && cpuUsage > 90) {
+            const msg = `Java memory usage is ${memPercent.toFixed(2)}% and total CPU usage is ${Number(metrics[1]).toFixed(0)}% across ${cpuCount} cores.`;
+            storeUtils.setNodeStatusInfo({error: msg, rebootRequired: true});
+            throw new Error(msg);
+        }
+
     }
 
 };

@@ -45,11 +45,14 @@ export async function main() {
         })
         .catch((error: Error) => {
             if (error.message === 'RESTART_REQUIRED') {
-                const {fatal:hadFatal=false} = storeUtils.getTimerInfo();
-                if (!hadFatal) {
-                    logger.fatal('Service Unhealthy - RESTART_REQUIRED');
-                    storeUtils.setTimerInfo({fatal: true});
-                    backupUtils.backupLogs();
+                const {error: nodeError} = storeUtils.getNodeStatusInfo();
+                if (nodeError) {
+                    const {fatal: hadFatal = false} = storeUtils.getTimerInfo();
+                    if (!hadFatal) {
+                        logger.fatal('Service Unhealthy - RESTART_REQUIRED');
+                        storeUtils.setTimerInfo({fatal: true});
+                        backupUtils.backupLogs();
+                    }
                 }
 
                 throw new Error('Service Unhealthy');

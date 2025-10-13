@@ -4,6 +4,7 @@ import {checkUtils} from "./utils/check-utils.js";
 import {clusterUtils} from "./utils/cluster-utils.js";
 import {nodeUtils} from "./utils/node-utils.js";
 import {storeUtils} from "./utils/store-utils.js";
+import {APP_ENV} from "./app-env.js";
 
 // @ts-expect-error
 const MAX_STATE_TIME: Record<NodeState, number> = {
@@ -71,7 +72,7 @@ class HealthCheck {
     }
 
     private async checkDownloadProgress(currentState: NodeState) {
-        if (currentState !== NodeState.SessionStarted) {
+        if (APP_ENV.CL_TESSELATION_LAYER === 'gl0' && currentState !== NodeState.SessionStarted) {
             const ordinal = nodeUtils.getNodeLatestOrdinalOnDisk();
             const clusterOrdinal = await clusterUtils.getClusterLatestOrdinal();
 

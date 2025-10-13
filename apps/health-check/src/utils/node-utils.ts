@@ -75,10 +75,10 @@ export const nodeUtils = {
 
         if (!hasJoined) {
             const {isHydrateRunning} = storeUtils.getTimerInfo();
-            const {pilotSession='0'} = storeUtils.getNodeStatusInfo();
+            const {error,lastError,pilotSession='0'} = storeUtils.getNodeStatusInfo();
             if (state === 'Ready') {
                 logger.log(`Node has joined the cluster. Current state: ${state}.`);
-                storeUtils.setNodeStatusInfo({clusterSession, error: '', hasJoined: true, pilotSession: APP_ENV.NODE_PILOT_SESSION});
+                storeUtils.setNodeStatusInfo({clusterSession, error: '', hasJoined: true, lastError: error || lastError, pilotSession: APP_ENV.NODE_PILOT_SESSION});
                 const { fatal: hadFatal = false } = storeUtils.getTimerInfo();
                 if (hadFatal) {
                     logger.fatal(`Node has recovered`);
@@ -94,12 +94,13 @@ export const nodeUtils = {
                     const {isRunning} = storeUtils.getArchiveInfo();
                     if (isRunning) {
                         logger.log(`Hydrate is running.`);
+                        storeUtils.setNodeStatusInfo({state: 'HydratingSnapshots'});
                     }
                     else if (isHydrateRunning || APP_ENV.CL_TESSELATION_LAYER !== 'gl0') {
                         storeUtils.setTimerInfo({isHydrateRunning: false});
 
                         logger.log(`Initiating auto join...`);
-                        storeUtils.setNodeStatusInfo({error: '', state: 'JoiningCluster'});
+                        storeUtils.setNodeStatusInfo({error: '', lastError: error || lastError, state: 'JoiningCluster'});
                         const nodeInfo = await clusterUtils.getClusterNodeInfo();
                         await nodeUtils.joinCluster(nodeInfo);
                     }

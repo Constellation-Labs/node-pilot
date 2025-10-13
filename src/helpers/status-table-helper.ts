@@ -5,15 +5,15 @@ class CellFormatter {
         const num = Number.parseInt(value, 10);
         if (num === 0) return value;
         if (num < 60) return this.style(value.toString(), "green");
-        if (num < 90) return this.style(value.toString(), "yellow", "bold");
-        return this.style(value.toString(), "red", "bold");
+        if (num < 99) return this.style(value.toString(), "yellow", "bold");
+        return this.style(value.toString(), "bgRed", "bold");
     }
 
     formatDistance (value: string) {
         if (value === '-') return value;
         const num = Number(value);
         if (num === 0) return value;
-        if (num < 4) return this.style(value.toString(), "bgYellow", "bold");
+        if (num < 9) return this.style(value.toString(),"bgYellow", "whiteBright", "bold");
         return this.style(value.toString(), "bgRed", "bold");
     }
 
@@ -37,7 +37,7 @@ class CellFormatter {
         const [v,changed] = value.split(':');
 
         if (changed) {
-            return this.style(v, "whiteBright");
+            return this.style(v, "bgCyan", "whiteBright", "bold");
         }
 
         return this.style(v, "cyan");
@@ -54,22 +54,37 @@ class CellFormatter {
     }
 
     formatUpTIme(startTime: number | string) {
-        if (!startTime) return '-';
-        const upTimeMs = Date.now() - Number(startTime);
-        const upTimeSec = Math.floor(upTimeMs / 1000);
-        const hours = Math.floor(upTimeSec / 3600);
-        const minutes = Math.floor((upTimeSec % 3600) / 60);
-        const seconds = upTimeSec % 60;
-        if (hours < 1 && minutes < 1) return `${seconds}s`;
-        return hours > 0 ? `${hours}h ${minutes}m ${seconds}s` : `${minutes}m ${seconds}s`;
+        const formattedTime = formatTime(Date.now() - Number(startTime), true);
+        return formattedTime ?? '-';
     }
 
-    style(value: string, color: string, style?: string) {
-        return `c${color}v${value}s${style}`
+    style(value: string, color: string, style1?: string, style2?: string) {
+        return `c${color}v${value}s${style1}-${style2}`;
     }
 }
 
 const {formatCpu, formatDistance, formatError, formatMem, formatOrdinal, formatState, formatUpTIme} = new CellFormatter();
+
+export function formatTime(time: number, includeSeconds: boolean) {
+    if (!time) return '';
+    const upTimeMs = Number(time);
+    const upTimeSec = Math.floor(upTimeMs / 1000);
+    const hours = Math.floor(upTimeSec / 3600);
+    const minutes = Math.floor((upTimeSec % 3600) / 60);
+    const seconds = upTimeSec % 60;
+    if (hours < 1 && minutes < 1) return `${seconds}s`;
+    if (includeSeconds) {
+        return hours > 0 ? `${hours}h ${minutes}m ${seconds}s` : `${minutes}m ${seconds}s`;
+    }
+
+    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+}
+
+export function formatTimeAgo(value: number) {
+    const timeAgo = formatTime(value, false);
+    if (!timeAgo) return null;
+    return timeAgo + ' ago';
+}
 
 // Layer | Uptime | State | Ordinal | Distance from cluster | Cluster State | CPU Usage | Mem Usage | Error
 export const statusTableHeader = [
@@ -92,6 +107,8 @@ export type NodeStatusInfo = {
     clusterState: string;
     cpuUsage: string;
     error: string;
+    errorDate: number;
+    lastError: string;
     memUsage: string;
     ordinal: number;
     pilotSession: string;
