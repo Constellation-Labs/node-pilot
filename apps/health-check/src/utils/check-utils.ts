@@ -54,7 +54,7 @@ export const checkUtils = {
     async checkProcessUsage() {
 
         const results = await shellUtils.runCommandWithOutput('ps -eo %mem,%cpu,rss,command | grep java | grep Xms');
-        const metrics = results.split('\n')[0].split(' ');
+        const metrics = results.split('\n')[0].split(/\s+/);
         const memGB = (Number(metrics[2]) / (1024*1024));
         const maxMem = APP_ENV.CL_DOCKER_JAVA_OPTS.split(' ')[1].slice(4,-1);
         const memPercent = (memGB / Number(maxMem)) * 100;

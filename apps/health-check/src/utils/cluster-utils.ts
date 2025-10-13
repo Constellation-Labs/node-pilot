@@ -110,6 +110,21 @@ export const clusterUtils = {
         return { includesSourceNode: false, ordinal: -1, peerCount: -1 };
     },
 
+    async getClusterLatestOrdinal(): Promise<number> {
+        const lbUrl = APP_ENV.CL_LB;
+        if (lbUrl) {
+            return fetch(`${lbUrl}/${APP_ENV.SNAPSHOT_URL_PATH}/latest`)
+                .then(res => res.json())
+                .then(i => i.value.ordinal)
+                .catch(() => {
+                    logger.warn(`Failed to fetch node info from ${lbUrl}. Falling back to source node.`);
+                    return this.getSourceNodeLatestOrdinal();
+                })
+        }
+
+        return this.getSourceNodeLatestOrdinal();
+    },
+
     async getClusterNodeInfo(): Promise<NodeInfo> {
         const lbUrl = APP_ENV.CL_LB;
         if (lbUrl) {
@@ -122,6 +137,25 @@ export const clusterUtils = {
         } // 4054563
 
         return this.getSourceNodeInfo();
+    },
+
+    // Downloading snapshot hash=Some(7c1daf3d97dcdece8bcda08644cc72693383e2cd71a653be519d4104acaa6744), ordinal=SnapshotOrdinal{value=5187017}
+    async getLatestDownloadedSnapshot() {
+        const logFile = path.join(APP_ENV.PATH_LOGS, 'app.log');
+        try {
+            // Use awk to extract the value after 'value=' and before '}'
+            const cmd = `tail -n 500 ${logFile} | grep '), ordinal=SnapshotOrdinal{value=' | awk -F'value=|}' '{print $2}'`;
+            const output = await shellUtils.runCommandWithOutput(cmd);
+            if (!output) return null;
+            // Extract all numbers, sort numerically, and return the largest
+            const numbers = output.trim().split(/\r?\n/).map(line => Number.parseInt(line, 10)).filter(n => !Number.isNaN(n));
+            if (numbers.length === 0) return null;
+            numbers.sort((a, b) => a - b);
+            return numbers.at(-1);
+        } catch (error) {
+            logger.error(`Failed to extract latest downloaded snapshot using awk: ${error}`);
+            return null;
+        }
     },
 
     async getSourceNodeInfo(): Promise<NodeInfo> {

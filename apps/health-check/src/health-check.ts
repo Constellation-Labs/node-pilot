@@ -48,6 +48,7 @@ class HealthCheck {
             await clusterUtils.checkLatestSnapshotHash();
         }
         else {
+            await this.checkDownloadProgress(state);
             await this.checkForStalledState(layer, state);
         }
 
@@ -66,6 +67,15 @@ class HealthCheck {
 
         if (layer === TessellationLayer.ML0 && state === NodeState.Ready) {
             // verify ordinal snapshot hashes match with cluster
+        }
+    }
+
+    private async checkDownloadProgress(currentState: NodeState) {
+        if (currentState !== NodeState.SessionStarted) {
+            const ordinal = nodeUtils.getNodeLatestOrdinalOnDisk();
+            const clusterOrdinal = await clusterUtils.getClusterLatestOrdinal();
+
+            storeUtils.setNodeStatusInfo({clusterOrdinal, ordinal});
         }
     }
 

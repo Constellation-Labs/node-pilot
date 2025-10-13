@@ -110,9 +110,6 @@ export const nodeUtils = {
                     }
 
                 }
-                else {
-                    storeUtils.setNodeStatusInfo({hasJoined: false, pilotSession: APP_ENV.NODE_PILOT_SESSION});
-                }
             }
         }
 
