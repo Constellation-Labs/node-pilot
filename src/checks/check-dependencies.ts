@@ -42,9 +42,9 @@ export const checkDependencies = async () => {
 
             clm.debug(`Running install-dependencies.sh from ${pilotDir}`);
 
-            const silent = !process.env.DEBUG;
+            // const silent = !process.env.DEBUG;
 
-            const result = shell.exec('bash install-dependencies.sh', { cwd: pilotDir, silent });
+            const result = shell.exec('bash install-dependencies.sh', { cwd: pilotDir });
 
             if (result.code > 0) {
                 console.log(result.stderr);

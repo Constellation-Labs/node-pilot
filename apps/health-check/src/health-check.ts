@@ -1,9 +1,15 @@
 import {logger} from "./logger.js";
 import {NodeState, TessellationLayer, TimerInfo} from "./types.js";
+import {checkUtils} from "./utils/check-utils.js";
 import {clusterUtils} from "./utils/cluster-utils.js";
 import {nodeUtils} from "./utils/node-utils.js";
 import {storeUtils} from "./utils/store-utils.js";
 
+// @ts-expect-error
+const MAX_STATE_TIME: Record<NodeState, number> = {
+    [NodeState.Observing]: 600,
+    [NodeState.SessionStarted]: 600, // 10 minutes
+}
 
 class HealthCheck {
 
@@ -25,6 +31,11 @@ class HealthCheck {
         const state = await nodeUtils.getCurrentState();
 
         if (state === NodeState.Leaving) {
+            // const {error} = storeUtils.getNodeStatusInfo();
+            // if (!error) {
+            //     storeUtils.setNodeStatusInfo({error: 'unrecoverable error'});
+            // }
+
             return;
         }
 
@@ -39,6 +50,8 @@ class HealthCheck {
         else {
             await this.checkForStalledState(layer, state);
         }
+
+        await checkUtils.checkProcessUsage();
     }
 
     async checkMetagraph(layer: TessellationLayer) {
@@ -71,6 +84,7 @@ class HealthCheck {
         logger.log(`Checking for stalled state. lastState: ${lastState}, currentState: ${currentState}...`);
 
         if (lastState === currentState) {
+            const MAX_TIME = MAX_STATE_TIME[currentState] || 300; // 5 minutes
             const property = currentState + 'StartTime';
             const timerInfo = storeUtils.getTimerInfo();
             const startTime = (timerInfo[property as keyof TimerInfo] || 0) as number;
@@ -78,15 +92,16 @@ class HealthCheck {
 
             if (startTime === 0) {
                 storeUtils.setTimerInfo({[property]: currentTime});
-                logger.log(`${layer} has repeated ${currentState} state. Starting 5-minute timeout.`);
+                logger.log(`${layer} has repeated ${currentState} state. Starting ${Math.round(MAX_TIME/60)}-minute timeout.`);
             } else {
                 const timeDiff = currentTime - startTime;
 
-                if (timeDiff >= 300) {
+                if (timeDiff >= MAX_TIME) {
                     await nodeUtils.leaveCluster();
-                    throw new Error(`${layer} has been in ${currentState} state for more than 5 minutes - exiting...`);
+                    throw new Error(`${layer} has been in ${currentState} state for more than ${Math.round(MAX_TIME/60)} minutes - exiting...`);
                 } else {
-                    const remainingTime = 300 - timeDiff;
+                    const remainingTime = MAX_TIME - timeDiff;
+                    storeUtils.setNodeStatusInfo({state: currentState + ` (${remainingTime}s)`});
                     logger.log(
                         `${layer} is in ${currentState} state for ${timeDiff}s (${remainingTime}s remaining before timeout).`
                     );

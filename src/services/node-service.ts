@@ -19,7 +19,7 @@ export const nodeService = {
         return fetch(`http://localhost:${portInfo.PUBLIC}/node/info`)
             .then(res => {
                 if (res.ok) return res.json().then(i => ({...i, layer}));
-                clm.warn(`Failed to get node info from ${res.url} (${res.status})`);
+                clm.debug(`Failed to get node info from ${res.url} (${res.status})`);
                 throw new Error(`Failed`);
             })
             .catch(() => ({layer, state: "Unavailable"}));

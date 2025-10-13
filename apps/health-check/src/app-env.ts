@@ -4,6 +4,7 @@ class AppEnv {
 
     CL_APP_ENV: string;
     CL_CLI_HTTP_PORT: string;
+    CL_DOCKER_JAVA_OPTS: string;
     CL_GLOBAL_L0_PEER_HTTP_HOST: string;
     CL_GLOBAL_L0_PEER_HTTP_PORT: string;
     CL_GLOBAL_L0_PEER_ID: string;
@@ -21,6 +22,7 @@ class AppEnv {
     SNAPSHOT_URL_PATH = 'global-snapshots';
 
     constructor(env: Record<string, string>) {
+        this.CL_DOCKER_JAVA_OPTS = env.CL_DOCKER_JAVA_OPTS || '-Xms1024M -Xmx8G -Xss256K ';
         this.CL_PUBLIC_HTTP_PORT = env.CL_PUBLIC_HTTP_PORT || '9000';
         this.CL_GLOBAL_L0_PEER_ID = env.CL_GLOBAL_L0_PEER_ID;
         this.CL_GLOBAL_L0_PEER_HTTP_PORT = env.CL_GLOBAL_L0_PEER_HTTP_PORT || '9000';

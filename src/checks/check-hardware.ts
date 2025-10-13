@@ -19,9 +19,7 @@ export const checkHardware = {
         // const usage = diskusage.checkSync(os.homedir());
         // const usableSpaceGB = (usage.total / (1024 * 1024 * 1024)).toFixed(2);
 
-        // Retrieve sys memory
-        const totalMemoryBytes = os.totalmem();
-        const totalMemoryGB = (totalMemoryBytes / (1024 * 1024 * 1024)).toFixed(2)
+        const totalMemoryGB = (os.totalmem() / (1024 * 1024 * 1024)).toFixed(2)
 
         // Retrieve number of CPU cores
         const numOfCores = os.availableParallelism();

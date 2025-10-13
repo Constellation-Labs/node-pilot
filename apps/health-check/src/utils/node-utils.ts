@@ -47,7 +47,7 @@ export const nodeUtils = {
             // Check for cluster health
             const peerInfo = await clusterUtils.getClusterConsensusPeers();
 
-            if (peerInfo.peerCount > 0) {
+            if (peerInfo.peerCount >= 0) {
                 if (peerInfo.peerCount === 0) {
                     logger.warn(`Cluster is unhealthy. Peer count: ${peerInfo.peerCount}`);
                     clusterState = 'Offline'
@@ -95,11 +95,11 @@ export const nodeUtils = {
                     if (isRunning) {
                         logger.log(`Hydrate is running.`);
                     }
-                    else if (isHydrateRunning) {
+                    else if (isHydrateRunning || APP_ENV.CL_TESSELATION_LAYER !== 'gl0') {
                         storeUtils.setTimerInfo({isHydrateRunning: false});
 
                         logger.log(`Initiating auto join...`);
-                        storeUtils.setNodeStatusInfo({state: 'JoiningCluster'});
+                        storeUtils.setNodeStatusInfo({error: '', state: 'JoiningCluster'});
                         const nodeInfo = await clusterUtils.getClusterNodeInfo();
                         await nodeUtils.joinCluster(nodeInfo);
                     }
@@ -191,6 +191,11 @@ export const nodeUtils = {
             return;
         }
 
+        const {error} = storeUtils.getNodeStatusInfo();
+        if (!error) {
+            storeUtils.setNodeStatusInfo({error: 'cluster-leave invoked'});
+        }
+
         const cliPort = APP_ENV.CL_CLI_HTTP_PORT;
 
         logger.log(`${APP_ENV.CL_TESSELATION_LAYER} is leaving the cluster.`);
@@ -202,6 +207,10 @@ export const nodeUtils = {
         logger.debug(`Fetching node info from http://localhost:${APP_ENV.CL_PUBLIC_HTTP_PORT}/${path}`);
         return fetch(`http://localhost:${APP_ENV.CL_PUBLIC_HTTP_PORT}/${path}`)
             .then(d => d.json())
+            .then(d => {
+                storeUtils.setNodeStatusInfo({unavailableCount: 0});
+                return d;
+            })
             .catch(error => {
                 logger.error(`Local node is unresponsive - ${error}`);
 

@@ -1,7 +1,13 @@
-import chalk from "chalk";
-
-
 class CellFormatter {
+
+    formatCpu (value: string) {
+        if (value === '-') return value;
+        const num = Number.parseInt(value, 10);
+        if (num === 0) return value;
+        if (num < 60) return this.style(value.toString(), "green");
+        if (num < 90) return this.style(value.toString(), "yellow", "bold");
+        return this.style(value.toString(), "red", "bold");
+    }
 
     formatDistance (value: string) {
         if (value === '-') return value;
@@ -17,12 +23,21 @@ class CellFormatter {
         return this.style(value, "bgRed", "bold")
     }
 
+    formatMem (value: string) {
+        if (value === '-') return value;
+        const num = Number.parseInt(value.split('(')[1], 10);
+        if (num === 0) return value;
+        if (num < 70) return this.style(value.toString(), "green");
+        if (num < 90) return this.style(value.toString(), "yellow", "bold");
+        return this.style(value.toString(), "red", "bold");
+    }
+
     formatOrdinal (value: string) {
 
         const [v,changed] = value.split(':');
 
         if (changed) {
-            return this.style(v, "bgCyan");
+            return this.style(v, "whiteBright");
         }
 
         return this.style(v, "cyan");
@@ -54,17 +69,19 @@ class CellFormatter {
     }
 }
 
-const {formatDistance, formatError, formatOrdinal, formatState, formatUpTIme} = new CellFormatter();
+const {formatCpu, formatDistance, formatError, formatMem, formatOrdinal, formatState, formatUpTIme} = new CellFormatter();
 
-// Layer | Uptime | State | Ordinal | Distance from cluster | Cluster State | Error
+// Layer | Uptime | State | Ordinal | Distance from cluster | Cluster State | CPU Usage | Mem Usage | Error
 export const statusTableHeader = [
     { color: 'white', headerColor: 'whiteBright', value: 'Network' },
     { color: 'whiteBright', headerColor: 'whiteBright', value: 'Layer' },
     { color: 'white', formatter: formatUpTIme, headerColor: 'whiteBright', value: 'Uptime' },
-    { color: 'white', formatter: formatState, headerColor: 'whiteBright', value: 'Node State', width: 18},
+    { color: 'white', formatter: formatState, headerColor: 'whiteBright', value: 'Node State', width: 24},
     { color: 'white', formatter: formatOrdinal, headerColor: 'whiteBright', value: 'Ordinal' },
-    { color: 'white', formatter: formatDistance, headerColor: 'whiteBright', value: 'Ord. lag' },
+    { color: 'white', formatter: formatDistance, headerColor: 'whiteBright', value: 'Distance' },
     { color: 'white', formatter: formatState, headerColor: 'whiteBright', value: 'Cluster State', width: 16},
+    { color: 'white', formatter: formatCpu, headerColor: 'whiteBright', value: 'CPU Usage', width: 12 },
+    { color: 'white', formatter: formatMem, headerColor: 'whiteBright', value: 'Mem Usage (GB)', width: 16 },
     { color: 'white', formatter: formatError, headerColor: 'whiteBright', value: 'Error', width: 22},
 ];
 
@@ -73,7 +90,9 @@ export type NodeStatusInfo = {
     clusterOrdinal: number;
     clusterSession: string;
     clusterState: string;
+    cpuUsage: string;
     error: string;
+    memUsage: string;
     ordinal: number;
     pilotSession: string;
     session: string;

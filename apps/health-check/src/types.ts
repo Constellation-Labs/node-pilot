@@ -44,10 +44,15 @@ export type NodeStatusInfo = {
     clusterOrdinal: number;
     clusterSession: string;
     clusterState: string;
+    cpuLastTime: string;
+    cpuLastUsage: string;
+    cpuUsage: string;
     error: string;
+    errorDate: number;
     hasJoined: boolean;
     inConsensus: boolean;
     inNetwork: boolean;
+    memUsage: string;
     ordinal: number;
     pilotSession: string;
     session: string;

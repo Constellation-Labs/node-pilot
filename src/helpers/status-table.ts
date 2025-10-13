@@ -9,24 +9,6 @@ import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
 import {NodeStatusInfo, statusTableHeader} from "./status-table-helper.js";
 
-// mismatched snapshot hash, cluster fork, lagging behind cluster, stalled state, missing snapshot
-// const possibleErrors = [
-//     '-',
-//     'Bad snapshot hash',
-//     'Cluster fork',
-//     'Lagging behind',
-//     'Stalled state',
-//     'Missing snapshot',
-// ]
-//
-// const possibleStates =
-//     [
-//         'Ready',
-//         'Restarting',
-//         'Offline',
-//         'SessionStarted'
-//     ]
-
 export class StatusTable {
     private alreadyRendered = false;
     private previousHeight = 0;
@@ -79,11 +61,6 @@ export class StatusTable {
         return info;
     }
 
-    // Layer | Uptime | State | Ordinal | Distance from cluster | Cluster State | Error
-    // state:  Restarting...
-    // cluster state: Ready, Offline, Restarting...
-    // possibleErrors: mismatched snapshot hash, cluster fork, lagging behind cluster, stalled state, missing snapshot
-
     private async monitorState() {
 
         const projects = this.getProjectInfo();
@@ -106,27 +83,43 @@ export class StatusTable {
                     n.ordinal ? ordinal : '-',
                     distance,
                     n.clusterState || 'Ready',
+                    n.cpuUsage || '-',
+                    n.memUsage || '-',
                     n.error || '-'
                 ])
                 values[p.layer].ordinal = n.ordinal;
             }
-            // const rows = [
-            //     ["GL0", '1760103674654', possibleStates[Math.floor(Math.random()*possibleStates.length)], '5174762', String(Math.floor(Math.random()*8)), possibleStates[Math.floor(Math.random()*possibleStates.length)], possibleErrors[Math.floor(Math.random()*possibleErrors.length)]],
-            //     ["GL1", '1760102674654', possibleStates[Math.floor(Math.random()*possibleStates.length)], '4174762', String(Math.floor(Math.random()*8)), possibleStates[Math.floor(Math.random()*possibleStates.length)], possibleErrors[Math.floor(Math.random()*possibleErrors.length)]],
-            // ]
 
             this.render(rows);
 
-            process.stdout.write("   *press any key to cancel")
+            process.stdout.write("   * press any key to cancel")
 
             // eslint-disable-next-line no-await-in-loop
             await sleep(1);
         }
     }
 
-    private render (body: string[][]) {
+    private render (rows: string[][]) {
+        const header = [...statusTableHeader];
+
+        // const emptyColumns = Array.from({length: rows[0].length}).fill(0) as number[];
+        // for (const [, row] of rows.entries()) {
+        //     for (const [j, cell] of row.entries()) {
+        //         if (cell === '-') emptyColumns[j] += 1;
+        //     }
+        // }
+        //
+        // for (const [j, cell] of emptyColumns.entries()) {
+        //     if(cell === rows.length) {
+        //         header.splice(j, 1);
+        //         for (const [, row] of rows.entries()) {
+        //             row.splice(j, 1);
+        //         }
+        //     }
+        // }
+
         const options = { terminalAdapter: true } as never;
-        const t1 = ttyTable(statusTableHeader, body, options)
+        const t1 = ttyTable(header, rows, options)
 
         // hide cursor
         console.log("\u001B[?25l")

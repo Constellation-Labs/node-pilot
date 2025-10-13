@@ -30,6 +30,11 @@ export class FastforwardUtil {
     }
 
     static async synctoLatestSnapshot() {
+
+        if (APP_ENV.CL_TESSELATION_LAYER !== 'gl0') {
+            return;
+        }
+
         const ffs = new FastforwardUtil();
         await ffs.runFastForwardSnapshot();
     }

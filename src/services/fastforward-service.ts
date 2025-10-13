@@ -24,11 +24,10 @@ export class FastforwardService {
         const {type} = configStore.getNetworkInfo();
 
         this.network = type;
-        this.tmpDir = path.join(projectDir, 'gl0', 'tmp');
         this.dataDir = path.join(projectDir, 'gl0', 'data');
+        this.tmpDir = path.join(projectDir, 'gl0', 'data', 'tmp');
 
         fs.mkdirSync(this.tmpDir, {recursive: true});
-        fs.mkdirSync(this.dataDir, {recursive: true});
 
         // const env = configStore.getEnvNetworkInfo(type);
 

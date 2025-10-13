@@ -52,6 +52,7 @@ export const storeUtils = {
     },
     setNodeStatusInfo(info: Partial<NodeStatusInfo>) {
         const old = store.getItem('node');
+        if (info.error) info.errorDate = Date.now();
         store.setItem('node', { ...old, ...info });
     },
 
