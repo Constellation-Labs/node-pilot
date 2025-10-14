@@ -23,7 +23,8 @@ export const checkUtils = {
             logger.log(`CPU usage: ${totalPercent.toFixed(2)}%`);
             if (totalPercent >= 98) {
                 logger.error(`CPU usage has reached ${totalPercent.toFixed(2)}%.`);
-                // nodeUtils.leaveCluster();
+                storeUtils.setNodeStatusInfo({error: `cpu:max-usage ${totalPercent.toFixed(0)}%`});
+                await nodeUtils.leaveCluster();
             }
         }
         else {
@@ -43,6 +44,7 @@ export const checkUtils = {
         storeUtils.setNodeStatusInfo({memUsage: usedPercent.toFixed(0)});
         if (usedPercent >= 92) {
             logger.error(`Memory usage has reached ${usedPercent.toFixed(2)}%.`);
+            storeUtils.setNodeStatusInfo({error: `memory:max-usage ${usedPercent.toFixed(0)}%`});
             await nodeUtils.leaveCluster();
         }
         else {
@@ -64,9 +66,12 @@ export const checkUtils = {
 
         storeUtils.setNodeStatusInfo({cpuUsage: metrics[1] + '%', memUsage});
 
+        // logger.log('checkProcessUsage - ' + `java:mem: ${memUsage}, ` + `java:cpu: ${metrics[1]}%`);
+
         if (memPercent > 100 && cpuUsage > 90) {
-            const msg = `Java memory usage is ${memPercent.toFixed(2)}% and total CPU usage is ${Number(metrics[1]).toFixed(0)}% across ${cpuCount} cores.`;
+            const msg = `java:mem:max ${memPercent.toFixed(0)}%, cpu:max ${Number(metrics[1]).toFixed(0)}%`;
             storeUtils.setNodeStatusInfo({error: msg, rebootRequired: true});
+            await nodeUtils.leaveCluster();
             throw new Error(msg);
         }
 

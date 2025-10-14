@@ -1,12 +1,16 @@
+import os from "node:os";
+
 class CellFormatter {
 
     formatCpu (value: string) {
         if (value === '-') return value;
-        const num = Number.parseInt(value, 10);
+        const cores = os.cpus().length;
+        const num = Number.parseFloat(value) / cores;
+        value = num.toFixed(1) + '%';
         if (num === 0) return value;
-        if (num < 60) return this.style(value.toString(), "green");
-        if (num < 99) return this.style(value.toString(), "yellow", "bold");
-        return this.style(value.toString(), "bgRed", "bold");
+        if (num < 40) return this.style(value, "green");
+        if (num < 85) return this.style(value, "yellow", "bold");
+        return this.style(value, "bgRed", "bold");
     }
 
     formatDistance (value: string) {
@@ -25,10 +29,10 @@ class CellFormatter {
 
     formatMem (value: string) {
         if (value === '-') return value;
-        const num = Number.parseInt(value.split('(')[1], 10);
+        const num = Number.parseInt(value, 10);
         if (num === 0) return value;
-        if (num < 70) return this.style(value.toString(), "green");
-        if (num < 90) return this.style(value.toString(), "yellow", "bold");
+        if (num < 86) return this.style(value.toString(), "green");
+        if (num < 99) return this.style(value.toString(), "yellow", "bold");
         return this.style(value.toString(), "red", "bold");
     }
 
@@ -54,6 +58,7 @@ class CellFormatter {
     }
 
     formatUpTIme(startTime: number | string) {
+        if (!startTime) return '-';
         const formattedTime = formatTime(Date.now() - Number(startTime), true);
         return formattedTime ?? '-';
     }
@@ -63,7 +68,8 @@ class CellFormatter {
     }
 }
 
-const {formatCpu, formatDistance, formatError, formatMem, formatOrdinal, formatState, formatUpTIme} = new CellFormatter();
+const {
+    formatCpu, formatDistance, formatError, formatMem, formatOrdinal, formatState, formatUpTIme} = new CellFormatter();
 
 export function formatTime(time: number, includeSeconds: boolean) {
     if (!time) return '';

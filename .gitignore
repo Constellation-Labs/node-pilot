@@ -3,9 +3,9 @@
 **/.DS_Store
 /.idea
 /.vscode
-/dist
+dist
 /tmp
-/node_modules
+node_modules
 oclif.manifest.json
 
 *.p12

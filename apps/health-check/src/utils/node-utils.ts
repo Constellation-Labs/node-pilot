@@ -189,11 +189,6 @@ export const nodeUtils = {
             return;
         }
 
-        const {error} = storeUtils.getNodeStatusInfo();
-        if (!error) {
-            storeUtils.setNodeStatusInfo({error: 'cluster-leave invoked'});
-        }
-
         const cliPort = APP_ENV.CL_CLI_HTTP_PORT;
 
         logger.log(`${APP_ENV.CL_TESSELATION_LAYER} is leaving the cluster.`);

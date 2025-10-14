@@ -8,6 +8,7 @@ import path from "node:path";
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
 import {promptHelper} from "../helpers/prompt-helper.js";
+import {shellService} from "./shell-service.js";
 
 const CHUNK_SIZE = 20_000;
 
@@ -78,7 +79,7 @@ export class FastforwardService {
 
         await this.saveSnapshotFiles(ordinal.toString(), hash);
 
-        clm.postStep(`Fastforward to snapshot "${ordinal}" completed.`);
+        clm.postStep(`✅ Fastforward to snapshot ${chalk.bold(ordinal)} completed.`);
     }
 
     private async fetchLatestSnapshot(): Promise<[number,string,string]> {
@@ -128,8 +129,19 @@ export class FastforwardService {
         const hashDir = path.join(incrementalSnapshotDir, 'hash', hashSubdir);
         const ordinalDir = path.join(incrementalSnapshotDir, 'ordinal', ordinalRounded.toString());
 
-        fs.mkdirSync(hashDir, { recursive: true });
-        fs.mkdirSync(ordinalDir, { recursive: true });
+        try {
+            fs.mkdirSync(hashDir, {recursive: true});
+        }
+        catch {
+            await shellService.runCommand(`sudo mkdir -p ${hashDir}`);
+        }
+
+        try {
+            fs.mkdirSync(ordinalDir, {recursive: true});
+        }
+        catch {
+            await shellService.runCommand(`sudo mkdir -p ${ordinalDir}`);
+        }
 
         const destOrdinalFile = path.join(ordinalDir, ordinal);
 

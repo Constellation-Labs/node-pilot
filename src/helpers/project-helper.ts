@@ -88,11 +88,7 @@ export const projectHelper = {
         const {projectDir} = configStore.getProjectInfo();
         const {platform} = configStore.getSystemInfo();
 
-        // Create gl0 folder for the fast-forward feature before Docker does
-        const gl0DataDir = path.join(projectDir,'gl0','data');
-        fs.mkdirSync(path.join(gl0DataDir,'incremental_snapshot'), {recursive: true});
-        fs.mkdirSync(path.join(gl0DataDir,'snapshot_info'));
-        fs.mkdirSync(path.join(gl0DataDir,'tmp'));
+        this.prepareDataFolder();
 
         if (platform === 'linux') {
             const layerDir = path.join(projectDir,'gl0');
@@ -121,6 +117,19 @@ export const projectHelper = {
         clm.debug(`Installing project from ${projectFolder} to ${projectDir}`);
 
         fs.cpSync(projectFolder, projectDir, {recursive: true});
+    },
+
+    prepareDataFolder() {
+        const {projectDir} = configStore.getProjectInfo();
+
+        // Create gl0 folder for the fast-forward feature before Docker does
+        const gl0DataDir = path.join(projectDir,'gl0','data');
+
+        if (!fs.existsSync(gl0DataDir)) {
+            fs.mkdirSync(path.join(gl0DataDir,'incremental_snapshot'), {recursive: true});
+            fs.mkdirSync(path.join(gl0DataDir,'snapshot_info'));
+            fs.mkdirSync(path.join(gl0DataDir,'tmp'));
+        }
     },
 
     async selectProject() {

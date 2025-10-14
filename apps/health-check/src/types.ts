@@ -73,6 +73,6 @@ export type TimerInfo = {
 export type ArchiveInfo = {
     endTime: number;
     isRunning: boolean;
-    pid: number;
+    pid: string;
     startTime: number;
 }

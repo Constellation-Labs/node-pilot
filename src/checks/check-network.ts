@@ -39,7 +39,7 @@ export const checkNetwork = {
         }
 
         configStore.setProjectFlag('duplicateNodeIdChecked', true);
-        clm.postStep('No duplicate Node found.');
+        clm.postStep('✅ No duplicate Node found.');
     },
 
     async checkSeedList() {
@@ -55,7 +55,7 @@ export const checkNetwork = {
         if (fs.existsSync(seedListFile)) {
             const found = fs.readFileSync(seedListFile, 'utf8').includes(nodeId);
             if (found) {
-                clm.postStep(`Node ID found in ${type.toUpperCase()} seed list.`);
+                clm.postStep(`✅ Node ID found in ${type.toUpperCase()} seed list.`);
                 configStore.setProjectFlag('seedListChecked', true);
                 return;
             }

@@ -38,7 +38,7 @@ export const checkWallet = {
             await promptHelper.doYouWishToContinue();
         }
         else {
-            clm.postStep('Collateral check PASSED')
+            clm.postStep('✅ Collateral check PASSED')
         }
 
         configStore.setProjectFlag('skipCollateralCheck', true);

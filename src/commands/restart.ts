@@ -42,6 +42,9 @@ export default class Restart extends BaseCommand {
                     // eslint-disable-next-line no-await-in-loop
                     await this.restart();
                 }
+                else {
+                    serviceLog.log('    ' + project + ' version is the same. ');
+                }
             }
 
             configStore.setActiveProject(project);
@@ -54,7 +57,7 @@ export default class Restart extends BaseCommand {
             const activeProjects = configStore.getRunningProjects();
             // serviceLog.log(`    Active projects: ${activeProjects.join(', ')}...`);
             for (const project of activeProjects) {
-                serviceLog.log('    ' + project + ' is restarting...');
+                serviceLog.log('    ' + project + ' is being auto started...');
                 configStore.setActiveProject(project);
                 // eslint-disable-next-line no-await-in-loop
                 await this.restart();
@@ -89,7 +92,11 @@ export default class Restart extends BaseCommand {
         // const pAll = layersToRun.map(l => nodeService.getNodeInfo(l));
         // const info = await Promise.all(pAll);
         // const isRunning = info.some(n => n.state !== 'Unavailable');
-        if (configStore.isRestarting()) return;
+        if (configStore.isRestarting()) {
+            serviceLog.log('Restart already ACTIVE')
+            return;
+        }
+
         configStore.setIsRestarting(true);
         try {
             if (await dockerService.isRunning()) {
@@ -103,7 +110,7 @@ export default class Restart extends BaseCommand {
             clm.preStep('Checking for a new version...');
             await checkProject.runUpgrade();
             clm.preStep('Starting the node...');
-            await dockerService.dockerUp();
+            await dockerService.dockerRestartAll();
         }
         finally {
             configStore.setIsRestarting(false);

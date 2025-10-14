@@ -33,7 +33,7 @@ export const archiveUtils = {
         if (ordinal > 0) {
             logger.log('Corrupt snapshot detected at ordinal: ' + ordinal);
             // Remove corrupt snapshots from archive. Fallback to fast-forward strategy.
-            await healUtils.removeSnapshotsAfterCorruptOrdinal(ordinal);
+            await healUtils.removeSnapshotsAfterCorruptOrdinal(ordinal).catch();
             await FastforwardUtil.synctoLatestSnapshot();
             return;
         }
@@ -65,7 +65,7 @@ export const archiveUtils = {
         catch {
             logger.error('Error downloading archive.')
             // Archive is not available. Remove corrupt snapshots from archive. Fallback to fast-forward strategy.
-            await healUtils.removeSnapshotsAfterCorruptOrdinal(ordinal);
+            await healUtils.removeSnapshotsAfterCorruptOrdinal(ordinal).catch();
             await FastforwardUtil.synctoLatestSnapshot();
         }
     },
@@ -133,7 +133,7 @@ export const archiveUtils = {
             const duration = endTime - startTime;
             logger.log(`Archive sync completed in ${Math.floor(duration / 1000)} seconds.`);
 
-            storeUtils.setArchiveInfo({endTime, isRunning: false, pid: 0});
+            storeUtils.setArchiveInfo({endTime, isRunning: false, pid: ''});
         }
     },
 
@@ -149,7 +149,9 @@ export const archiveUtils = {
         storeUtils.setArchiveInfo({isRunning: true});
 
         const hydrateSH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), `../../bin/hydrate.sh`);
-        await shellUtils.runCommand(hydrateSH);
+        const pid = await shellUtils.runCommandWithOutput(hydrateSH);
+        logger.log('pid: ' + pid);
+        storeUtils.setArchiveInfo({pid});
     },
 
     // NOTE: Unable to verify hash from local node as it has left the cluster during archive sync.

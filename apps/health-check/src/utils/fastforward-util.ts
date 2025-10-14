@@ -25,8 +25,8 @@ export class FastforwardUtil {
         fs.mkdirSync(this.tmpDir, {recursive: true});
         fs.mkdirSync(this.dataDir, {recursive: true});
 
-        // this.lbUrl = `https://l0-lb-${this.network}.constellationnetwork.io`;
-        this.lbUrl = `http://${APP_ENV.CL_L0_PEER_HTTP_HOST}:${APP_ENV.CL_L0_PEER_HTTP_PORT}`;
+        this.lbUrl = `https://l0-lb-${this.network}.constellationnetwork.io`;
+        // this.lbUrl = `http://${APP_ENV.CL_L0_PEER_HTTP_HOST}:${APP_ENV.CL_L0_PEER_HTTP_PORT}`;
     }
 
     static async synctoLatestSnapshot() {
@@ -58,7 +58,7 @@ export class FastforwardUtil {
 
         await this.saveSnapshotFiles(ordinal.toString(), hash);
 
-        logger.log(`Fastforward to snapshot "${ordinal}" completed.`);
+        logger.log(`✅ Fastforward to snapshot ${ordinal} completed.`);
     }
 
     private async fetchLatestSnapshot(): Promise<[number,string,string]> {

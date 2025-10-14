@@ -28,17 +28,26 @@ export const dockerService = {
                 spinner.stop();
             }
 
-            clm.postStep('Node container built.');
+            clm.postStep('✅ Node container built.');
         }
     },
 
-    async dockerDown() {
-        await run('down');
+    async dockerDown(layers?: TessellationLayer[]) {
+        await run('down', layers);
         configStore.setProjectStatusToRunning(false);
     },
 
     async dockerRestart(layer: TessellationLayer) {
         await run('restart', [layer]);
+    },
+
+    async dockerRestartAll() {
+        if (await this.isRunning()) {
+            await this.dockerDown();
+        }
+
+        await run('up -d');
+        configStore.setProjectStatusToRunning(true);
     },
 
     async dockerStartLayers(layers: TessellationLayer[]) {

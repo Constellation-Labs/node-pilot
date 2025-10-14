@@ -1,15 +1,16 @@
+import {APP_ENV} from "./app-env.js";
 import {logger} from "./logger.js";
 import {NodeState, TessellationLayer, TimerInfo} from "./types.js";
 import {checkUtils} from "./utils/check-utils.js";
 import {clusterUtils} from "./utils/cluster-utils.js";
 import {nodeUtils} from "./utils/node-utils.js";
 import {storeUtils} from "./utils/store-utils.js";
-import {APP_ENV} from "./app-env.js";
 
 // @ts-expect-error
 const MAX_STATE_TIME: Record<NodeState, number> = {
     [NodeState.Observing]: 600,
     [NodeState.SessionStarted]: 600, // 10 minutes
+    [NodeState.WaitingForDownload]: 60, // 1 minute- happened during joining
 }
 
 class HealthCheck {
@@ -49,7 +50,7 @@ class HealthCheck {
             await clusterUtils.checkLatestSnapshotHash();
         }
         else {
-            await this.checkDownloadProgress(state);
+            await this.checkDownloadProgress();
             await this.checkForStalledState(layer, state);
         }
 
@@ -71,8 +72,8 @@ class HealthCheck {
         }
     }
 
-    private async checkDownloadProgress(currentState: NodeState) {
-        if (APP_ENV.CL_TESSELATION_LAYER === 'gl0' && currentState !== NodeState.SessionStarted) {
+    private async checkDownloadProgress() {
+        if (APP_ENV.CL_TESSELATION_LAYER === 'gl0') {
             const ordinal = nodeUtils.getNodeLatestOrdinalOnDisk();
             const clusterOrdinal = await clusterUtils.getClusterLatestOrdinal();
 
@@ -108,6 +109,7 @@ class HealthCheck {
                 const timeDiff = currentTime - startTime;
 
                 if (timeDiff >= MAX_TIME) {
+                    storeUtils.setNodeStatusInfo({error: `stalled:${currentState} ${Math.round(MAX_TIME/60)}m`});
                     await nodeUtils.leaveCluster();
                     throw new Error(`${layer} has been in ${currentState} state for more than ${Math.round(MAX_TIME/60)} minutes - exiting...`);
                 } else {

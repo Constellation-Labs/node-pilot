@@ -94,6 +94,9 @@ export const clusterService = {
 
         return fetch(`http://${CL_L0_PEER_HTTP_HOST}:${CL_PUBLIC_HTTP_PORT}/${path}`)
             .then(res =>  res.json())
+            .catch(() => {
+                throw new Error(`Unable to connect to source node at http://${CL_L0_PEER_HTTP_HOST}:${CL_PUBLIC_HTTP_PORT}/${path}`)
+            })
     }
 };
 
