@@ -51,11 +51,11 @@ export const nodeUtils = {
             if (peerInfo.peerCount >= 0) {
                 if (peerInfo.peerCount === 0) {
                     logger.warn(`Cluster is unhealthy. Peer count: ${peerInfo.peerCount}`);
-                    storeUtils.setTimerInfo({clusterQueue: Math.random()*300_000});
+                    storeUtils.setTimerInfo({clusterQueue: Math.round(Math.random()*300_000)});
                     clusterState = 'Offline'
                 } else if (peerInfo.peerCount < 4) {
                     logger.warn(`Cluster is unhealthy. Peer count: ${peerInfo.peerCount}`);
-                    storeUtils.setTimerInfo({clusterQueue: Math.random()*300_000});
+                    storeUtils.setTimerInfo({clusterQueue: Math.round(Math.random()*300_000)});
                     clusterState = 'Restarting'
                 } else if (peerInfo.includesSourceNode) {
                     clusterState = 'Ready';
@@ -94,6 +94,7 @@ export const nodeUtils = {
                     storeUtils.setTimerInfo({upgrade: false});
                 }
                 else {
+                    notifyUtils.notify(`Node has started a new session and is READY`);
                     logger.log(`Node has started a new session.`);
                 }
             }
