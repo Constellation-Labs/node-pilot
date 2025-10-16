@@ -130,8 +130,11 @@ export const checkProject = {
         //     spinner.color = 'green';
         // }
         // else {
+        if (!rInfo) {
+            // First time install
             clm.preStep('Tessellation and dependencies need to be installed. This may take a few minutes...');
             await promptHelper.doYouWishToContinue();
+        }
         // }
 
         // const node = await clusterService.getClusterNodeInfo();

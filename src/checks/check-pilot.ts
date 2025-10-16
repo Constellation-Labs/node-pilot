@@ -1,6 +1,7 @@
 import {input} from "@inquirer/prompts";
 import {JSONStorage} from "node-localstorage";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 import packageJson from '../../package.json' with {type: 'json'};
@@ -41,10 +42,12 @@ export const checkNodePilot = {
 
         const latestVersion = result['dist-tags'].latest;
 
+        // console.log(`Current version: "${packageJson.version}", Latest version: "${latestVersion}"`);
+
         if (packageJson.version !== latestVersion) {
-            console.log('There is a new node-pilot version available.');
-            if (await promptHelper.confirmPrompt('Do you wish to upgrade now?')) {
-                await shellService.runCommand('npm install -g @constellationnetwork/node-pilot@latest');
+            console.log(`There is a new node-pilot version available. Current version: "${packageJson.version}", Latest version: "${latestVersion}"`);
+            if (os.platform() === 'linux' && await promptHelper.confirmPrompt('Do you wish to upgrade now?')) {
+                await shellService.runCommand('sudo npm install -g @constellation-network/node-pilot@latest');
                 await projectHelper.upgradeHypergraph();
                 clm.postStep('Run cpilot again to use the latest version');
                 process.exit(0);
@@ -62,20 +65,22 @@ export const checkNodePilot = {
             return;
         }
 
-        let answer = await input({
-            default: '',
-            message: `Provide your Discord username to have it included in the notification: `
-        });
+        // let answer = await input({
+        //     default: '',
+        //     message: `Provide your Discord username to have it included in the notification: `
+        // });
+        //
+        // answer = answer.trim();
+        //
+        // if (answer === '') {
+        //     hcStorage.setItem('user', {webHookEnabled: true});
+        // }
+        // else {
+        //     if (answer.charAt(0) === '@') answer = answer.slice(1);
+        //     hcStorage.setItem('user', {discordUser: answer.trim(), webHookEnabled: true});
+        // }
 
-        answer = answer.trim();
-
-        if (answer === '') {
-            hcStorage.setItem('user', {webHookEnabled: true});
-        }
-        else {
-            if (answer.charAt(0) === '@') answer = answer.slice(1);
-            hcStorage.setItem('user', {discordUser: answer.trim(), webHookEnabled: true});
-        }
+        hcStorage.setItem('user', {webHookEnabled: true});
 
         clm.postStep('Discord notifications are enabled.');
     }

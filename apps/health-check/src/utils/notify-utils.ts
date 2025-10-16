@@ -6,11 +6,11 @@ const NOTIFY_SERVER = 'http://34.197.47.192:3008/notify'
 export const notifyUtils = {
 
     notify(msg: string) {
-        const {discordUser, webHookEnabled=false} = storeUtils.getUserInfo();
+        const {webHookEnabled=false} = storeUtils.getUserInfo();
 
         if (webHookEnabled) {
             const network = APP_ENV.CL_APP_ENV;
-            msg = discordUser ? `<@${discordUser}> ${msg}` : `${APP_ENV.CL_EXTERNAL_IP} - ${msg}`;
+            msg = `${APP_ENV.CL_EXTERNAL_IP} - ${msg}`;
             // post using fetch
             fetch(NOTIFY_SERVER, {
                 body: JSON.stringify({

@@ -97,14 +97,18 @@ export class StatusTable {
                 }
             }
 
-            this.render(rows, err.msg !== '');
+            let hasError = err.msg !== '';
 
-            if (err.msg) {
+            if (hasError) {
                 const d = new Date(err.date);
                 // if under 8 hours ago
-                if (d.getTime() + (8 * 60 * 60 * 1000) > Date.now()) {
-                    process.stdout.write(chalk.green(`   AUTO HEALED (${err.timeAgo}): `) + chalk.red(`${err.layer}:${err.msg} - ${err.date}\n`));
-                }
+                hasError = (d.getTime() + (8 * 60 * 60 * 1000) > Date.now());
+            }
+
+            this.render(rows, hasError);
+
+            if (hasError) {
+                process.stdout.write(chalk.green(`   AUTO HEALED (${err.timeAgo}): `) + chalk.red(`${err.layer}:${err.msg} - ${err.date}\n`));
             }
 
             process.stdout.write("   * press any key to cancel")

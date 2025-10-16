@@ -92,28 +92,32 @@ export default class Restart extends BaseCommand {
         // const pAll = layersToRun.map(l => nodeService.getNodeInfo(l));
         // const info = await Promise.all(pAll);
         // const isRunning = info.some(n => n.state !== 'Unavailable');
-        if (configStore.isRestarting()) {
+        const startRestarted = configStore.isRestarting();
+        if (startRestarted && (startRestarted + 1000 * 60 * 5 > Date.now())) {
             serviceLog.log('Restart already ACTIVE')
             return;
         }
 
-        configStore.setIsRestarting(true);
+        configStore.setIsRestarting(Date.now());
         try {
             if (await dockerService.isRunning()) {
                 await nodeService.leaveClusterAllLayers();
                 const {layersToRun} = configStore.getProjectInfo();
                 await nodeService.pollForLayersState(layersToRun, 'Offline');
                 clm.preStep('Stopping the node...');
+                serviceLog.log('Stopping the node...');
                 await dockerService.dockerDown();
             }
 
             clm.preStep('Checking for a new version...');
+            serviceLog.log('Checking for a new version...');
             await checkProject.runUpgrade();
             clm.preStep('Starting the node...');
+            serviceLog.log('Starting the node...');
             await dockerService.dockerRestartAll();
         }
         finally {
-            configStore.setIsRestarting(false);
+            configStore.setIsRestarting(0);
         }
     }
 

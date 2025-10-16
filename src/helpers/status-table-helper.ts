@@ -50,7 +50,7 @@ class CellFormatter {
         if (!value || value === '-') return '-';
         if (value === 'Offline') return this.style(value, "bgRed", "bold")
         if (value === 'Ready') return this.style(value, "green")
-        if (value === 'ReadyToJoin') return this.style(value, "yellow", "bold")
+        if (value === 'ReadyToJoin' || value === 'JoiningCluster') return this.style(value, "yellow", "bold")
         if (value === 'Restarting') return this.style(value, "yellow", "bold")
 
         return this.style(value, "white")

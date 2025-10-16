@@ -7,6 +7,7 @@ import {NodeInfo, NodeState} from "../types.js";
 import {archiveUtils} from "./archive-utils.js";
 import {clusterUtils} from "./cluster-utils.js";
 import {notifyUtils} from "./notify-utils.js";
+import {shellUtils} from "./shell-utils.js";
 import {storeUtils} from "./store-utils.js";
 
 const ValidStatesAfterReady = new Set([
@@ -108,8 +109,17 @@ export const nodeUtils = {
                 logger.log(`Node is ready to join the cluster. Current state: ${state}. Last session: ${pilotSession}. Node Pilot session: ${APP_ENV.NODE_PILOT_SESSION}`);
 
                 if (pilotSession === APP_ENV.NODE_PILOT_SESSION) {
-                    const {isRunning} = storeUtils.getArchiveInfo();
+                    const {isRunning, pid} = storeUtils.getArchiveInfo();
                     if (isRunning) {
+                        try {
+                            await shellUtils.runCommand(`ps ${pid}`);
+                        } catch {
+                            logger.log(`Hydrate process not found. Resetting hydrate state.`);
+                            storeUtils.setArchiveInfo({isRunning: false, pid: ''});
+                            storeUtils.setTimerInfo({isHydrateRunning: false});
+                            return state;
+                        }
+
                         logger.log(`Hydrate is running.`);
                         storeUtils.setNodeStatusInfo({state: 'HydratingSnapshots'});
                     }

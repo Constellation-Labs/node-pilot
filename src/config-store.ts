@@ -31,7 +31,7 @@ class ConfigStore {
 
         const appInfo = this.pilotStore.getItem('pilot') as PilotInfo;
         if (!appInfo) {
-            this.pilotStore.setItem('pilot', { appDir, project: 'undefined', projects: [], restarting: false, running: [] } as PilotInfo);
+            this.pilotStore.setItem('pilot', { appDir, project: 'undefined', projects: [], restarting: 0, running: [] } as PilotInfo);
         }
 
         const { project } = this.pilotStore.getItem('pilot') as PilotInfo;
@@ -183,7 +183,7 @@ class ConfigStore {
         this.projectStore.setItem('network-env', { ...networks, [network]: { ...networks[network], ...info } } );
     }
 
-    setIsRestarting(val: boolean) {
+    setIsRestarting(val: number) {
         this.setPilotInfo({restarting: val})
     }
 
@@ -242,7 +242,7 @@ type PilotInfo = {
     appDir: string;
     project: string;
     projects: string[];
-    restarting: boolean;
+    restarting: number;
     running: string[];
 }
 

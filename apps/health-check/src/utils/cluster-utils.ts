@@ -148,12 +148,11 @@ export const clusterUtils = {
                     logger.warn(`Failed to fetch node info from ${lbUrl}. Falling back to source node.`);
                     return this.getSourceNodeInfo();
                 })
-        } // 4054563
+        }
 
         return this.getSourceNodeInfo();
     },
 
-    // Downloading snapshot hash=Some(7c1daf3d97dcdece8bcda08644cc72693383e2cd71a653be519d4104acaa6744), ordinal=SnapshotOrdinal{value=5187017}
     async getLatestDownloadedSnapshot() {
         const logFile = path.join(APP_ENV.PATH_LOGS, 'app.log');
         try {
