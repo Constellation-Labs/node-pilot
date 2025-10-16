@@ -5,6 +5,7 @@ class AppEnv {
     CL_APP_ENV: string;
     CL_CLI_HTTP_PORT: string;
     CL_DOCKER_JAVA_OPTS: string;
+    CL_EXTERNAL_IP: string;
     CL_GLOBAL_L0_PEER_HTTP_HOST: string;
     CL_GLOBAL_L0_PEER_HTTP_PORT: string;
     CL_GLOBAL_L0_PEER_ID: string;
@@ -39,6 +40,7 @@ class AppEnv {
         this.CL_APP_ENV = env.CL_APP_ENV;
         this.CL_TESSELATION_LAYER = env.CL_TESSELATION_LAYER;
         this.CL_LB = env.CL_LB;
+        this.CL_EXTERNAL_IP = env.CL_EXTERNAL_IP;
 
         if (this.CL_TESSELATION_LAYER) {
             this.IS_GLOBAL_LAYER = this.CL_TESSELATION_LAYER.charAt(0) === 'g';

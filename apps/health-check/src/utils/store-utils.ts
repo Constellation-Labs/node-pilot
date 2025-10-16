@@ -2,7 +2,7 @@ import {JSONStorage} from "node-localstorage";
 import path from "node:path";
 
 import {APP_ENV} from "../app-env.js";
-import {ArchiveInfo, BackupInfo, NodeStatusInfo, TimerInfo} from "../types.js";
+import {ArchiveInfo, BackupInfo, NodeStatusInfo, TimerInfo, UserInfo} from "../types.js";
 
 const store = new JSONStorage(path.resolve(APP_ENV.PATH_DATA,'health-check'));
 
@@ -28,6 +28,10 @@ export const storeUtils = {
 
     getTimerInfo(): TimerInfo {
         return store.getItem('timers') || {};
+    },
+
+    getUserInfo(): UserInfo {
+        return store.getItem('user') || {};
     },
 
     setArchiveInfo(info: Partial<ArchiveInfo>) {
@@ -59,5 +63,10 @@ export const storeUtils = {
     setTimerInfo(info: Partial<TimerInfo>) {
         const old = store.getItem('timers');
         store.setItem('timers', { ...old, ...info });
-    }
+    },
+
+    setUserInfo(info: Partial<UserInfo>) {
+        const old = store.getItem('user');
+        store.setItem('user', { ...old, ...info });
+    },
 }

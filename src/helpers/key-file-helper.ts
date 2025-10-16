@@ -74,27 +74,43 @@ export const keyFileHelper = {
     },
 
     async importKeyFile() {
-        const userKeyPath = await input({
-            message: 'Enter the path to your key file:',
-            validate(value) {
-                const fullPath = shellService.resolvePath(value.trim());
-                if (!fs.existsSync(fullPath)) {
-                    return `${fullPath} does not exist. Please provide a valid path.`;
-                }
+        const p12Files = fs.readdirSync(os.homedir())
+            .filter(file => file.endsWith('.p12'))
+            .map(file => ({ name: 'Import ~/' + file, value: file }));
 
-                return true;
-            }
-        });
+        let userKeyPath = '';
+        let answer = 'importAnother';
+
+        if (p12Files.length > 0) {
+
+            const choices = [
+                ...p12Files,
+                {name: 'Import a different key file', value: 'importAnother'}
+            ];
+            answer = await select({choices, message: 'Choose an option:'});
+
+            userKeyPath = path.join(os.homedir(), answer);
+        }
+
+        if (answer === 'importAnother') {
+            userKeyPath = await input({
+                message: 'Enter the path to your key file:',
+                validate(value) {
+                    const fullPath = shellService.resolvePath(value.trim());
+                    if (!fs.existsSync(fullPath)) {
+                        return `${fullPath} does not exist. Please provide a valid path.`;
+                    }
+
+                    return true;
+                }
+            });
+        }
 
         const { projectDir } = configStore.getProjectInfo();
         const fullPath = shellService.resolvePath(userKeyPath.trim());
         const keyStorePath = path.join(projectDir, "key.p12");
-
-        try {
-            fs.copyFileSync(fullPath, keyStorePath);
-        } catch (error) {
-            clm.error('Failed to import key file:' + error);
-        }
+        const tempKeyPath = path.join(projectDir, "temp.p12");
+        const envInfo = configStore.getEnvInfo();
 
         // prompt for password
         const keyPassword = await password({ message: 'Enter the key file password:'});
@@ -103,16 +119,38 @@ export const keyFileHelper = {
         configStore.setEnvInfo({CL_KEYALIAS: keyAlias, CL_KEYSTORE: keyStorePath, CL_PASSWORD: keyPassword});
 
         try {
+            if (fs.existsSync(keyStorePath)) fs.cpSync(keyStorePath, tempKeyPath, { force: true });
+            fs.copyFileSync(fullPath, keyStorePath);
+        } catch (error) {
+            clm.error('Failed to import key file:' + error);
+        }
+
+        try {
             const dagAddress = await this.getAddress();
             const nodeId = await this.getId();
             configStore.setProjectInfo({dagAddress, nodeId});
 
         }
         catch {
-            fs.rmSync(keyStorePath);
+
+            if (fs.existsSync(tempKeyPath)) {
+                // Revert back to original key file
+                fs.cpSync(tempKeyPath, keyStorePath, { force: true });
+                configStore.setEnvInfo({CL_KEYALIAS: envInfo.CL_KEYALIAS, CL_KEYSTORE: envInfo.CL_KEYSTORE, CL_PASSWORD: envInfo.CL_PASSWORD});
+            }
+            else {
+                fs.rmSync(keyStorePath);
+            }
+
             clm.error('Failed to unlock the key file. Please check your key file information and try again.');
             // await this.promptForKeyFile();
             // return;
+        }
+
+        try {
+            fs.copyFileSync(fullPath, keyStorePath);
+        } catch (error) {
+            clm.error('Failed to import key file:' + error);
         }
 
         clm.postStep('Key file imported successfully.\n');

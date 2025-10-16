@@ -27,6 +27,11 @@ export enum NodeState {
     WaitingForDownload = 'WaitingForDownload'
 }
 
+export type UserInfo = {
+    discordUser: string;
+    webHookEnabled: boolean;
+}
+
 export type NodeInfo = {
     clusterSession: string;
     host: string;
@@ -63,10 +68,12 @@ export type NodeStatusInfo = {
 }
 
 export type TimerInfo = {
+    clusterQueue: number;
     fatal: boolean;
     isHydrateRunning: boolean;
     lastState: string;
     observingStartTime: number;
+    upgrade: boolean
     waitForDownloadStartTime: number;
 }
 

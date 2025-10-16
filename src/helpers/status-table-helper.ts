@@ -3,7 +3,7 @@ import os from "node:os";
 class CellFormatter {
 
     formatCpu (value: string) {
-        if (value === '-') return value;
+        if (!value || value === '-') return '-';
         const cores = os.cpus().length;
         const num = Number.parseFloat(value) / cores;
         value = num.toFixed(1) + '%';
@@ -14,21 +14,20 @@ class CellFormatter {
     }
 
     formatDistance (value: string) {
-        if (value === '-') return value;
-        const num = Number(value);
+        if (!value || value === '-') return '-';
+        const num = Math.abs(Number(value));
         if (num === 0) return value;
-        if (num < 9) return this.style(value.toString(),"bgYellow", "whiteBright", "bold");
-        return this.style(value.toString(), "bgRed", "bold");
+        if (num < 9) return this.style(value,"bgYellow", "whiteBright", "bold");
+        return this.style(value, "bgRed", "bold");
     }
 
     formatError (value: string) {
-
-        if (value === '-') return value;
+        if (!value || value === '-') return '-';
         return this.style(value, "bgRed", "bold")
     }
 
     formatMem (value: string) {
-        if (value === '-') return value;
+        if (!value || value === '-') return '-';
         const num = Number.parseInt(value, 10);
         if (num === 0) return value;
         if (num < 86) return this.style(value.toString(), "green");
@@ -37,7 +36,7 @@ class CellFormatter {
     }
 
     formatOrdinal (value: string) {
-
+        if (!value || value === '-') return '-';
         const [v,changed] = value.split(':');
 
         if (changed) {
@@ -48,7 +47,7 @@ class CellFormatter {
     }
 
     formatState (value: string) {
-
+        if (!value || value === '-') return '-';
         if (value === 'Offline') return this.style(value, "bgRed", "bold")
         if (value === 'Ready') return this.style(value, "green")
         if (value === 'ReadyToJoin') return this.style(value, "yellow", "bold")

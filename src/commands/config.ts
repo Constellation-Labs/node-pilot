@@ -9,6 +9,7 @@ import {configHelper} from "../helpers/config-helper.js";
 import {keyFileHelper} from "../helpers/key-file-helper.js";
 import {promptHelper} from "../helpers/prompt-helper.js";
 import {dockerService} from "../services/docker-service.js";
+import {checkNodePilot} from "../checks/check-pilot.js";
 
 export default class Config extends Command {
 
@@ -26,10 +27,12 @@ export default class Config extends Command {
         const answer = await select({
             choices: [
                 { name: 'External IP Address', value: 'externalIp' },
+                { name: `Discord Alerts`, value: 'discordAlerts' },
                 { name: 'Java Memory', value: 'javaMemory' },
                 { name: 'Key File', value: 'keyFile' },
                 { name: 'Layers To Run', value: 'layersToRun' },
                 { name: `Network`, value: 'network' },
+
             ],
             message: 'What would you like to change?:',
         });
@@ -37,6 +40,9 @@ export default class Config extends Command {
         // eslint-disable-next-line unicorn/prefer-switch
         if (answer === 'externalIp') {
             await checkNetwork.configureIpAddress();
+        }
+        else if (answer === 'discordAlerts') {
+            await checkNodePilot.promptDiscordRegistration();
         }
         else if (answer === 'javaMemory') {
             await shutdownNodeIfRunning();

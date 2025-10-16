@@ -4,6 +4,7 @@ import {APP_ENV} from "../app-env.js";
 import {logger} from "../logger.js";
 import {NodeInfo} from "../types.js";
 import {nodeUtils} from "./node-utils.js";
+import {notifyUtils} from "./notify-utils.js";
 import {shellUtils} from "./shell-utils.js";
 import {storeUtils} from "./store-utils.js";
 
@@ -11,14 +12,27 @@ export const clusterUtils = {
 
     async checkForSessionFork() {
         const { clusterSession } = await this.getSourceNodeInfo();
-        const nodeStatusInfo = storeUtils.getNodeStatusInfo();
+        const {clusterSession: nodeClusterSession} = storeUtils.getNodeStatusInfo();
 
         logger.log(`Checking for session fork.`);
 
-        if (clusterSession !== nodeStatusInfo.clusterSession) {
-            logger.error(`Session fork detected. Current session: ${clusterSession}, Node session: ${nodeStatusInfo.clusterSession}`);
-            storeUtils.setNodeStatusInfo({error: 'cluster:forked'});
-            throw new Error('RESTART_REQUIRED');
+        if (clusterSession !== nodeClusterSession) {
+            logger.error(`Session fork detected. Current session: ${clusterSession}, Node session: ${nodeClusterSession}`);
+            if (await this.hasVersionChanged()) {
+                logger.log(`    Network version has changed. Waiting for auto-upgrade...`);
+                const {upgrade} = storeUtils.getTimerInfo();
+                if (!upgrade) {
+                    storeUtils.setTimerInfo({upgrade: true});
+                    notifyUtils.notify(`Network version has changed. Waiting for auto-upgrade...`);
+                }
+
+                storeUtils.setNodeStatusInfo({error: 'cluster:upgrade'});
+                throw new Error('Cluster upgrade in progress.');
+            }
+            else {
+                storeUtils.setNodeStatusInfo({error: 'cluster:forked'});
+                throw new Error('RESTART_REQUIRED');
+            }
         }
 
         // logger.log(`    Cluster and Node Session matched: ${clusterSession}`);
@@ -158,6 +172,10 @@ export const clusterUtils = {
         }
     },
 
+    async getReleaseVersion() {
+        return this.getClusterNodeInfo().then(i => i.version);
+    },
+
     async getSourceNodeInfo(): Promise<NodeInfo> {
         return this.makeSourceNodeRequest('node/info');
     },
@@ -174,6 +192,14 @@ export const clusterUtils = {
         const logFile = path.join(APP_ENV.PATH_LOGS, 'app.log');
 
         return shellUtils.runCommandWithOutput(`grep -i 'Global snapshot not found for ordinal' ${logFile}`).catch(() => '');
+    },
+
+    async hasVersionChanged() {
+        const [clusterVersion, nodeVersion] = await Promise.all([
+            this.getReleaseVersion(),
+            nodeUtils.getNodeVersion()
+        ]);
+        return nodeVersion !== clusterVersion;
     },
 
     async makeSourceNodeRequest(path: string) {

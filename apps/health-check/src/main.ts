@@ -3,6 +3,7 @@ import {healthCheck} from "./health-check.js";
 import {logger} from "./logger.js";
 import {TessellationLayer} from "./types.js";
 import {backupUtils} from "./utils/backup-utils.js";
+import {notifyUtils} from "./utils/notify-utils.js";
 import {storeUtils} from "./utils/store-utils.js";
 
 const supportedLayers = new Set([
@@ -51,6 +52,7 @@ export async function main() {
                     if (!hadFatal) {
                         logger.fatal('Service Unhealthy - RESTART_REQUIRED');
                         storeUtils.setTimerInfo({fatal: true});
+                        notifyUtils.notify(`Restarting - ${nodeError}`);
                         backupUtils.backupLogs();
                     }
                 }

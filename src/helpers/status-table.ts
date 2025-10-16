@@ -35,7 +35,6 @@ export class StatusTable {
 
         await onKeyPress({});
 
-        console.log("\u001B[?25h");
         process.exit();
     }
 
@@ -72,7 +71,7 @@ export class StatusTable {
             const rows = [];
             for (const p of projects) {
                 if (!values[p.layer]) values[p.layer] = {};
-                const n: NodeStatusInfo = JSON.parse(fs.readFileSync(p.path, 'utf8'));
+                const n: NodeStatusInfo = fs.existsSync(p.path) ? JSON.parse(fs.readFileSync(p.path, 'utf8')) : {};
                 const projectName = p.project === 'hypergraph' ? '' : p.project;
                 const network = p.network === 'integrationnet' ? 'intnet' : p.network;
                 const distance = Number.isNaN(n.clusterOrdinal-n.ordinal)  ? '-' : String(n.clusterOrdinal - n.ordinal);
@@ -101,7 +100,11 @@ export class StatusTable {
             this.render(rows, err.msg !== '');
 
             if (err.msg) {
-                process.stdout.write(chalk.green(`   AUTO HEALED (${err.timeAgo}): `) + chalk.red(`${err.layer}:${err.msg} - ${err.date}\n`));
+                const d = new Date(err.date);
+                // if under 8 hours ago
+                if (d.getTime() + (8 * 60 * 60 * 1000) > Date.now()) {
+                    process.stdout.write(chalk.green(`   AUTO HEALED (${err.timeAgo}): `) + chalk.red(`${err.layer}:${err.msg} - ${err.date}\n`));
+                }
             }
 
             process.stdout.write("   * press any key to cancel")

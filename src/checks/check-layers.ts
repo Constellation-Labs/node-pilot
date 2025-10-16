@@ -43,7 +43,7 @@ export const checkLayers = {
                     await dockerService.dockerUp();
                     await nodeService.pollForLayersState(layersToRun);
                 } else {
-                    clm.postStep('Node not started.');
+                    clm.postStep('Validator Node not started.');
                 }
             });
         }
@@ -56,7 +56,7 @@ export const checkLayers = {
                     await dockerService.dockerStartLayers(layersNotRunning);
                     await nodeService.pollForLayersState(layersNotRunning);
                 } else {
-                    clm.echo('Node not started.');
+                    clm.echo('Validator Node not started.');
                 }
             });
         }

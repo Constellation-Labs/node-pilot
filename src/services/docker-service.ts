@@ -33,8 +33,8 @@ export const dockerService = {
     },
 
     async dockerDown(layers?: TessellationLayer[]) {
-        await run('down', layers);
         configStore.setProjectStatusToRunning(false);
+        await run('down', layers);
     },
 
     async dockerRestart(layer: TessellationLayer) {
@@ -46,8 +46,9 @@ export const dockerService = {
             await this.dockerDown();
         }
 
-        await run('up -d');
         configStore.setProjectStatusToRunning(true);
+
+        await run('up -d');
     },
 
     async dockerStartLayers(layers: TessellationLayer[]) {
@@ -60,10 +61,11 @@ export const dockerService = {
             await this.dockerDown();
         }
 
+        configStore.setProjectStatusToRunning(true);
+
         await projectHelper.generateLayerEnvFiles();
         await run('up -d');
 
-        configStore.setProjectStatusToRunning(true);
     },
 
     async isRunning() {

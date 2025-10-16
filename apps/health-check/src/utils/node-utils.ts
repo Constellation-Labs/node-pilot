@@ -6,6 +6,7 @@ import {logger} from "../logger.js";
 import {NodeInfo, NodeState} from "../types.js";
 import {archiveUtils} from "./archive-utils.js";
 import {clusterUtils} from "./cluster-utils.js";
+import {notifyUtils} from "./notify-utils.js";
 import {storeUtils} from "./store-utils.js";
 
 const ValidStatesAfterReady = new Set([
@@ -50,9 +51,11 @@ export const nodeUtils = {
             if (peerInfo.peerCount >= 0) {
                 if (peerInfo.peerCount === 0) {
                     logger.warn(`Cluster is unhealthy. Peer count: ${peerInfo.peerCount}`);
+                    storeUtils.setTimerInfo({clusterQueue: Math.random()*300_000});
                     clusterState = 'Offline'
                 } else if (peerInfo.peerCount < 4) {
                     logger.warn(`Cluster is unhealthy. Peer count: ${peerInfo.peerCount}`);
+                    storeUtils.setTimerInfo({clusterQueue: Math.random()*300_000});
                     clusterState = 'Restarting'
                 } else if (peerInfo.includesSourceNode) {
                     clusterState = 'Ready';
@@ -74,22 +77,35 @@ export const nodeUtils = {
         }
 
         if (!hasJoined) {
-            const {isHydrateRunning} = storeUtils.getTimerInfo();
+            const {clusterQueue=0, isHydrateRunning} = storeUtils.getTimerInfo();
             const {error,lastError,pilotSession='0'} = storeUtils.getNodeStatusInfo();
             if (state === 'Ready') {
                 logger.log(`Node has joined the cluster. Current state: ${state}.`);
                 storeUtils.setNodeStatusInfo({clusterSession, error: '', hasJoined: true, lastError: error || lastError, pilotSession: APP_ENV.NODE_PILOT_SESSION});
-                const { fatal: hadFatal = false } = storeUtils.getTimerInfo();
+                const { fatal: hadFatal = false, upgrade = false } = storeUtils.getTimerInfo();
                 if (hadFatal) {
                     logger.fatal(`Node has recovered`);
+                    notifyUtils.notify(`Node has recovered and is READY`);
                     storeUtils.setTimerInfo({fatal: false});
+                }
+                else if (upgrade) {
+                    logger.log(`Node has upgraded`);
+                    notifyUtils.notify(`Node has been upgraded and is READY`);
+                    storeUtils.setTimerInfo({upgrade: false});
                 }
                 else {
                     logger.log(`Node has started a new session.`);
                 }
             }
             else if (state === 'ReadyToJoin') {
+
+                if (Number(clusterSession) + clusterQueue > Date.now()) {
+                    logger.log(`Node is in queue to join the cluster. Time remaining: ${Math.round((clusterQueue + Number(clusterSession) - Date.now())/1000)}s`);
+                    return state;
+                }
+
                 logger.log(`Node is ready to join the cluster. Current state: ${state}. Last session: ${pilotSession}. Node Pilot session: ${APP_ENV.NODE_PILOT_SESSION}`);
+
                 if (pilotSession === APP_ENV.NODE_PILOT_SESSION) {
                     const {isRunning} = storeUtils.getArchiveInfo();
                     if (isRunning) {
@@ -97,7 +113,7 @@ export const nodeUtils = {
                         storeUtils.setNodeStatusInfo({state: 'HydratingSnapshots'});
                     }
                     else if (isHydrateRunning || APP_ENV.CL_TESSELATION_LAYER !== 'gl0') {
-                        storeUtils.setTimerInfo({isHydrateRunning: false});
+                        storeUtils.setTimerInfo({clusterQueue:0, isHydrateRunning: false});
 
                         logger.log(`Initiating auto join...`);
                         storeUtils.setNodeStatusInfo({error: '', lastError: error || lastError, state: 'JoiningCluster'});
@@ -105,7 +121,7 @@ export const nodeUtils = {
                         await nodeUtils.joinCluster(nodeInfo);
                     }
                     else {
-                        storeUtils.setTimerInfo({isHydrateRunning: true});
+                        storeUtils.setTimerInfo({clusterQueue:0, isHydrateRunning: true});
                         storeUtils.setNodeStatusInfo({state: 'HydratingSnapshots'});
                         await archiveUtils.runHydrate();
                     }
@@ -146,6 +162,10 @@ export const nodeUtils = {
 
     async getNodeOrdinalHash(ordinal: number): Promise<string> {
         return this.makeNodeRequest(`${APP_ENV.SNAPSHOT_URL_PATH}/${ordinal}/hash`);
+    },
+
+    async getNodeVersion() {
+        return this.getNodeInfo().then(i => i.version);
     },
 
     async joinCluster(node: NodeInfo) {

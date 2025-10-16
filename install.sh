@@ -130,7 +130,9 @@ check_system_update
 if [ -f /var/run/reboot-required ]; then
   echo ""
   echo "⚠️ A system reboot is required to complete updates. Please reboot your system."
+  echo ""
   echo "Then run 'cpilot' to get started"
+  echo ""
   echo "Would you like to reboot now? (y/n)"
   read -r response
   if [[ ! "$response" =~ ^[Yy]$ ]]; then

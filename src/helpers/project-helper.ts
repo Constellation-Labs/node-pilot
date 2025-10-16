@@ -183,6 +183,30 @@ export const projectHelper = {
                 }
             }
         }
+    },
+
+    async upgradeEmbedded (name: string)   {
+        const projectFolder = path.resolve(path.dirname(fileURLToPath(import.meta.url)), `../../projects/${name}`);
+
+        if (!fs.existsSync(projectFolder)) {
+            clm.error(`Project folder not found: ${projectFolder}`);
+        }
+
+        await this.upgradeProject(name, projectFolder);
+    },
+
+    async upgradeHypergraph() {
+        await this.upgradeEmbedded('hypergraph');
+
+        this.importEnvFiles();
+    },
+
+    async upgradeProject(name: string, projectFolder: string) {
+        const {projectDir} = configStore.getProjectInfo();
+
+        clm.debug(`Upgrading project from ${projectFolder} to ${projectDir}`);
+
+        fs.cpSync(projectFolder, projectDir, {recursive: true});
     }
 }
 

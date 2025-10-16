@@ -51,6 +51,22 @@ export const promptHelper = {
         }
     },
 
+    async confirmPrompt(msg: string) {
+        const result = await input({
+            default: 'y',
+            message: `${msg} (y/n)`,
+            validate(value) {
+                if (value.toLowerCase() === 'y' || value.toLowerCase() === 'n') {
+                    return true;
+                }
+
+                return 'Please enter "y" or "n"';
+            }
+        });
+
+        return result.toLowerCase() !== 'n';
+    },
+
     async doYouWishToContinue(defaultAnswer: 'n' | 'y' = 'y') {
         const result = await input({
             default: defaultAnswer,
@@ -67,7 +83,6 @@ export const promptHelper = {
         if (result.toLowerCase() === 'n') {
             process.exit(0);
         }
-
     },
 
     async selectLayers() {
