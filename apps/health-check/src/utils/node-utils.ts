@@ -14,7 +14,8 @@ const ValidStatesAfterReady = new Set([
     NodeState.DownloadInProgress,
     NodeState.Leaving,
     NodeState.Observing,
-    NodeState.Ready
+    NodeState.Ready,
+    NodeState.WaitingForReady
 ]);
 
 const OutOfClusterStates = new Set([
@@ -57,9 +58,9 @@ export const nodeUtils = {
                 } else if (peerInfo.peerCount < 4) {
                     logger.warn(`Cluster is unhealthy. Peer count: ${peerInfo.peerCount}`);
                     storeUtils.setTimerInfo({clusterQueue: Math.round(Math.random() * 300_000)});
-                    clusterState = `Restarting  (${peerInfo.peerCount}))}`
+                    clusterState = `Restarting  (${peerInfo.peerCount})}`
                 } else {
-                    clusterState = `Ready (${peerInfo.peerCount}))`;
+                    clusterState = `Ready (${peerInfo.peerCount})`;
                 }
             }
         }
@@ -150,7 +151,7 @@ export const nodeUtils = {
         return this.makeNodeRequest(`${APP_ENV.SNAPSHOT_URL_PATH}/latest`)
             .then(info => {
                 if (info.message && info.message === "Node is not ready yet") {
-                    throw new Error('Node is no longer at latest');
+                    throw new Error('Node is unable to retrieve latest snapshot. Not in READY state.');
                 }
 
                 return info.value.ordinal;

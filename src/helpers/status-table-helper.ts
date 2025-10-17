@@ -50,8 +50,10 @@ class CellFormatter {
         if (!value || value === '-') return '-';
         if (value === 'Offline') return this.style(value, "bgRed", "bold")
         if (value === 'Ready') return this.style(value, "green")
+        if (value === 'HydratingSnapshots') return this.style(value, "cyan")
         if (value === 'ReadyToJoin' || value === 'JoiningCluster') return this.style(value, "yellow", "bold")
         if (value === 'Restarting') return this.style(value, "yellow", "bold")
+        if (value.startsWith('Ready')) return this.style(value, "green")
 
         return this.style(value, "white")
     }
@@ -101,6 +103,22 @@ export const statusTableHeader = [
     { color: 'white', formatter: formatDistance, headerColor: 'whiteBright', value: 'Distance' },
     { color: 'white', formatter: formatState, headerColor: 'whiteBright', value: 'Cluster State', width: 16},
     { color: 'white', formatter: formatCpu, headerColor: 'whiteBright', value: 'CPU Usage', width: 12 },
+    { color: 'white', formatter: formatMem, headerColor: 'whiteBright', value: 'Mem Usage (GB)', width: 16 },
+    { color: 'white', formatter: formatError, headerColor: 'whiteBright', value: 'Error', width: 22},
+];
+
+export const glHeader1 = [
+    // { color: 'white', headerColor: 'whiteBright', value: 'Network' },
+    // { color: 'whiteBright', headerColor: 'whiteBright', value: 'Layer' },
+    { color: 'white', formatter: formatState, headerColor: 'whiteBright', value: 'Node State', width: 22},
+    { color: 'white', formatter: formatUpTIme, headerColor: 'whiteBright', value: 'Uptime', width: 13 },
+    { color: 'white', formatter: formatOrdinal, headerColor: 'whiteBright', value: 'Ordinal', width: 16 },
+    { color: 'white', formatter: formatDistance, headerColor: 'whiteBright', value: 'Distance', width: 22},
+];
+
+export const glHeader2 = [
+    { color: 'white', formatter: formatState, headerColor: 'whiteBright', value: 'Cluster State', width: 22},
+    { color: 'white', formatter: formatCpu, headerColor: 'whiteBright', value: 'CPU Usage', width: 13 },
     { color: 'white', formatter: formatMem, headerColor: 'whiteBright', value: 'Mem Usage (GB)', width: 16 },
     { color: 'white', formatter: formatError, headerColor: 'whiteBright', value: 'Error', width: 22},
 ];

@@ -138,7 +138,12 @@ class ConfigStore {
 
     isRestarting() {
         const {restarting}  = this.pilotStore.getItem('pilot') as PilotInfo;
-        return restarting;
+        if (restarting && restarting + 1000 * 60 * 5 < Date.now()) {
+            this.setIsRestarting(0);
+            return false;
+        }
+
+        return restarting > 0;
     }
 
 

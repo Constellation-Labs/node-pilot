@@ -31,9 +31,9 @@ export default class Restart extends BaseCommand {
 
         if (flags.update) {
             serviceLog.log('Executing "cpilot restart --update" at ' + new Date().toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}));
+            this.setIsRestarting(true);
             const project = configStore.getActiveProject();
             const activeProjects = configStore.getRunningProjects();
-            // serviceLog.log(`    Active projects: ${activeProjects.join(', ')}...`);
             for (const project of activeProjects) {
                 configStore.setActiveProject(project);
                 // eslint-disable-next-line no-await-in-loop
@@ -48,14 +48,15 @@ export default class Restart extends BaseCommand {
             }
 
             configStore.setActiveProject(project);
+            this.setIsRestarting(false);
             return;
         }
 
         if (flags.autostart) {
             serviceLog.log('Executing "cpilot restart --autostart" at ' + new Date().toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}));
+            this.setIsRestarting(true);
             const project = configStore.getActiveProject();
             const activeProjects = configStore.getRunningProjects();
-            // serviceLog.log(`    Active projects: ${activeProjects.join(', ')}...`);
             for (const project of activeProjects) {
                 serviceLog.log('    ' + project + ' is being auto started...');
                 configStore.setActiveProject(project);
@@ -64,6 +65,7 @@ export default class Restart extends BaseCommand {
             }
 
             configStore.setActiveProject(project);
+            this.setIsRestarting(false);
             return;
         }
 
@@ -89,34 +91,31 @@ export default class Restart extends BaseCommand {
     }
 
     private async restart() {
-        // const pAll = layersToRun.map(l => nodeService.getNodeInfo(l));
-        // const info = await Promise.all(pAll);
-        // const isRunning = info.some(n => n.state !== 'Unavailable');
-        const startRestarted = configStore.isRestarting();
-        if (startRestarted && (startRestarted + 1000 * 60 * 5 > Date.now())) {
-            serviceLog.log('Restart already ACTIVE')
-            return;
+
+        if (await dockerService.isRunning()) {
+            await nodeService.leaveClusterAllLayers();
+            const {layersToRun} = configStore.getProjectInfo();
+            await nodeService.pollForLayersState(layersToRun, 'Offline');
+            clm.preStep('Stopping the node...');
+            await dockerService.dockerDown();
         }
 
-        configStore.setIsRestarting(Date.now());
-        try {
-            if (await dockerService.isRunning()) {
-                await nodeService.leaveClusterAllLayers();
-                const {layersToRun} = configStore.getProjectInfo();
-                await nodeService.pollForLayersState(layersToRun, 'Offline');
-                clm.preStep('Stopping the node...');
-                serviceLog.log('Stopping the node...');
-                await dockerService.dockerDown();
+        clm.preStep('Checking for a new version...');
+        await checkProject.runUpgrade();
+        clm.preStep('Starting the node...');
+        await dockerService.dockerRestartAll();
+    }
+
+    private setIsRestarting(val: boolean) {
+        if (val) {
+            if (configStore.isRestarting()) {
+                serviceLog.log('Restart already ACTIVE')
+                process.exit(0);
             }
 
-            clm.preStep('Checking for a new version...');
-            serviceLog.log('Checking for a new version...');
-            await checkProject.runUpgrade();
-            clm.preStep('Starting the node...');
-            serviceLog.log('Starting the node...');
-            await dockerService.dockerRestartAll();
+            configStore.setIsRestarting(Date.now());
         }
-        finally {
+        else {
             configStore.setIsRestarting(0);
         }
     }

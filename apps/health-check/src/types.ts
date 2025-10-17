@@ -24,7 +24,8 @@ export enum NodeState {
     SessionStarting = 'SessionStarting',
     StartingSession = 'StartingSession',
     Unavailable = 'Unavailable',
-    WaitingForDownload = 'WaitingForDownload'
+    WaitingForDownload = 'WaitingForDownload',
+    WaitingForReady = 'WaitingForReady',
 }
 
 export type UserInfo = {

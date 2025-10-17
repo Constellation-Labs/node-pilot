@@ -88,7 +88,7 @@ export const checkProject = {
             if (nInfo.version !== clusterVersion) {
                 const answer = await input({
                     default: 'y',
-                    message: `A new required network version has been detected. Do you want to upgrade now? (y/n): `
+                    message: `A new required network version has been detected. ${clusterVersion}. Do you want to upgrade now? (y/n): `
                 });
                 if (answer !== 'y') {
                     process.exit(0);

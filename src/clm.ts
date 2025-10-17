@@ -1,5 +1,8 @@
 import chalk from "chalk";
 
+import {configStore} from "./config-store.js";
+import {serviceLog} from "./helpers/service-log.js";
+
 /*
     Command Line Messaging with color styling
  */
@@ -11,7 +14,7 @@ export const clm = {
     },
 
     echo(msg: string) {
-        console.log(msg);
+        o().log(msg);
     },
 
     echoRepeatLine(char: string) {
@@ -19,23 +22,33 @@ export const clm = {
     },
 
     error (msg: string, silent = true) {
-        console.error(chalk.red(msg));
+        o().error(chalk.red(msg));
         process.exit(silent ? 0 : 1);
     },
 
     postStep(s: string) {
-        console.log(chalk.green(s));
+        o().log(chalk.green(s));
     },
 
     preStep(s: string) {
-        console.log('\n' + chalk.italic(chalk.green(s)));
+        o().log('\n' + chalk.italic(chalk.green(s)));
     },
 
     step(msg: string) {
-        console.warn(chalk.whiteBright(msg));
+        o().warn(chalk.whiteBright(msg));
     },
 
     warn(msg: string) {
-        console.warn(chalk.red(msg));
+        o().warn(chalk.red(msg));
     }
+}
+
+function o(): OutStream {
+    return configStore.isRestarting() ? serviceLog : console
+}
+
+type OutStream = {
+    error: (msg: string) => void;
+    log: (msg: string) => void;
+    warn: (msg: string) => void;
 }

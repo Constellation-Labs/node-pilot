@@ -5,10 +5,18 @@ import {configStore} from "../config-store.js";
 
 export const serviceLog = {
 
+    error(s: string) {
+        this.log(s);
+    },
+
     log(s: string) {
         const appDir = configStore.getAppDir();
         const logFile = path.join(appDir,'logs','service.log');
 
         fs.appendFileSync(logFile, s + '\n');
+    },
+
+    warn(s: string) {
+        this.log(s);
     },
 }

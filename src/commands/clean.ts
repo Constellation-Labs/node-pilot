@@ -47,6 +47,7 @@ export default class Clean extends Command {
         if (deleteData) {
             await shellService.runProjectCommand(`sudo rm -rf ${args.layer}/data`);
             projectHelper.prepareDataFolder();
+            configStore.setProjectFlag('discordChecked', false);
         }
 
         if (deleteLogs) {

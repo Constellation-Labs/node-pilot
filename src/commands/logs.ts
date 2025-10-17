@@ -15,6 +15,7 @@ export default class Logs extends Command {
         '<%= config.bin %> <%= command.id %>',
     ]
     static override flags = {
+        area: Flags.string({char: 'a', default: 'hc', description: 'area to view logs for. e.g. "app" or "hc" for health-check', options: ['app', 'hc']}),
         follow: Flags.boolean({char: 'f', description: 'continuously wait for additional data to be appended'}),
         numOfLines: Flags.string({char: 'n', description: 'number of lines at the end of the log to display'}),
     }
@@ -35,8 +36,10 @@ export default class Logs extends Command {
             tailFlag = ' -f';
         }
 
+        const file = flags.area === 'app' ? 'app.log' : 'health-check.log';
+
         const {projectDir} = configStore.getProjectInfo();
-        const logPath = path.join(projectDir, args.layer, 'logs', 'app.log');
+        const logPath = path.join(projectDir, args.layer, 'logs', file);
         await shellService.runCommand(`tail ${tailFlag} ${logPath}`).catch(()=> 1);
     }
 }
