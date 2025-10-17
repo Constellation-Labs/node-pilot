@@ -59,14 +59,14 @@ export const clusterUtils = {
                 logger.log('Detected healable errors in logs...\n    ' + errors);
                 storeUtils.setNodeStatusInfo({error: 'missing snapshot'});
                 await nodeUtils.leaveCluster();
-                throw new Error('checkLatestOrdinals: RESTART_REQUIRED');
+                throw new Error('missing snapshot');
             }
 
             if (ordinal + 20 < clusterOrdinal) {
                 logger.error(`Node ordinal is being left too far behind - Leaving Cluster...`);
                 storeUtils.setNodeStatusInfo({error: 'lagging behind'});
                 await nodeUtils.leaveCluster();
-                throw new Error('checkLatestOrdinals: RESTART_REQUIRED');
+                throw new Error('lagging behind');
             }
         }
 

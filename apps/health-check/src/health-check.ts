@@ -10,7 +10,7 @@ import {storeUtils} from "./utils/store-utils.js";
 const MAX_STATE_TIME: Record<NodeState, number> = {
     [NodeState.Observing]: 600,
     [NodeState.SessionStarted]: 600, // 10 minutes
-    [NodeState.WaitingForDownload]: 60, // 1 minute- happened during joining
+    [NodeState.WaitingForDownload]: 30, // 30s - happened during joining
 }
 
 class HealthCheck {
@@ -109,7 +109,7 @@ class HealthCheck {
                 const timeDiff = currentTime - startTime;
 
                 if (timeDiff >= MAX_TIME) {
-                    storeUtils.setNodeStatusInfo({error: `stalled:${currentState} ${Math.round(MAX_TIME/60)}m`});
+                    storeUtils.setNodeStatusInfo({error: `stalled:${currentState}`});
                     await nodeUtils.leaveCluster();
                     throw new Error(`${layer} has been in ${currentState} state for more than ${Math.round(MAX_TIME/60)} minutes - exiting...`);
                 } else {

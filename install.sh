@@ -137,9 +137,9 @@ if [ -f /var/run/reboot-required ]; then
   read -r response
   if [[ ! "$response" =~ ^[Yy]$ ]]; then
     echo "Reboot skipped. Please reboot manually to proceed."
-    exit 0
+  else
+    sudo reboot
   fi
-  sudo reboot
 elif [ "$DOCKER_INSTALLED" = true ]; then
   echo ""
   echo "⚠️ Log out and log back in for Docker permissions to take effect."

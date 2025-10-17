@@ -56,13 +56,10 @@ export const nodeUtils = {
                     clusterState = 'Offline'
                 } else if (peerInfo.peerCount < 4) {
                     logger.warn(`Cluster is unhealthy. Peer count: ${peerInfo.peerCount}`);
-                    storeUtils.setTimerInfo({clusterQueue: Math.round(Math.random()*300_000)});
-                    clusterState = 'Restarting'
-                } else if (peerInfo.includesSourceNode) {
-                    clusterState = 'Ready';
-                }
-                else {
-                    clusterState = 'WaitingForSourceNode'
+                    storeUtils.setTimerInfo({clusterQueue: Math.round(Math.random() * 300_000)});
+                    clusterState = `Restarting  (${peerInfo.peerCount}))}`
+                } else {
+                    clusterState = `Ready (${peerInfo.peerCount}))`;
                 }
             }
         }
@@ -243,6 +240,7 @@ export const nodeUtils = {
                 unavailableCount++;
 
                 if (unavailableCount > 4) {
+                    storeUtils.setNodeStatusInfo({error: 'node:unresponsive'});
                     throw new Error('RESTART_REQUIRED');
                 }
 

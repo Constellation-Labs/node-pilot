@@ -1,4 +1,5 @@
 import {APP_ENV} from "../app-env.js";
+import {logger} from "../logger.js";
 import {storeUtils} from "./store-utils.js";
 
 const NOTIFY_SERVER = 'http://34.197.47.192:3008/notify'
@@ -21,7 +22,9 @@ export const notifyUtils = {
                     'Content-Type': 'application/json',
                 },
                 method: 'POST'
-            }).catch(() => '');
+            }).catch(error => {
+                logger.error(`Failed to send alert- ${error}`);
+            });
         }
     }
 };

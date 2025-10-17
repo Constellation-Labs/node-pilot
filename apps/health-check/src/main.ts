@@ -51,10 +51,15 @@ export async function main() {
                     const {fatal: hadFatal = false} = storeUtils.getTimerInfo();
                     if (!hadFatal) {
                         logger.fatal('Service Unhealthy - RESTART_REQUIRED');
+                        logger.log(`Service Unhealthy - RESTART_REQUIRED - error: ${nodeError}`);
                         storeUtils.setTimerInfo({fatal: true});
+                        storeUtils.setNodeStatusInfo({state: 'Restarting'});
                         notifyUtils.notify(`Restarting - ${nodeError}`);
                         backupUtils.backupLogs();
                     }
+                }
+                else {
+                    logger.log('No nodeError recorded.');
                 }
 
                 throw new Error('Service Unhealthy');
