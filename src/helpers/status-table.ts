@@ -29,7 +29,7 @@ export class StatusTable {
 
         const cols = process.stdout.columns;
 
-        console.log(String('Colspan: ' + cols));
+        // console.log(String('Colspan: ' + cols));
 
         if (cols > 120) {
             table.monitorWide();
@@ -119,7 +119,7 @@ export class StatusTable {
 
             this.renderNarrow(tables);
 
-            process.stdout.write("\n   * press any key to cancel")
+            process.stdout.write("\n   * press any key to stop monitoring")
 
             // eslint-disable-next-line no-await-in-loop
             await sleep(1);
@@ -175,7 +175,7 @@ export class StatusTable {
 
             this.renderWide({ error: errorMsg, label: '', row1: rows, row2: []});
 
-            process.stdout.write("\n   * press any key to cancel")
+            process.stdout.write("\n   * press any key to stop monitoring")
 
             // eslint-disable-next-line no-await-in-loop
             await sleep(1);

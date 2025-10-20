@@ -2,6 +2,7 @@ import {Command} from '@oclif/core'
 
 import {configStore} from "../config-store.js";
 import {configHelper} from "../helpers/config-helper.js";
+import {checkNodePilot} from "../checks/check-pilot.js";
 
 export default class Info extends Command {
 
@@ -42,6 +43,9 @@ export default class Info extends Command {
         configHelper.showEnvInfo('Project Directory', projectInfo.projectDir);
 
         // Fast Forward
-        configHelper.showEnvInfo('Fast Forward Enabled', (projectInfo.fastForward === undefined || Boolean(projectInfo.fastForward)).toString());
+        // configHelper.showEnvInfo('Fast Forward Enabled', (projectInfo.fastForward === undefined || Boolean(projectInfo.fastForward)).toString());
+
+        // Discord alerts
+        configHelper.showEnvInfo('Discord Alerts Enabled', checkNodePilot.isDiscordAlertsEnabled());
     }
 }

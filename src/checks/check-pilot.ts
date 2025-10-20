@@ -89,6 +89,12 @@ export const checkNodePilot = {
         process.exit(0);
     },
 
+    isDiscordAlertsEnabled() {
+        const hcStorage = getHcStorage();
+        const user = hcStorage.getItem('user');
+        return user && user.webHookEnabled;
+    },
+
     async promptDiscordRegistration() {
         const hcStorage = getHcStorage();
         const join = await promptHelper.confirmPrompt('Do you want to enable Discord notifications for your node?:');

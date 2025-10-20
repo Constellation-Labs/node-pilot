@@ -10,16 +10,16 @@ import {TessellationLayer} from "../types.js";
 
 export default class Clean extends Command {
     static override args = {
-        layer: Args.string({description: 'network layer to clean. e.g. gl0', required: true}),
+        layer: Args.string({description: 'network layer to clean. e.g. gl0', required: false}),
     }
     static override description = 'Remove data and/or logs from a validator node'
     static override examples = [
         '<%= config.bin %> <%= command.id %>',
     ]
     static override flags = {
-        all: Flags.boolean({char: 'a', description: 'remove all data and logs'}),
-        data: Flags.boolean({char: 'd', description: 'remove data'}),
-        logs: Flags.boolean({char: 'l', description: 'remove logs'})
+        data: Flags.boolean({char: 'd', description: 'remove only data'}),
+        jars: Flags.boolean({char: 'j', description: 'remove only jars'}),
+        logs: Flags.boolean({char: 'l', description: 'remove only logs'})
     }
 
     public async run(): Promise<void> {
@@ -27,16 +27,16 @@ export default class Clean extends Command {
 
         const {layersToRun} = configStore.getProjectInfo();
 
-        if (!layersToRun.includes(args.layer as TessellationLayer)) {
-            this.error(`Invalid layer: ${args.layer}. Available layers: ${layersToRun.join(',')}`);
-        }
+        if (args.layer && !layersToRun.includes(args.layer as TessellationLayer)) {
+                this.error(`Invalid layer: ${args.layer}. Available layers: ${layersToRun.join(',')}`);
+            }
 
-        const deleteLogs = flags.logs || flags.all;
-        const deleteData = flags.data || flags.all;
+        const layers = args.layer ? [args.layer] : layersToRun;
 
-        if (!deleteLogs && !deleteData) {
-            this.error('At least one of --data or --logs must be specified.');
-        }
+        const deleteAll = !flags.data && !flags.logs && !flags.jars;
+        const deleteLogs = flags.logs || deleteAll;
+        const deleteData = flags.data || deleteAll;
+        const deleteJars = flags.jars || deleteAll;
 
         if (await dockerService.isRunning()) {
             clm.preStep('The validator node must be stopped first.')
@@ -44,15 +44,28 @@ export default class Clean extends Command {
             await dockerService.dockerDown();
         }
 
-        if (deleteData) {
-            await shellService.runProjectCommand(`sudo rm -rf ${args.layer}/data`);
-            projectHelper.prepareDataFolder();
-            configStore.setProjectFlag('discordChecked', false);
+        for (const layer of layers) {
+            if (deleteData) {
+                // eslint-disable-next-line no-await-in-loop
+                await shellService.runProjectCommand(`sudo rm -rf ${layer}/data`);
+                if (layer === 'gl0') {
+                    projectHelper.prepareDataFolder();
+                    configStore.setProjectFlag('discordChecked', false);
+                }
+            }
+
+            if (deleteLogs) {
+                // eslint-disable-next-line no-await-in-loop
+                await shellService.runProjectCommand(`sudo rm -rf ${layer}/logs`);
+            }
+
+            if (deleteJars) {
+                // eslint-disable-next-line no-await-in-loop
+                await shellService.runProjectCommand(`sudo rm -rf ${layer}/dist`);
+            }
         }
 
-        if (deleteLogs) {
-            await shellService.runProjectCommand(`sudo rm -rf ${args.layer}/logs`);
-        }
+
 
     }
 }

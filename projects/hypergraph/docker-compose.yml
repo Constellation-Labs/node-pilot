@@ -20,8 +20,8 @@ services:
     volumes:
       - ./gl0/data:/app/data
       - ./gl0/logs:/app/logs
+      - ./seedlist:/app/seedlist
       - ./key.p12:/app/key.p12:ro
-      - ./seedlist:/app/seedlist:ro
     healthcheck:
       test: ["CMD", "cpilotHC"]
 #      test: ["CMD", "/health-check/bin/run.sh"]

@@ -21,7 +21,7 @@ $ npm install -g @constellation-network/node-pilot
 $ cpilot COMMAND
 running command...
 $ cpilot (--version|-v)
-@constellation-network/node-pilot/0.1.0 darwin-arm64 node-v22.15.0
+@constellation-network/node-pilot/0.2.1 darwin-arm64 node-v22.15.0
 $ cpilot --help [COMMAND]
 USAGE
   $ cpilot COMMAND
@@ -37,7 +37,7 @@ If no command is entered, node-pilot will automatically perform a series of chec
 
 # Commands
 <!-- commands -->
-* [`cpilot clean LAYER`](#cpilot-clean-layer)
+* [`cpilot clean [LAYER]`](#cpilot-clean-layer)
 * [`cpilot config`](#cpilot-config)
 * [`cpilot config get [NAME]`](#cpilot-config-get-name)
 * [`cpilot config set NAME VALUE`](#cpilot-config-set-name-value)
@@ -48,21 +48,21 @@ If no command is entered, node-pilot will automatically perform a series of chec
 * [`cpilot shutdown`](#cpilot-shutdown)
 * [`cpilot status`](#cpilot-status)
 
-## `cpilot clean LAYER`
+## `cpilot clean [LAYER]`
 
 Remove data and/or logs from a validator node
 
 ```
 USAGE
-  $ cpilot clean LAYER [-a] [-d] [-l]
+  $ cpilot clean [LAYER] [-d] [-j] [-l]
 
 ARGUMENTS
   LAYER  network layer to clean. e.g. gl0
 
 FLAGS
-  -a, --all   remove all data and logs
-  -d, --data  remove data
-  -l, --logs  remove logs
+  -d, --data  remove only data
+  -j, --jars  remove only jars
+  -l, --logs  remove only logs
 
 DESCRIPTION
   Remove data and/or logs from a validator node
@@ -71,7 +71,7 @@ EXAMPLES
   $ cpilot clean
 ```
 
-_See code: [src/commands/clean.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.1.0/src/commands/clean.ts)_
+_See code: [src/commands/clean.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.2.1/src/commands/clean.ts)_
 
 ## `cpilot config`
 
@@ -88,7 +88,7 @@ EXAMPLES
   $ cpilot config
 ```
 
-_See code: [src/commands/config.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.1.0/src/commands/config.ts)_
+_See code: [src/commands/config.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.2.1/src/commands/config.ts)_
 
 ## `cpilot config get [NAME]`
 
@@ -112,7 +112,7 @@ EXAMPLES
   $ cpilot config get gl0:CL_PUBLIC_HTTP_PORT
 ```
 
-_See code: [src/commands/config/get.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.1.0/src/commands/config/get.ts)_
+_See code: [src/commands/config/get.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.2.1/src/commands/config/get.ts)_
 
 ## `cpilot config set NAME VALUE`
 
@@ -135,7 +135,7 @@ EXAMPLES
   $ cpilot config set gl0:CL_PUBLIC_HTTP_PORT 9000
 ```
 
-_See code: [src/commands/config/set.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.1.0/src/commands/config/set.ts)_
+_See code: [src/commands/config/set.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.2.1/src/commands/config/set.ts)_
 
 ## `cpilot help [COMMAND]`
 
@@ -172,7 +172,7 @@ EXAMPLES
   $ cpilot info
 ```
 
-_See code: [src/commands/info.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.1.0/src/commands/info.ts)_
+_See code: [src/commands/info.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.2.1/src/commands/info.ts)_
 
 ## `cpilot logs LAYER`
 
@@ -180,12 +180,14 @@ view validator node runtime logs
 
 ```
 USAGE
-  $ cpilot logs LAYER [-f] [-n <value>]
+  $ cpilot logs LAYER [-a app|hc] [-f] [-n <value>]
 
 ARGUMENTS
   LAYER  network layer to view. e.g. gl0
 
 FLAGS
+  -a, --area=<option>       [default: hc] area to view logs for. e.g. "app" or "hc" for health-check
+                            <options: app|hc>
   -f, --follow              continuously wait for additional data to be appended
   -n, --numOfLines=<value>  number of lines at the end of the log to display
 
@@ -196,7 +198,7 @@ EXAMPLES
   $ cpilot logs
 ```
 
-_See code: [src/commands/logs.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.1.0/src/commands/logs.ts)_
+_See code: [src/commands/logs.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.2.1/src/commands/logs.ts)_
 
 ## `cpilot restart [LAYER]`
 
@@ -224,7 +226,7 @@ EXAMPLES
   $ cpilot restart
 ```
 
-_See code: [src/commands/restart.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.1.0/src/commands/restart.ts)_
+_See code: [src/commands/restart.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.2.1/src/commands/restart.ts)_
 
 ## `cpilot shutdown`
 
@@ -244,7 +246,7 @@ EXAMPLES
   $ cpilot shutdown
 ```
 
-_See code: [src/commands/shutdown.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.1.0/src/commands/shutdown.ts)_
+_See code: [src/commands/shutdown.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.2.1/src/commands/shutdown.ts)_
 
 ## `cpilot status`
 
@@ -258,5 +260,5 @@ DESCRIPTION
   Display node status and configuration settings
 ```
 
-_See code: [src/commands/status.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.1.0/src/commands/status.ts)_
+_See code: [src/commands/status.ts](https://github.com/Constellation-Labs/node-pilot/blob/v0.2.1/src/commands/status.ts)_
 <!-- commandsstop -->
