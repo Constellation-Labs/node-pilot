@@ -1,5 +1,7 @@
 import * as fs from "node:fs";
 
+import packageJson from '../package.json' with {type: 'json'};
+
 class AppEnv {
 
     CL_APP_ENV: string;
@@ -20,6 +22,7 @@ class AppEnv {
     NODE_PILOT_SESSION: string;
     PATH_DATA: string;
     PATH_LOGS: string;
+    PILOT_VERSION: string;
     SNAPSHOT_URL_PATH = 'global-snapshots';
 
     constructor(env: Record<string, string>) {
@@ -41,6 +44,8 @@ class AppEnv {
         this.CL_TESSELATION_LAYER = env.CL_TESSELATION_LAYER;
         this.CL_LB = env.CL_LB;
         this.CL_EXTERNAL_IP = env.CL_EXTERNAL_IP;
+
+        this.PILOT_VERSION = packageJson.version;
 
         if (this.CL_TESSELATION_LAYER) {
             this.IS_GLOBAL_LAYER = this.CL_TESSELATION_LAYER.charAt(0) === 'g';

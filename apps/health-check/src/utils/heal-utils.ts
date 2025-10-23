@@ -26,6 +26,29 @@ export const healUtils = {
         return oldestOrdinal === Number.MAX_SAFE_INTEGER ? 0 :  oldestOrdinal;
     },
 
+    async detectSeedlistDoesNotMatch() {
+        if (APP_ENV.CL_APP_ENV === 'mainnet') return;
+
+        const {dir=APP_ENV.PATH_LOGS} = storeUtils.getBackupInfo();
+        logger.log(`detectSeedlistDoesNotMatch from ${dir}`);
+        const dataDir = path.join(dir, 'app.log');
+        const result = await shellUtils.runCommandWithOutput(`grep -i 'SeedlistDoesNotMatch' ${dataDir}`).catch(() => '');
+
+        if (result) {
+            const url = `https://constellationlabs-dag.s3.us-west-1.amazonaws.com/${APP_ENV.CL_APP_ENV}-seedlist`;
+            const content = await fetch(url).then(res => res.text());
+            const seedFile = path.resolve('/app', 'seedlist');
+            if (fs.existsSync(seedFile)) {
+                fs.writeFileSync(seedFile, content);
+                storeUtils.setNodeStatusInfo({error: 'node:invalid-seedlist'});
+                storeUtils.setTimerInfo({fatal:false}); // reset fatal flag
+                throw new Error('RESTART_REQUIRED');
+            }
+        }
+
+        return false;
+    },
+
     async getOldestMissingOrdinalFromLogs() {
 
         const {dir=APP_ENV.PATH_LOGS} = storeUtils.getBackupInfo();

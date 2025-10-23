@@ -51,16 +51,15 @@ export const checkNodePilot = {
         if (os.platform() !== 'linux') return;
 
         const hasMajorMinorChange = latestVer.major !== currentVer.major || latestVer.minor !== currentVer.minor;
+        const dockerIsRunning = await dockerService.isRunning();
 
         if (hasMajorMinorChange) {
-
-            const dockerIsRunning = await dockerService.isRunning();
 
             if (dockerIsRunning) {
                 clm.warn('This update requires the Node to shutdown before proceeding.');
             }
 
-            if (await promptHelper.confirmPrompt('Do you wish to upgrade now?')) {
+            if (await promptHelper.confirmPrompt('Do you wish to update now?')) {
                 if (dockerIsRunning) {
                     await dockerService.dockerDown();
                 }
@@ -71,8 +70,14 @@ export const checkNodePilot = {
             }
         }
         else {
-            clm.preStep('This update includes a minor change. There is no need to restart your Node.');
-            if(!await promptHelper.confirmPrompt('Do you wish to upgrade now?')) {
+            if (dockerIsRunning) {
+                clm.preStep('This update includes a minor change. Your Node will remain up and running during the update.');
+            }
+            else {
+                clm.preStep('This update includes a minor change.');
+            }
+
+            if(!await promptHelper.confirmPrompt('Do you wish to update now?')) {
                 clm.postStep('Skipping update...');
                 return;
             }

@@ -6,6 +6,7 @@ import {logger} from "../logger.js";
 import {NodeInfo, NodeState} from "../types.js";
 import {archiveUtils} from "./archive-utils.js";
 import {clusterUtils} from "./cluster-utils.js";
+import {healUtils} from "./heal-utils.js";
 import {notifyUtils} from "./notify-utils.js";
 import {shellUtils} from "./shell-utils.js";
 import {storeUtils} from "./store-utils.js";
@@ -82,15 +83,15 @@ export const nodeUtils = {
                 logger.log(`Node has joined the cluster. Current state: ${state}.`);
                 storeUtils.setNodeStatusInfo({clusterSession, error: '', hasJoined: true, lastError: error || lastError, pilotSession: APP_ENV.NODE_PILOT_SESSION});
                 const { fatal: hadFatal = false, upgrade = false } = storeUtils.getTimerInfo();
-                if (hadFatal) {
-                    logger.fatal(`Node has recovered`);
-                    notifyUtils.notify(`Node has recovered and is READY`);
-                    storeUtils.setTimerInfo({fatal: false});
-                }
-                else if (upgrade) {
+                if (upgrade) {
                     logger.log(`Node has upgraded`);
                     notifyUtils.notify(`Node has been upgraded and is READY`);
                     storeUtils.setTimerInfo({upgrade: false});
+                }
+                else if (hadFatal) {
+                    logger.fatal(`Node has recovered`);
+                    notifyUtils.notify(`Node has recovered from "${error}" and is READY`);
+                    storeUtils.setTimerInfo({fatal: false});
                 }
                 else {
                     notifyUtils.notify(`Node has started a new session and is READY`);
@@ -130,6 +131,7 @@ export const nodeUtils = {
                         await nodeUtils.joinCluster(nodeInfo);
                     }
                     else {
+                        await healUtils.detectSeedlistDoesNotMatch();
                         storeUtils.setTimerInfo({clusterQueue:0, isHydrateRunning: true});
                         storeUtils.setNodeStatusInfo({state: 'HydratingSnapshots'});
                         await archiveUtils.runHydrate();

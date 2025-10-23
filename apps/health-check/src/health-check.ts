@@ -10,7 +10,7 @@ import {storeUtils} from "./utils/store-utils.js";
 const MAX_STATE_TIME: Record<NodeState, number> = {
     [NodeState.Observing]: 600,
     [NodeState.SessionStarted]: 600, // 10 minutes
-    [NodeState.WaitingForDownload]: 30, // 30s - happened during joining
+    [NodeState.WaitingForDownload]: 120, // 30s - happened during joining
 }
 
 class HealthCheck {
@@ -33,12 +33,11 @@ class HealthCheck {
         const state = await nodeUtils.getCurrentState();
 
         if (state === NodeState.Leaving) {
-            // const {error} = storeUtils.getNodeStatusInfo();
-            // if (!error) {
-            //     storeUtils.setNodeStatusInfo({error: 'unrecoverable error'});
-            // }
-
             return;
+        }
+
+        if (state === NodeState.Offline) {
+            throw new Error('RESTART_REQUIRED');
         }
 
         const {hasJoined = false} = storeUtils.getNodeStatusInfo();
@@ -85,10 +84,6 @@ class HealthCheck {
 
         if (currentState === NodeState.ReadyToJoin ||  currentState === NodeState.DownloadInProgress) {
             return;
-        }
-
-        if (currentState === NodeState.Offline) {
-            throw new Error('RESTART_REQUIRED');
         }
 
         const lastState: string = storeUtils.getLastState();
