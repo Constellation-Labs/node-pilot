@@ -9,6 +9,7 @@ import {checkNodePilot} from "../checks/check-pilot.js";
 import {checkProject} from "../checks/check-project.js";
 import {checkWallet} from "../checks/check-wallet.js";
 import {keyFileHelper} from "../helpers/key-file-helper.js";
+import {migrationService} from "../services/migration-service.js";
 
 export default class Status extends Command {
 
@@ -24,8 +25,11 @@ export default class Status extends Command {
 
 export async function checkInstallationAndConfigurationStatus() {
 
+    migrationService.runMigrations();
+
     await checkInitialSetup.firstTimeRun();
     await checkProject.projectInstallation();
+    await checkProject.checkJavaMemory();
     await checkNetwork.checkExternalIpAddress();
     await checkNetwork.isNetworkConnectable();
     await checkNodePilot.checkDiscordRegistration();

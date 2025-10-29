@@ -12,6 +12,15 @@ import {checkNetwork} from "./check-network.js";
 
 export const checkProject = {
 
+    async checkJavaMemory() {
+
+        if(configStore.hasProjectFlag('javaMemoryChecked')) {
+            return;
+        }
+
+        await promptHelper.configureJavaMemoryArguments();
+    },
+
     async hasVersionChanged() {
         const clusterVersion = await clusterService.getReleaseVersion();
 
@@ -24,7 +33,7 @@ export const checkProject = {
         let updateNetworkType = false;
         let updateLayers = false;
 
-        if (!configStore.hasProjects() || process.env.PILOT_ENV === 'test') {
+        if (!configStore.hasProjects()) {
             await projectHelper.selectProject();
             await checkNetwork.configureIpAddress();
             updateNetworkType = true;

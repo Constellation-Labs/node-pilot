@@ -126,7 +126,7 @@ class ConfigStore {
         return this.pilotStore.getItem('system');
     }
 
-    hasProjectFlag(name: string){
+    hasProjectFlag(name: string) {
         const flags =  this.projectStore.getItem('flags') || {};
         return flags[name] || false;
     }
@@ -349,6 +349,7 @@ export type ProjectInfo = {
     name: string;
     nodeId: string;
     projectDir: string;
+    version: string;
 }
 
 export type NetworkInfo = {

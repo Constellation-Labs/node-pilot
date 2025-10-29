@@ -1,7 +1,7 @@
 {
   "name": "@constellation-network/node-pilot",
   "description": "An easy deployment and monitoring tool for Constellation nodes.",
-  "version": "0.8.0",
+  "version": "0.8.0-testnet",
   "author": "Frank Fox",
   "bin": {
     "cpilot": "bin/run.js"
@@ -21,7 +21,7 @@
     "version": "oclif readme && git add README.md",
     "start": "./bin/dev.js",
     "debug": "DEBUG=true ./bin/dev.js",
-    "pub": "npm publish --access public"
+    "pub": "npm publish --access public --tag testnet"
   },
   "types": "dist/index.d.ts",
   "engines": {

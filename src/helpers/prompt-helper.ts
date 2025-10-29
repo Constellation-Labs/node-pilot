@@ -1,9 +1,15 @@
 import {checkbox, input, number, select} from "@inquirer/prompts";
 import chalk from "chalk";
+import os from "node:os";
 
 import {clm} from "../clm.js";
 import {configStore, NetworkType} from "../config-store.js";
 import {TessellationLayer} from "../types.js";
+
+function getJavaMemoryOptions(mem: number) {
+    const linuxOpt = (os.platform() === 'linux') ? ' -XX:+UseZGC' : '';
+    return `-Xms${mem}g -Xmx${mem}g -XX:+UnlockExperimentalVMOptions${linuxOpt} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./heap_dumps/ -XX:+ExitOnOutOfMemoryError`;
+}
 
 export const promptHelper = {
 
@@ -39,7 +45,7 @@ export const promptHelper = {
                 const network = type.toUpperCase();
                 const logMethod = type === currentNetwork ? clm.postStep : clm.debug;
                 logMethod(`${network}:: ${layersToRun[0]} memory allocation: ${mainLayerMem}GB`);
-                configStore.setEnvLayerInfo(type, layersToRun[0], { CL_DOCKER_JAVA_OPTS: `-Xms1024M -Xmx${mainLayerMem}G -Xss256K` });
+                configStore.setEnvLayerInfo(type, layersToRun[0], { CL_DOCKER_JAVA_OPTS: getJavaMemoryOptions(mainLayerMem) });
 
                 if (subLayerMem) {
                     logMethod(`${network}:: ${layersToRun[1]} memory allocation: ${subLayerMem}GB`);
@@ -49,6 +55,8 @@ export const promptHelper = {
 
 
         }
+
+        configStore.setProjectFlag('javaMemoryChecked', true);
     },
 
     async confirmPrompt(msg: string) {
