@@ -109,7 +109,7 @@ class ConfigStore {
     }
 
     getProjectInfo(): ProjectInfo {
-        return this.projectStore.getItem('project');
+        return this.projectStore.getItem('project') || {};
     }
 
     getProjects() {

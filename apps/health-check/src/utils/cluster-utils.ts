@@ -50,7 +50,7 @@ export const clusterUtils = {
 
         logger.log(`Checking local snapshot ${ordinal} distance from cluster: ${clusterOrdinal - ordinal}`);
 
-        if (ordinal !== clusterOrdinal) {
+        if (ordinal < clusterOrdinal) {
             logger.log(`    Cluster: ${clusterOrdinal}`);
 
             const errors = await this.hasHealableErrors();
