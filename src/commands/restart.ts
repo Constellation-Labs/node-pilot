@@ -101,6 +101,7 @@ export default class Restart extends BaseCommand {
         }
 
         clm.preStep('Checking for a new version...');
+        // await checkNodePilot.runUpgrade();
         await checkProject.runUpgrade();
         clm.preStep('Starting the node...');
         await dockerService.dockerRestartAll();

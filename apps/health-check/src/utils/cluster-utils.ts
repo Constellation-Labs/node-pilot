@@ -23,7 +23,7 @@ export const clusterUtils = {
                 const {upgrade} = storeUtils.getTimerInfo();
                 if (!upgrade) {
                     storeUtils.setTimerInfo({upgrade: true});
-                    notifyUtils.notify(`Network version has changed. Waiting for auto-upgrade...`);
+                    await notifyUtils.notify(`Network version has changed. Waiting for auto-upgrade...`);
                 }
 
                 storeUtils.setNodeStatusInfo({error: 'cluster:upgrade'});

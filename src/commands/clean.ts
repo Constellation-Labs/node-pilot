@@ -44,6 +44,8 @@ export default class Clean extends Command {
             await dockerService.dockerDown();
         }
 
+        clm.preStep('Requesting sudo permission to remove files...');
+
         for (const layer of layers) {
             if (deleteData) {
                 // eslint-disable-next-line no-await-in-loop

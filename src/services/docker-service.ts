@@ -33,7 +33,6 @@ export const dockerService = {
     },
 
     async dockerDown(layers?: TessellationLayer[]) {
-        configStore.setProjectStatusToRunning(false);
         await run('down', layers);
     },
 

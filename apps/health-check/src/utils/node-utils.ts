@@ -54,12 +54,12 @@ export const nodeUtils = {
             if (peerInfo.peerCount >= 0) {
                 if (peerInfo.peerCount === 0) {
                     logger.warn(`Cluster is unhealthy. Peer count: ${peerInfo.peerCount}`);
-                    storeUtils.setTimerInfo({clusterQueue: Math.round(Math.random()*300_000)});
+                    storeUtils.setTimerInfo({clusterQueue: Math.round(Math.random()*120_000)});
                     clusterState = 'Offline'
                 } else if (peerInfo.peerCount < 4) {
                     logger.warn(`Cluster is unhealthy. Peer count: ${peerInfo.peerCount}`);
-                    storeUtils.setTimerInfo({clusterQueue: Math.round(Math.random() * 300_000)});
-                    clusterState = `Restarting  (${peerInfo.peerCount})}`
+                    storeUtils.setTimerInfo({clusterQueue: Math.round(Math.random()*120_000)});
+                    clusterState = `Starting  (${peerInfo.peerCount})`
                 } else {
                     clusterState = `Ready (${peerInfo.peerCount})`;
                 }
@@ -85,16 +85,16 @@ export const nodeUtils = {
                 const { fatal: hadFatal = false, upgrade = false } = storeUtils.getTimerInfo();
                 if (upgrade) {
                     logger.log(`Node has upgraded`);
-                    notifyUtils.notify(`Node has been upgraded and is READY`);
+                    await notifyUtils.notify(`Node has been upgraded and is READY`);
                     storeUtils.setTimerInfo({upgrade: false});
                 }
                 else if (hadFatal) {
                     logger.fatal(`Node has recovered`);
-                    notifyUtils.notify(`Node has recovered from "${error}" and is READY`);
+                    await notifyUtils.notify(`Node has recovered from "${error}" and is READY`);
                     storeUtils.setTimerInfo({fatal: false});
                 }
                 else {
-                    notifyUtils.notify(`Node has started a new session and is READY`);
+                    await notifyUtils.notify(`Node has started a new session and is READY`);
                     logger.log(`Node has started a new session.`);
                 }
             }
@@ -106,6 +106,8 @@ export const nodeUtils = {
                 }
 
                 logger.log(`Node is ready to join the cluster. Current state: ${state}. Last session: ${pilotSession}. Node Pilot session: ${APP_ENV.NODE_PILOT_SESSION}`);
+
+                await healUtils.detectSeedlistDoesNotMatch();
 
                 if (pilotSession === APP_ENV.NODE_PILOT_SESSION) {
                     const {isRunning, pid} = storeUtils.getArchiveInfo();
@@ -126,12 +128,11 @@ export const nodeUtils = {
                         storeUtils.setTimerInfo({clusterQueue:0, isHydrateRunning: false});
 
                         logger.log(`Initiating auto join...`);
-                        storeUtils.setNodeStatusInfo({error: '', lastError: error || lastError, state: 'JoiningCluster'});
+                        storeUtils.setNodeStatusInfo({state: 'JoiningCluster'});
                         const nodeInfo = await clusterUtils.getClusterNodeInfo();
                         await nodeUtils.joinCluster(nodeInfo);
                     }
                     else {
-                        await healUtils.detectSeedlistDoesNotMatch();
                         storeUtils.setTimerInfo({clusterQueue:0, isHydrateRunning: true});
                         storeUtils.setNodeStatusInfo({state: 'HydratingSnapshots'});
                         await archiveUtils.runHydrate();

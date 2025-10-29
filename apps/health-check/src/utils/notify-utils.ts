@@ -6,14 +6,14 @@ const NOTIFY_SERVER = 'http://34.197.47.192:3008/notify'
 
 export const notifyUtils = {
 
-    notify(msg: string) {
+    async notify(msg: string) {
         const {webHookEnabled=false} = storeUtils.getUserInfo();
 
         if (webHookEnabled) {
             const network = APP_ENV.CL_APP_ENV;
-            msg = `${APP_ENV.CL_EXTERNAL_IP}:${APP_ENV.PILOT_VERSION} - ${msg}`;
+            msg = `${APP_ENV.CL_EXTERNAL_IP} v${APP_ENV.PILOT_VERSION} - ${msg}`;
             // post using fetch
-            fetch(NOTIFY_SERVER, {
+            await fetch(NOTIFY_SERVER, {
                 body: JSON.stringify({
                     msg,
                     network

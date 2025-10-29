@@ -25,7 +25,6 @@ export const storeUtils = {
         return store.getItem('node') || {};
     },
 
-
     getTimerInfo(): TimerInfo {
         return store.getItem('timers') || {};
     },
@@ -54,6 +53,7 @@ export const storeUtils = {
             this.setTimerInfo({lastState: val});
         }
     },
+
     setNodeStatusInfo(info: Partial<NodeStatusInfo>) {
         const old = store.getItem('node');
         if (info.error) info.errorDate = Date.now();
@@ -68,5 +68,5 @@ export const storeUtils = {
     setUserInfo(info: Partial<UserInfo>) {
         const old = store.getItem('user');
         store.setItem('user', { ...old, ...info });
-    },
+    }
 }

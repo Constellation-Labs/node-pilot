@@ -26,7 +26,8 @@ export const shellService = {
         const result = shell.exec(`docker compose exec ${serviceName} bash -c "${command}"`, { cwd: projectDir, silent: true });
 
         if (result.stderr && result.code > 0) {
-            clm.error(`Command Failed - ${command} with stderr: ${result.stderr}`);
+            clm.warn(`Command Failed - ${command} with stderr: ${result.stderr}`);
+            throw new Error(`Command Failed - ${command} with stderr: ${result.stderr}`);
         }
 
         return result.stdout;

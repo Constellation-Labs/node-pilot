@@ -1,15 +1,15 @@
-import {JSONStorage} from "node-localstorage";
-import fs from "node:fs";
+
 import os from "node:os";
-import path from "node:path";
 import semver from "semver";
 
 import packageJson from '../../package.json' with {type: 'json'};
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
+import {healthCheckConfig} from "../helpers/health-check-config.js";
 import {projectHelper} from "../helpers/project-helper.js";
 import {promptHelper} from "../helpers/prompt-helper.js";
 import {dockerService} from "../services/docker-service.js";
+import {nodeService} from "../services/node-service.js";
 import {shellService} from "../services/shell-service.js";
 
 const REGISTRY_URL = 'https://registry.npmjs.org/';
@@ -29,20 +29,7 @@ export const checkNodePilot = {
 
     async checkVersion () {
 
-        const packageUrl = new URL(encodeURIComponent(packageJson.name).replace(/^%40/, '@'), REGISTRY_URL);
-
-        const headers = {
-            accept: 'application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*',
-        };
-
-        const result: PackageInfo = await fetch(packageUrl.toString(), {headers}).then(res => res.json()).catch(() => null);
-
-        if (!result) {
-            return;
-        }
-
-        const latestVer = semver.parse(result['dist-tags'].latest);
-        const currentVer = semver.parse(packageJson.version);
+        const {currentVer, latestVer} = await this.compareVersions();
 
         if (!latestVer || !currentVer || latestVer.compare(currentVer) === 0) return;
 
@@ -61,6 +48,9 @@ export const checkNodePilot = {
 
             if (await promptHelper.confirmPrompt('Do you wish to update now?')) {
                 if (dockerIsRunning) {
+                    const {layersToRun} = configStore.getProjectInfo();
+                    await nodeService.leaveClusterAllLayers();
+                    await nodeService.pollForLayersState(layersToRun, 'Offline');
                     await dockerService.dockerDown();
                 }
             }
@@ -94,18 +84,35 @@ export const checkNodePilot = {
         process.exit(0);
     },
 
+    async compareVersions() {
+        const packageUrl = new URL(encodeURIComponent(packageJson.name).replace(/^%40/, '@'), REGISTRY_URL);
+
+        const headers = {
+            accept: 'application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*',
+        };
+
+        const result: PackageInfo = await fetch(packageUrl.toString(), {headers}).then(res => res.json()).catch(() => null);
+
+        if (!result) {
+            return { currentVer: undefined, latestVer:undefined };
+        }
+
+        const latestVer = semver.parse(result['dist-tags'].latest);
+        const currentVer = semver.parse(packageJson.version);
+
+        return {currentVer, latestVer};
+    },
+
     isDiscordAlertsEnabled() {
-        const hcStorage = getHcStorage();
-        const user = hcStorage.getItem('user');
-        return user && user.webHookEnabled;
+        const {webHookEnabled=false} = healthCheckConfig.getUserState();
+        return webHookEnabled;
     },
 
     async promptDiscordRegistration() {
-        const hcStorage = getHcStorage();
         const join = await promptHelper.confirmPrompt('Do you want to enable Discord notifications for your node?:');
 
         if (!join) {
-            hcStorage.setItem('user', {webHookEnabled: false});
+            healthCheckConfig.setUserState({webHookEnabled: false});
             clm.postStep('Discord notifications are disabled.');
             return;
         }
@@ -125,22 +132,29 @@ export const checkNodePilot = {
         //     hcStorage.setItem('user', {discordUser: answer.trim(), webHookEnabled: true});
         // }
 
-        hcStorage.setItem('user', {webHookEnabled: true});
+        healthCheckConfig.setUserState({webHookEnabled: true});
 
         clm.postStep('Discord notifications are enabled.');
+    },
+
+    async runUpgrade() {
+        const {currentVer, latestVer} = await this.compareVersions();
+
+        if (!latestVer || !currentVer || latestVer.compare(currentVer) === 0) return;
+
+        clm.step('Updating Node Pilot to the latest version...');
+        await shellService.runCommand(`sudo npm install -g @constellation-network/node-pilot@${latestVer.version}`);
+
+        const hasMajorMinorChange = latestVer.major !== currentVer.major || latestVer.minor !== currentVer.minor;
+
+        if (hasMajorMinorChange) {
+            clm.step('Updating scripts and configuration files...');
+            await projectHelper.upgradeHypergraph();
+        }
     }
 }
 
-function getHcStorage() {
-    const {layersToRun,projectDir} = configStore.getProjectInfo();
-    const layer = layersToRun[0];
-    const hcPath = path.join(projectDir,layer,'data','health-check');
-    if (fs.existsSync(hcPath)) {
-        fs.mkdirSync(hcPath, {recursive: true});
-    }
 
-    return new JSONStorage(hcPath);
-}
 
 type PackageInfo = {
     'dist-tags': {

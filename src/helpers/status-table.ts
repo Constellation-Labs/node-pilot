@@ -53,7 +53,7 @@ export class StatusTable {
         const activeProject = configStore.getActiveProject();
         const projects = configStore.getRunningProjects();
         if (!activeProject || projects.length === 0)  {
-            clm.error("No running projects found.");
+            clm.error("No projects are running.");
         }
 
         const info = [];

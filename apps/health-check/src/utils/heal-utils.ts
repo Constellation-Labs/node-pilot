@@ -5,6 +5,7 @@ import {APP_ENV} from "../app-env.js";
 import {logger} from "../logger.js";
 import {CHUNK_SIZE} from "../types.js";
 import {clusterUtils} from "./cluster-utils.js";
+import {nodeUtils} from "./node-utils.js";
 import {shellUtils} from "./shell-utils.js";
 import {storeUtils} from "./store-utils.js";
 
@@ -27,13 +28,13 @@ export const healUtils = {
     },
 
     async detectSeedlistDoesNotMatch() {
-        if (APP_ENV.CL_APP_ENV === 'mainnet') return;
+        if (APP_ENV.CL_APP_ENV === 'mainnet' || APP_ENV.CL_TESSELATION_LAYER !== 'gl0') return;
 
-        const {dir=APP_ENV.PATH_LOGS} = storeUtils.getBackupInfo();
-        logger.log(`detectSeedlistDoesNotMatch from ${dir}`);
+        const dir= APP_ENV.PATH_LOGS;
+
         const dataDir = path.join(dir, 'app.log');
         const result = await shellUtils.runCommandWithOutput(`grep -i 'SeedlistDoesNotMatch' ${dataDir}`).catch(() => '');
-
+        logger.log(`detectSeedlistDoesNotMatch from ${dir} - ${result}`);
         if (result) {
             const url = `https://constellationlabs-dag.s3.us-west-1.amazonaws.com/${APP_ENV.CL_APP_ENV}-seedlist`;
             const content = await fetch(url).then(res => res.text());
@@ -42,6 +43,7 @@ export const healUtils = {
                 fs.writeFileSync(seedFile, content);
                 storeUtils.setNodeStatusInfo({error: 'node:invalid-seedlist'});
                 storeUtils.setTimerInfo({fatal:false}); // reset fatal flag
+                await nodeUtils.leaveCluster();
                 throw new Error('RESTART_REQUIRED');
             }
         }

@@ -44,7 +44,7 @@ export async function main() {
             const {state:lastKnownState} = storeUtils.getNodeStatusInfo();
             logger.log(`${layer} is healthy. State: ${lastKnownState}`);
         })
-        .catch((error: Error) => {
+        .catch(async (error: Error) => {
             if (error.message === 'RESTART_REQUIRED') {
                 const {error: nodeError} = storeUtils.getNodeStatusInfo();
                 if (nodeError) {
@@ -54,7 +54,7 @@ export async function main() {
                         logger.log(`Service Unhealthy - RESTART_REQUIRED - error: ${nodeError}`);
                         storeUtils.setTimerInfo({fatal: true});
                         storeUtils.setNodeStatusInfo({state: 'Restarting'});
-                        notifyUtils.notify(`Restarting - ${nodeError}`);
+                        await notifyUtils.notify(`Restarting - ${nodeError}`);
                         backupUtils.backupLogs();
                     }
                 }

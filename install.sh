@@ -9,21 +9,9 @@ check_node() {
           return 0
       else
           echo "⚠️ Node.js version $NODE_VERSION is installed, but version 22 or later is required."
-          echo "Would you like to update Node.js now? (y/n)"
-          read -r response
-          if [[ ! "$response" =~ ^[Yy]$ ]]; then
-              echo "Node.js update skipped. Please update Node.js manually to proceed."
-              return 1
-          fi
       fi
   else
     echo "⚠️ Node.js 22 is required but not found."
-    echo "Would you like to install Node.js now? (y/n)"
-    read -r response
-    if [[ ! "$response" =~ ^[Yy]$ ]]; then
-      echo "Node.js installation skipped. Please install Node.js manually to proceed."
-      return 1
-    fi
   fi
 
   install_node
@@ -123,9 +111,10 @@ check_node_pilot() {
   echo "✅ Node Pilot installed: $(cpilot --version)"
 }
 
-check_node_pilot
-check_docker
 check_system_update
+check_docker
+check_node_pilot
+
 
 if [ -f /var/run/reboot-required ]; then
   echo ""
