@@ -45,6 +45,9 @@ export async function main() {
             logger.log(`${layer} is healthy. State: ${lastKnownState}`);
         })
         .catch(async (error: Error) => {
+
+            logger.error(`[${APP_ENV.CL_TESSELATION_LAYER}] error: ${error.toString()}`);
+
             if (error.message === 'RESTART_REQUIRED') {
                 const {error: nodeError} = storeUtils.getNodeStatusInfo();
                 if (nodeError) {
@@ -65,7 +68,7 @@ export async function main() {
                 throw new Error('Service Unhealthy');
             }
 
-            logger.error(`[${APP_ENV.CL_TESSELATION_LAYER}] error: ${error.toString()}`);
+
         });
 
 }

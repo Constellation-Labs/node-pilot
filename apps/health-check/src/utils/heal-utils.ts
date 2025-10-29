@@ -44,11 +44,9 @@ export const healUtils = {
                 storeUtils.setNodeStatusInfo({error: 'node:invalid-seedlist'});
                 storeUtils.setTimerInfo({fatal:false}); // reset fatal flag
                 await nodeUtils.leaveCluster();
-                throw new Error('RESTART_REQUIRED');
+                throw new Error('node:invalid-seedlist');
             }
         }
-
-        return false;
     },
 
     async getOldestMissingOrdinalFromLogs() {

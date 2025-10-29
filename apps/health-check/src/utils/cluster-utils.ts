@@ -172,7 +172,7 @@ export const clusterUtils = {
     },
 
     async getReleaseVersion() {
-        return this.getClusterNodeInfo().then(i => i.version);
+        return this.getSourceNodeInfo().then(i => i.version);
     },
 
     async getSourceNodeInfo(): Promise<NodeInfo> {

@@ -67,7 +67,6 @@ export default class Clean extends Command {
             }
         }
 
-
-
+        clm.postStep('Done');
     }
 }

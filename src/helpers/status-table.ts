@@ -90,8 +90,8 @@ export class StatusTable {
                 const ordinal = (values[info.layer].ordinal === n.ordinal) ? String(n.ordinal) : n.ordinal + ':true';
                 const label = info.layer + ':' + network + projectName;
                 const row1 = [
-                    n.state,
-                    n.session,
+                    n.state || '-',
+                    n.session || Date.now().toString(),
                     n.ordinal ? ordinal : '-',
                     distance,
                 ];
@@ -149,8 +149,8 @@ export class StatusTable {
                 rows.push([
                     projectName + ':' + network,
                     info.layer,
-                    n.session, // n.pilotSession,
-                    n.state,
+                    n.session || Date.now().toString(),
+                    n.state || '-',
                     n.ordinal ? ordinal : '-',
                     distance,
                     n.clusterState || 'Ready',

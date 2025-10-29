@@ -59,7 +59,7 @@ class CellFormatter {
     }
 
     formatUpTIme(startTime: number | string) {
-        if (!startTime) return '-';
+        if (Number.isNaN(Number(startTime))) return '-';
         const formattedTime = formatTime(Date.now() - Number(startTime), true);
         return formattedTime ?? '-';
     }
