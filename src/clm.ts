@@ -39,7 +39,7 @@ export const clm = {
     },
 
     warn(msg: string) {
-        o().warn(chalk.red(msg));
+        o().warn(chalk.yellow(msg));
     }
 }
 
