@@ -46,7 +46,7 @@ export default class Config extends Command {
         }
         else if (answer === 'javaMemory') {
             await shutdownNodeIfRunning();
-            await promptHelper.configureJavaMemoryArguments();
+            await checkProject.configureJavaMemoryArguments();
         }
         else if (answer === 'keyFile') {
             await shutdownNodeIfRunning();
@@ -56,7 +56,7 @@ export default class Config extends Command {
         else if (answer === 'layersToRun') {
             await shutdownNodeIfRunning();
             await promptHelper.selectLayers();
-            await promptHelper.configureJavaMemoryArguments();
+            await checkProject.configureJavaMemoryArguments();
         }
         else if (answer === 'network') {
             await shutdownNodeIfRunning();

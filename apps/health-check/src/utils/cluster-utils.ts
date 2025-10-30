@@ -198,6 +198,10 @@ export const clusterUtils = {
             this.getReleaseVersion(),
             nodeUtils.getNodeVersion()
         ]);
+        logger.log('hasVersionChanged' +
+            `    Cluster: ${clusterVersion}` +
+            `    Node: ${nodeVersion}` +
+            `    Match: ${clusterVersion === nodeVersion}`)
         return nodeVersion !== clusterVersion;
     },
 

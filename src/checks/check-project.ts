@@ -1,4 +1,5 @@
-import {input, select} from "@inquirer/prompts";
+import {input, number, select} from "@inquirer/prompts";
+import os from "node:os";
 
 import {clm} from "../clm.js";
 import {configStore, NetworkType} from "../config-store.js";
@@ -10,6 +11,11 @@ import {dockerService} from "../services/docker-service.js";
 import {shellService} from "../services/shell-service.js";
 import {checkNetwork} from "./check-network.js";
 
+function getJavaMemoryOptions(mem: number) {
+    const linuxOpt = (os.platform() === 'linux') ? ' -XX:+UseZGC' : '';
+    return `-Xms${mem}g -Xmx${mem}g -XX:+UnlockExperimentalVMOptions${linuxOpt} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./heap_dumps/ -XX:+ExitOnOutOfMemoryError`;
+}
+
 export const checkProject = {
 
     async checkJavaMemory() {
@@ -18,7 +24,60 @@ export const checkProject = {
             return;
         }
 
-        await promptHelper.configureJavaMemoryArguments();
+        await this.configureJavaMemoryArguments();
+    },
+
+    async configureJavaMemoryArguments() {
+        const {memory} = configStore.getSystemInfo();
+        const {layersToRun, name} = configStore.getProjectInfo();
+        const {type: currentNetwork} = configStore.getNetworkInfo();
+
+        const xmx = Number(memory);
+
+        if (xmx === 8 && layersToRun.length > 1) {
+            clm.warn('Minimum 8GB memory detected. Only a single layer will be allowed to run');
+            await promptHelper.doYouWishToContinue();
+            configStore.setProjectInfo({layersToRun: [layersToRun[0]]});
+            configStore.setEnvLayerInfo(currentNetwork, layersToRun[0], { CL_DOCKER_JAVA_OPTS: '-Xms1024M -Xmx7G -Xss256K' });
+        }
+        else if (name === 'hypergraph') {
+            // prompt to use all detected memory
+            let answer = await number({
+                default: xmx-1,
+                message: `How much of the detected memory (${xmx}GB) do you want to use?: `,
+                validate: v => v !== undefined && v >= 4 && v <= xmx
+            }) as number;
+
+            if (answer === xmx) answer--;
+
+            let subLayerMem = 0;
+            let mainLayerMem = 0;
+
+            if (currentNetwork === 'testnet') {
+                subLayerMem = layersToRun.length > 1 ? Math.floor(answer / 2) : 0;
+                mainLayerMem = answer - subLayerMem;
+            }
+            else {
+                subLayerMem = layersToRun.length > 1 ? Math.floor(answer / 3) : 0;
+                mainLayerMem = answer - subLayerMem;
+            }
+
+            const {supportedTypes} = configStore.getNetworkInfo();
+
+            for (const type of supportedTypes) {
+                const network = type.toUpperCase();
+                const logMethod = type === currentNetwork ? clm.postStep : clm.debug;
+                logMethod(`${network}:: ${layersToRun[0]} memory allocation: ${mainLayerMem}GB`);
+                configStore.setEnvLayerInfo(type, layersToRun[0], { CL_DOCKER_JAVA_OPTS: getJavaMemoryOptions(mainLayerMem) });
+
+                if (subLayerMem) {
+                    logMethod(`${network}:: ${layersToRun[1]} memory allocation: ${subLayerMem}GB`);
+                    configStore.setEnvLayerInfo(type, layersToRun[1], { CL_DOCKER_JAVA_OPTS: `-Xms1024M -Xmx${subLayerMem}G -Xss256K` });
+                }
+            }
+        }
+
+        configStore.setProjectFlag('javaMemoryChecked', true);
     },
 
     async hasVersionChanged() {
@@ -50,7 +109,7 @@ export const checkProject = {
 
         if (!layersToRun || updateLayers) {
             await promptHelper.selectLayers();
-            await promptHelper.configureJavaMemoryArguments();
+            await this.configureJavaMemoryArguments();
         }
     },
 

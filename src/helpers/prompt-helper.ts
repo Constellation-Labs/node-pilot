@@ -1,63 +1,10 @@
-import {checkbox, input, number, select} from "@inquirer/prompts";
+import {checkbox, input, select} from "@inquirer/prompts";
 import chalk from "chalk";
-import os from "node:os";
 
-import {clm} from "../clm.js";
 import {configStore, NetworkType} from "../config-store.js";
 import {TessellationLayer} from "../types.js";
 
-function getJavaMemoryOptions(mem: number) {
-    const linuxOpt = (os.platform() === 'linux') ? ' -XX:+UseZGC' : '';
-    return `-Xms${mem}g -Xmx${mem}g -XX:+UnlockExperimentalVMOptions${linuxOpt} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./heap_dumps/ -XX:+ExitOnOutOfMemoryError`;
-}
-
 export const promptHelper = {
-
-    async configureJavaMemoryArguments() {
-        const {memory} = configStore.getSystemInfo();
-        const {layersToRun, name} = configStore.getProjectInfo();
-        const {type: currentNetwork} = configStore.getNetworkInfo();
-
-        const xmx = Number(memory);
-
-        if (xmx === 8 && layersToRun.length > 1) {
-            clm.warn('Minimum 8GB memory detected. Only a single layer will be allowed to run');
-            await promptHelper.doYouWishToContinue();
-            configStore.setProjectInfo({layersToRun: [layersToRun[0]]});
-            configStore.setEnvLayerInfo(currentNetwork, layersToRun[0], { CL_DOCKER_JAVA_OPTS: '-Xms1024M -Xmx7G -Xss256K' });
-        }
-        else if (name === 'hypergraph') {
-            // prompt to use all detected memory
-            let answer = await number({
-                default: xmx-1,
-                message: `How much of the detected memory (${xmx}GB) do you want to use?: `,
-                validate: v => v !== undefined && v >= 4 && v <= xmx
-            }) as number;
-
-            if (answer === xmx) answer--;
-
-            const subLayerMem = layersToRun.length > 1 ? Math.floor(answer / 3) : 0;
-            const mainLayerMem = answer - subLayerMem;
-
-            const {supportedTypes} = configStore.getNetworkInfo();
-
-            for (const type of supportedTypes) {
-                const network = type.toUpperCase();
-                const logMethod = type === currentNetwork ? clm.postStep : clm.debug;
-                logMethod(`${network}:: ${layersToRun[0]} memory allocation: ${mainLayerMem}GB`);
-                configStore.setEnvLayerInfo(type, layersToRun[0], { CL_DOCKER_JAVA_OPTS: getJavaMemoryOptions(mainLayerMem) });
-
-                if (subLayerMem) {
-                    logMethod(`${network}:: ${layersToRun[1]} memory allocation: ${subLayerMem}GB`);
-                    configStore.setEnvLayerInfo(type, layersToRun[1], { CL_DOCKER_JAVA_OPTS: `-Xms1024M -Xmx${subLayerMem}G -Xss256K` });
-                }
-            }
-
-
-        }
-
-        configStore.setProjectFlag('javaMemoryChecked', true);
-    },
 
     async confirmPrompt(msg: string) {
         const result = await input({

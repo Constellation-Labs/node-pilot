@@ -15,8 +15,8 @@ class CellFormatter {
 
     formatDistance (value: string) {
         if (!value || value === '-') return '-';
-        const num = Math.abs(Number(value));
-        if (num === 0) return value;
+        const num = Number(value);
+        if (num <= 0) return value;
         if (num < 9) return this.style(value,"bgYellow", "whiteBright", "bold");
         return this.style(value, "bgRed", "bold");
     }
@@ -103,7 +103,7 @@ export const statusTableHeader = [
     { color: 'white', formatter: formatDistance, headerColor: 'whiteBright', value: 'Distance' },
     { color: 'white', formatter: formatState, headerColor: 'whiteBright', value: 'Cluster State', width: 16},
     { color: 'white', formatter: formatCpu, headerColor: 'whiteBright', value: 'CPU Usage', width: 12 },
-    { color: 'white', formatter: formatMem, headerColor: 'whiteBright', value: 'Mem Usage (GB)', width: 16 },
+    { color: 'white', formatter: formatMem, headerColor: 'whiteBright', value: 'Mem Usage', width: 12 },
     { color: 'white', formatter: formatError, headerColor: 'whiteBright', value: 'Error', width: 22},
 ];
 
@@ -119,7 +119,7 @@ export const glHeader1 = [
 export const glHeader2 = [
     { color: 'white', formatter: formatState, headerColor: 'whiteBright', value: 'Cluster State', width: 22},
     { color: 'white', formatter: formatCpu, headerColor: 'whiteBright', value: 'CPU Usage', width: 13 },
-    { color: 'white', formatter: formatMem, headerColor: 'whiteBright', value: 'Mem Usage (GB)', width: 16 },
+    { color: 'white', formatter: formatMem, headerColor: 'whiteBright', value: 'Mem Usage', width: 16 },
     { color: 'white', formatter: formatError, headerColor: 'whiteBright', value: 'Error', width: 22},
 ];
 
