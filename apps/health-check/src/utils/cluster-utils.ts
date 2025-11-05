@@ -11,7 +11,7 @@ import {storeUtils} from "./store-utils.js";
 export const clusterUtils = {
 
     async checkForSessionFork() {
-        const { clusterSession } = await this.getSourceNodeInfo();
+        const { clusterSession } = await this.getClusterNodeInfo();
         const {clusterSession: nodeClusterSession} = storeUtils.getNodeStatusInfo();
 
         logger.log(`Checking for session fork.`);
@@ -44,13 +44,15 @@ export const clusterUtils = {
         // Not sure how to check metagraphs. Will need to revisit this.
         if (layer !== 'gl0') return;
 
+        logger.log(`Checking ordinal distance.`);
+
         const ordinal = await nodeUtils.getNodeLatestOrdinal();
-        const clusterOrdinal = await this.getSourceNodeLatestOrdinal();
+        const clusterOrdinal = await this.getClusterLatestOrdinal();
         storeUtils.setNodeStatusInfo({ clusterOrdinal, ordinal });
 
         logger.log(`Checking local snapshot ${ordinal} distance from cluster: ${clusterOrdinal - ordinal}`);
 
-        if (ordinal !== clusterOrdinal) {
+        if (ordinal < clusterOrdinal) {
             logger.log(`    Cluster: ${clusterOrdinal}`);
 
             const errors = await this.hasHealableErrors();
@@ -79,44 +81,49 @@ export const clusterUtils = {
         // Not sure how to check gl1. Will need to revisit this.
         if (layer !== 'gl0') return;
 
-        if (!APP_ENV.IS_GLOBAL_LAYER) {
-            logger.log(`Health check for layer ${layer} is not implemented. Skipping snapshot hash verification.`);
-            return;
-        }
-
-        let { clusterOrdinal, ordinal } = storeUtils.getNodeStatusInfo();
+        let { clusterOrdinal, hashMismatchCount=0, ordinal } = storeUtils.getNodeStatusInfo();
 
         if (!clusterOrdinal || !ordinal) {
             ordinal = await nodeUtils.getNodeLatestOrdinal();
-            clusterOrdinal = await this.getSourceNodeLatestOrdinal();
+            clusterOrdinal = await this.getClusterLatestOrdinal();
         }
 
         const ordinalToCheck = Math.min(clusterOrdinal, ordinal);
 
         const nodeOrdinalHash = await nodeUtils.getNodeOrdinalHash(ordinalToCheck);
-        const sourceNodeOrdinalHash = await this.getSourceNodeOrdinalHash(ordinalToCheck);
+        const clusterOrdinalHash = await this.getClusterOrdinalHash(ordinalToCheck);
 
         logger.debug("Comparing snapshot hashes for ordinal " + ordinalToCheck);
         logger.debug("  Local : " + nodeOrdinalHash);
-        logger.debug(`  Source(${APP_ENV.CL_L0_PEER_HTTP_HOST}): ${sourceNodeOrdinalHash}`);
+        logger.debug(`  Cluster: ${clusterOrdinalHash}`);
 
-        if (nodeOrdinalHash !== sourceNodeOrdinalHash) {
-            storeUtils.setNodeStatusInfo({error: 'hash mismatch:forked'});
-            await nodeUtils.leaveCluster();
-            throw new Error(`Hash mismatch detected at ordinal ${ordinalToCheck} - Node: ${nodeOrdinalHash}, Source: ${sourceNodeOrdinalHash} - Leaving Cluster...`);
+        if (nodeOrdinalHash === clusterOrdinalHash) {
+            storeUtils.setNodeStatusInfo({hashMismatchCount: 0});
+        }
+        else {
+            logger.log(`    Hash mismatch detected at ordinal ${ordinalToCheck} - Node: ${nodeOrdinalHash}, Cluster: ${clusterOrdinalHash}`);
+            if (hashMismatchCount < 1) {
+                storeUtils.setNodeStatusInfo({hashMismatchCount: hashMismatchCount+1});
+            }
+            else {
+                storeUtils.setNodeStatusInfo({error: 'hash mismatch:forked'});
+                await nodeUtils.leaveCluster();
+                throw new Error('Hash mismatch');
+            }
         }
     },
 
     async getClusterConsensusPeers() {
         const lbUrl = APP_ENV.CL_LB;
         if (lbUrl && APP_ENV.CL_TESSELATION_LAYER === 'gl0') {
-            return fetch(`${lbUrl}/consensus/latest/peers`)
+            const url = `${lbUrl}/consensus/latest/peers`;
+            return fetch(url)
                 .then(async res => {
                     const result: { key: number, peers: { ip: string }[] } = await res.json();
                     return { includesSourceNode: result.peers.some(p => p.ip.includes(APP_ENV.CL_L0_PEER_HTTP_HOST)), ordinal: result.key, peerCount: result.peers.length };
                 })
                 .catch(() => {
-                    logger.warn(`Failed to fetch consensus/latest/peers from ${lbUrl}.`)
+                    logger.warn(`Failed to fetch from ${url}.`);
                     return { includesSourceNode: false, ordinal: 0, peerCount: 0 };
                 })
         }
@@ -127,11 +134,12 @@ export const clusterUtils = {
     async getClusterLatestOrdinal(): Promise<number> {
         const lbUrl = APP_ENV.CL_LB;
         if (lbUrl) {
-            return fetch(`${lbUrl}/${APP_ENV.SNAPSHOT_URL_PATH}/latest`)
+            const url = `${lbUrl}/${APP_ENV.SNAPSHOT_URL_PATH}/latest`;
+            return fetch(url)
                 .then(res => res.json())
                 .then(i => i.value.ordinal)
                 .catch(() => {
-                    logger.warn(`Failed to fetch node info from ${lbUrl}. Falling back to source node.`);
+                    logger.warn(`Failed to fetch from ${url}. Falling back to source node.`);
                     return this.getSourceNodeLatestOrdinal();
                 })
         }
@@ -142,7 +150,7 @@ export const clusterUtils = {
     async getClusterNodeInfo(): Promise<NodeInfo> {
         const lbUrl = APP_ENV.CL_LB;
         if (lbUrl) {
-            return fetch(`${lbUrl}/node/info?sticky=false`)
+            return fetch(`${lbUrl}/node/info`) // ?sticky=false
                 .then(res => res.json())
                 .catch(() => {
                     logger.warn(`Failed to fetch node info from ${lbUrl}. Falling back to source node.`);
@@ -151,6 +159,23 @@ export const clusterUtils = {
         }
 
         return this.getSourceNodeInfo();
+    },
+
+    async getClusterOrdinalHash(ordinal: number): Promise<string> {
+        const lbUrl = APP_ENV.CL_LB;
+        if (lbUrl) {
+            const { hashMismatchCount } = storeUtils.getNodeStatusInfo();
+            const sticky = hashMismatchCount > 0 ? '?sticky=false' : '';
+            const url = `${lbUrl}/${APP_ENV.SNAPSHOT_URL_PATH}/${ordinal}/hash${sticky}`;
+            return fetch(url)
+                .then(res => res.json())
+                .catch(() => {
+                    logger.warn(`Failed to fetch from ${url}. Falling back to source node.`);
+                    return this.getSourceNodeOrdinalHash(ordinal);
+                })
+        }
+
+        return this.getSourceNodeOrdinalHash(ordinal);
     },
 
     async getLatestDownloadedSnapshot() {
@@ -198,6 +223,10 @@ export const clusterUtils = {
             this.getReleaseVersion(),
             nodeUtils.getNodeVersion()
         ]);
+        logger.log('hasVersionChanged' +
+            `    Cluster: ${clusterVersion}` +
+            `    Node: ${nodeVersion}` +
+            `    Match: ${clusterVersion === nodeVersion}`)
         return nodeVersion !== clusterVersion;
     },
 

@@ -17,15 +17,16 @@ export default class Info extends Command {
         const projectInfo = configStore.getProjectInfo();
         const networkInfo = configStore.getNetworkInfo();
         const {CL_EXTERNAL_IP: currentIpAddress} = configStore.getEnvInfo();
+        const {CL_DOCKER_JAVA_OPTS} = configStore.getEnvLayerInfo(networkInfo.type, 'gl0');
 
         // Project Name
         configHelper.showEnvInfo('Project Name', projectInfo.name);
 
-        // DAG Address
-        configHelper.showEnvInfo('DAG Address', projectInfo.dagAddress);
-
         // External IP Address
         configHelper.showEnvInfo('External IP Address', currentIpAddress);
+
+        // DAG Address
+        configHelper.showEnvInfo('DAG Address', projectInfo.dagAddress);
 
         // Node ID
         configHelper.showEnvInfo('Node ID', projectInfo.nodeId);
@@ -38,6 +39,9 @@ export default class Info extends Command {
 
         // Network version
         configHelper.showEnvInfo('Network Version', networkInfo.version);
+
+        // Java Memory
+        configHelper.showEnvInfo('GL0 Java Opts', CL_DOCKER_JAVA_OPTS);
 
         // Project Directory
         configHelper.showEnvInfo('Project Directory', projectInfo.projectDir);

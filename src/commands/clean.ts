@@ -1,11 +1,7 @@
 import {Args, Command, Flags} from '@oclif/core'
 
-import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
 import {projectHelper} from "../helpers/project-helper.js";
-import {promptHelper} from "../helpers/prompt-helper.js";
-import {dockerService} from "../services/docker-service.js";
-import {shellService} from "../services/shell-service.js";
 import {TessellationLayer} from "../types.js";
 
 export default class Clean extends Command {
@@ -31,42 +27,14 @@ export default class Clean extends Command {
                 this.error(`Invalid layer: ${args.layer}. Available layers: ${layersToRun.join(',')}`);
             }
 
-        const layers = args.layer ? [args.layer] : layersToRun;
+        const layers = args.layer ? [args.layer as TessellationLayer] : layersToRun;
 
         const deleteAll = !flags.data && !flags.logs && !flags.jars;
         const deleteLogs = flags.logs || deleteAll;
         const deleteData = flags.data || deleteAll;
         const deleteJars = flags.jars || deleteAll;
 
-        if (await dockerService.isRunning()) {
-            clm.preStep('The validator node must be stopped first.')
-            await promptHelper.doYouWishToContinue();
-            await dockerService.dockerDown();
-        }
+        await projectHelper.cleanup(layers, deleteLogs, deleteData, deleteJars);
 
-        clm.preStep('Requesting sudo permission to remove files...');
-
-        for (const layer of layers) {
-            if (deleteData) {
-                // eslint-disable-next-line no-await-in-loop
-                await shellService.runProjectCommand(`sudo rm -rf ${layer}/data`);
-                if (layer === 'gl0') {
-                    projectHelper.prepareDataFolder();
-                    configStore.setProjectFlag('discordChecked', false);
-                }
-            }
-
-            if (deleteLogs) {
-                // eslint-disable-next-line no-await-in-loop
-                await shellService.runProjectCommand(`sudo rm -rf ${layer}/logs`);
-            }
-
-            if (deleteJars) {
-                // eslint-disable-next-line no-await-in-loop
-                await shellService.runProjectCommand(`sudo rm -rf ${layer}/dist`);
-            }
-        }
-
-        clm.postStep('Done');
     }
 }

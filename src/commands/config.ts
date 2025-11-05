@@ -3,13 +3,14 @@ import {select} from '@inquirer/prompts';
 import {Command} from '@oclif/core'
 
 import {checkNetwork} from "../checks/check-network.js";
+import {checkNodePilot} from "../checks/check-pilot.js";
 import {checkProject} from "../checks/check-project.js";
 import {clm} from "../clm.js";
+import {configStore} from "../config-store.js";
 import {configHelper} from "../helpers/config-helper.js";
 import {keyFileHelper} from "../helpers/key-file-helper.js";
+import {projectHelper} from "../helpers/project-helper.js";
 import {promptHelper} from "../helpers/prompt-helper.js";
-import {dockerService} from "../services/docker-service.js";
-import {checkNodePilot} from "../checks/check-pilot.js";
 
 export default class Config extends Command {
 
@@ -45,22 +46,26 @@ export default class Config extends Command {
             await checkNodePilot.promptDiscordRegistration();
         }
         else if (answer === 'javaMemory') {
-            await shutdownNodeIfRunning();
-            await promptHelper.configureJavaMemoryArguments();
+            await promptHelper.shutdownNodeIfRunning();
+            await checkProject.configureJavaMemoryArguments();
         }
         else if (answer === 'keyFile') {
-            await shutdownNodeIfRunning();
+            await promptHelper.shutdownNodeIfRunning();
             await keyFileHelper.showKeyFileInfo();
             await keyFileHelper.promptForKeyFile();
         }
         else if (answer === 'layersToRun') {
-            await shutdownNodeIfRunning();
+            await promptHelper.shutdownNodeIfRunning();
             await promptHelper.selectLayers();
-            await promptHelper.configureJavaMemoryArguments();
+            await checkProject.configureJavaMemoryArguments();
         }
         else if (answer === 'network') {
-            await shutdownNodeIfRunning();
+            clm.warn('Changing the network will DELETE all the data and logs from the validator node.');
+            await promptHelper.doYouWishToContinue();
+            const {layersToRun} = configStore.getProjectInfo();
+            await projectHelper.cleanup(layersToRun,true,true,true)
             await promptHelper.selectNetwork();
+            await checkNodePilot.checkVersion(); // each network may have its own release
             await checkProject.runInstall();
         }
 
@@ -68,10 +73,4 @@ export default class Config extends Command {
 
 }
 
-async function shutdownNodeIfRunning() {
-    if (await dockerService.isRunning()) {
-        clm.preStep('The validator node must be stopped first.')
-        await promptHelper.doYouWishToContinue();
-        await dockerService.dockerDown();
-    }
-}
+

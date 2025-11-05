@@ -97,7 +97,11 @@ export const checkNodePilot = {
             return { currentVer: undefined, latestVer:undefined };
         }
 
-        const latestVer = semver.parse(result['dist-tags'].latest);
+        const {type} = configStore.getNetworkInfo();
+
+        const networkTag = type === 'testnet' ? 'testnet' : 'latest';
+
+        const latestVer = semver.parse(result['dist-tags'][networkTag]);
         const currentVer = semver.parse(packageJson.version);
 
         return {currentVer, latestVer};
@@ -159,6 +163,7 @@ export const checkNodePilot = {
 type PackageInfo = {
     'dist-tags': {
         latest: string;
+        testnet: string;
     };
     modified: string;
 }

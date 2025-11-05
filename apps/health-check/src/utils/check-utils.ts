@@ -58,18 +58,19 @@ export const checkUtils = {
         const results = await shellUtils.runCommandWithOutput('ps -eo %mem,%cpu,rss,command | grep java | grep Xms');
         const metrics = results.split('\n')[0].split(/\s+/);
         const cpuCount = os.cpus().length;
+        const sysMemPercent = Number(metrics[0]);
         const cpuUsage = Number(metrics[1]) / cpuCount;
-        const memGB = (Number(metrics[2]) / (1024*1024));
-        const maxMem = APP_ENV.CL_DOCKER_JAVA_OPTS.split(' ')[1].slice(4,-1);
-        const memPercent = (memGB / Number(maxMem)) * 100;
-        const memUsage = `${memPercent.toFixed(0)}% (${memGB.toFixed(1)}/${maxMem})`;
+        // const memGB = (Number(metrics[2]) / (1024*1024));
+        // const maxMem = APP_ENV.CL_DOCKER_JAVA_OPTS.split(' ')[1].slice(4,-1);
+        // const memPercent = (memGB / Number(maxMem)) * 100;
+        const memUsage = `${sysMemPercent.toFixed(0)}%`; // (${memGB.toFixed(1)}/${maxMem})`;
 
         storeUtils.setNodeStatusInfo({cpuUsage: metrics[1] + '%', memUsage});
 
         // logger.log('checkProcessUsage - ' + `java:mem: ${memUsage}, ` + `java:cpu: ${metrics[1]}%`);
 
-        if (memPercent > 100 && cpuUsage > 90) {
-            const msg = `java:mem:max ${memPercent.toFixed(0)}%, cpu:max ${Number(metrics[1]).toFixed(0)}%`;
+        if (sysMemPercent > 99 && cpuUsage > 90) {
+            const msg = `java:mem:max ${sysMemPercent.toFixed(0)}%, cpu:max ${Number(metrics[1]).toFixed(0)}%`;
             storeUtils.setNodeStatusInfo({error: msg, rebootRequired: true});
             await nodeUtils.leaveCluster();
             throw new Error(msg);

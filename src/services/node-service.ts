@@ -153,7 +153,7 @@ export const nodeService = {
                 return true;
             }
 
-            if (state === "Unavailable" && i > 2) {
+            if (state === "Unavailable" && i > 6) {
                 clm.warn(`${layer} is not connectable. Please try again later.`);
                 return false;
             }

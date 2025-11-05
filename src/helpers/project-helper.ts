@@ -12,8 +12,38 @@ import {shellService} from "../services/shell-service.js";
 import {TessellationLayer} from "../types.js";
 import {configHelper} from "./config-helper.js";
 import {getLayerEnvFileContent} from "./env-templates.js";
+import {promptHelper} from "./prompt-helper.js";
 
 export const projectHelper = {
+
+    async cleanup(layers: TessellationLayer[], deleteData: boolean, deleteLogs: boolean, deleteJars: boolean) {
+        await promptHelper.shutdownNodeIfRunning();
+
+        clm.preStep('Requesting sudo permission to remove files...');
+
+        for (const layer of layers) {
+            if (deleteData) {
+                // eslint-disable-next-line no-await-in-loop
+                await shellService.runProjectCommand(`sudo rm -rf ${layer}/data`);
+                if (layer === 'gl0') {
+                    this.prepareDataFolder();
+                    configStore.setProjectFlag('discordChecked', false);
+                }
+            }
+
+            if (deleteLogs) {
+                // eslint-disable-next-line no-await-in-loop
+                await shellService.runProjectCommand(`sudo rm -rf ${layer}/logs`);
+            }
+
+            if (deleteJars) {
+                // eslint-disable-next-line no-await-in-loop
+                await shellService.runProjectCommand(`sudo rm -rf ${layer}/dist`);
+            }
+        }
+
+        clm.postStep('Cleanup complete');
+    },
 
     async generateLayerEnvFiles(layers?: TessellationLayer[]) {
         const {layersToRun, projectDir} = configStore.getProjectInfo();
