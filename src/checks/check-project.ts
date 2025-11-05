@@ -1,5 +1,6 @@
 import {input, number, select} from "@inquirer/prompts";
 import os from "node:os";
+import ora from "ora";
 
 import {clm} from "../clm.js";
 import {configStore, NetworkType} from "../config-store.js";
@@ -189,39 +190,36 @@ export const checkProject = {
             await dockerService.dockerDown();
         }
 
-        // const silent = !process.env.DEBUG;
-        //
-        // const spinner = ora('');
-        //
-        // if (silent) {
-        //     spinner.start();
-        //     spinner.color = 'green';
-        // }
-        // else {
-        if (!rInfo) {
-            // First time install
-            clm.preStep('Tessellation and dependencies need to be installed. This may take a few minutes...');
-            await promptHelper.doYouWishToContinue();
+        const showSpinner = !configStore.isRestarting()
+
+        const spinner = ora('');
+
+        if (showSpinner) {
+            spinner.start();
+            spinner.color = 'green';
         }
+
+        // if (!rInfo && !configStore.isRestarting()) {
+        //     // First time install
+        //     clm.preStep('Tessellation and dependencies need to be installed. This may take a few minutes...');
+        //     await promptHelper.doYouWishToContinue();
         // }
 
-        // const node = await clusterService.getClusterNodeInfo();
-        // const NODE_URL = `http://${node.host}:${node.publicPort}`;
 
         // NOTE: may be different for metagraphs
         await shellService.runProjectCommand(`scripts/install.sh ${nInfo.type}`, undefined, false)
             .catch(() => {
-                // spinner.stop();
-                // if (silent) {
-                //     clm.error(`Install script failed. run: ${chalk.cyan("DEBUG=true cpilot")} for more details`);
-                // }
+
+                if (showSpinner) {
+                    spinner.stop();
+                }
 
                 clm.error('Install script failed. Please run cpilot again after correcting the error');
             });
 
-        // if (silent) {
-        //     spinner.stop();
-        // }
+        if (showSpinner) {
+            spinner.stop();
+        }
 
         rInfo = await configHelper.getReleaseInfo();
 

@@ -15,7 +15,7 @@ import {storeUtils} from "./store-utils.js";
 // http://5.161.243.241:7777/hash.txt
 const remoteIndexMap = {
     integrationnet: "http://5.161.243.241:7777",
-    mainnet:  "http://128.140.33.142:7777",
+    mainnet:  "http://116.203.215.246:7777", // http://128.140.33.142:7777/hash.txt",
     testnet: "http://65.108.87.84:7777"
 }
 

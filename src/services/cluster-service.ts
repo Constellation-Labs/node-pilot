@@ -1,4 +1,5 @@
 import {input} from "@inquirer/prompts";
+import ora from "ora";
 
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
@@ -31,7 +32,13 @@ export const clusterService = {
             configStore.setProjectInfo({fastForward: true})
         // }
 
+        const spinner = ora('Downloading latest snapshot...');
+        spinner.start();
+        spinner.color = 'green';
+
         await FastforwardService.synctoLatestSnapshot();
+
+        spinner.stop();
     },
 
     async getClusterInfo(layer?: TessellationLayer): Promise<ClusterInfo[]> {

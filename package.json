@@ -1,7 +1,7 @@
 {
   "name": "@constellation-network/node-pilot",
   "description": "An easy deployment and monitoring tool for Constellation nodes.",
-  "version": "0.10.0-testnet",
+  "version": "0.11.0-testnet",
   "author": "Frank Fox",
   "bin": {
     "cpilot": "bin/run.js"

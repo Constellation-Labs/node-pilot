@@ -114,6 +114,11 @@ export default class Restart extends BaseCommand {
                 process.exit(0);
             }
 
+            process.on("exit", () => {
+                // serviceLog.log('exiting, clearing isRestarting flag');
+                configStore.setIsRestarting(0);
+            });
+
             configStore.setIsRestarting(Date.now());
         }
         else {

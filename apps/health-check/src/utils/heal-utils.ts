@@ -11,6 +11,13 @@ import {storeUtils} from "./store-utils.js";
 
 export const healUtils = {
 
+    async detectClusterUpgradeStatus() {
+        if (await clusterUtils.hasVersionChanged()) {
+            storeUtils.setNodeStatusInfo({error: 'cluster:upgrade'});
+            throw new Error('cluster version has changed. waiting for node upgrade');
+        }
+    },
+
     async detectCorruptSnapshotsFromLogs() {
 
         const {dir=APP_ENV.PATH_LOGS} = storeUtils.getBackupInfo();

@@ -55,6 +55,7 @@ export type NodeStatusInfo = {
     cpuUsage: string;
     error: string;
     errorDate: number;
+    hashMismatchCount: number;
     hasJoined: boolean;
     inConsensus: boolean;
     inNetwork: boolean;

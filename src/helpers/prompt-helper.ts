@@ -1,7 +1,10 @@
 import {checkbox, input, select} from "@inquirer/prompts";
 import chalk from "chalk";
 
+import {clm} from "../clm.js";
 import {configStore, NetworkType} from "../config-store.js";
+import {dockerService} from "../services/docker-service.js";
+import {nodeService} from "../services/node-service.js";
 import {TessellationLayer} from "../types.js";
 
 export const promptHelper = {
@@ -73,5 +76,15 @@ export const promptHelper = {
         configStore.setNetworkInfo({type: networkType, version: "latest"});
         configStore.setProjectFlag('duplicateNodeIdChecked', false);
         configStore.setProjectFlag('seedListChecked', false);
+        configStore.setProjectFlag('javaMemoryChecked', false);
+    },
+
+    async shutdownNodeIfRunning() {
+        if (await dockerService.isRunning()) {
+            clm.preStep('The validator node must be stopped first.')
+            await promptHelper.doYouWishToContinue();
+            await nodeService.leaveClusterAllLayers().catch();
+            await dockerService.dockerDown();
+        }
     }
 }

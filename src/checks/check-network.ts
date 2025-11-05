@@ -172,6 +172,8 @@ export const checkNetwork = {
 
     async isNetworkConnectable() {
 
+        const {type} = configStore.getNetworkInfo();
+
         return clusterService.getClusterInfo()
             .then(async nodes =>  {
                 const someAreReady = nodes.some(node => node.state === 'Ready');
@@ -183,14 +185,15 @@ export const checkNetwork = {
                     throw new Error(`Network is not connectable.`);
                 }
 
-                clm.debug(`Network is live. Found ${nodes.length} nodes in the cluster.`);
+                clm.debug(`${type} is live. Found ${nodes.length} nodes in the cluster.`);
 
                 configStore.setClusterStats({ total: nodes.length });
 
                 return true;
             })
             .catch(() => {
-                clm.error(`Network is not in service. Please try again later.`);
+
+                clm.error(`${type} is not in service. Please try again later.`);
                 return false;
             });
     }
