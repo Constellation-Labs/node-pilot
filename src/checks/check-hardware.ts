@@ -25,10 +25,13 @@ export const checkHardware = {
         const numOfCores = os.availableParallelism();
 
         let allPassed = true;
-        const formatActual = (value: number | string, recommended: number, units = '') => {
+        let allMinPassed = true;
+        const formatActual = (value: number | string, recommended: number, minimum: number, units = '') => {
             const passed = Math.ceil(Number(value)) >= recommended;
+            const minPassed = Math.ceil(Number(value)) >= minimum;
             allPassed = allPassed && passed;
-            return passed ? chalk.greenBright(value + units) : chalk.redBright(value + units)
+            allMinPassed = allMinPassed && minPassed;
+            return passed ? chalk.greenBright(value + units) : (minPassed ? chalk.yellowBright(value + units) : chalk.redBright(value + units))
         }
 
         // eslint-disable-next-line unicorn/consistent-function-scoping
@@ -37,13 +40,14 @@ export const checkHardware = {
         const header = [
             { headerColor: 'white', value: 'HARDWARE' },
             { headerColor: 'white', value: 'RECOMMENDED' },
+            { headerColor: 'white', value: 'MINIMUM' },
             { headerColor: 'white', value: 'ACTUAL' },
         ];
 
         const rows = [
-            [fc("Disk size"), fc("240 GB"), formatActual(totalSpaceGB, 240, " GB")],
-            [fc("System memory"), fc("16 GB"), formatActual(totalMemoryGB, 16, " GB")],
-            [fc("CPU cores"), fc("8 cores"), formatActual(numOfCores, 8, " cores")],
+            [fc("Disk size"), fc("240 GB"), fc("50 GB"), formatActual(totalSpaceGB, 240, 45, " GB")],
+            [fc("System memory"), fc("16 GB"), fc("8 GB"), formatActual(totalMemoryGB, 16, 8," GB")],
+            [fc("CPU cores"), fc("8 cores"), fc("4 cores"), formatActual(numOfCores, 8, 4," cores")],
         ]
 
         clm.echo(ttyTable(header,rows).render() + "\n");
@@ -52,9 +56,12 @@ export const checkHardware = {
             clm.postStep(" ✅ System requirements check passed  ✅\n");
             await promptHelper.doYouWishToContinue();
         }
-        else {
+        else if (allMinPassed) {
             clm.warn("System recommendations not met. The validator node may not function properly.\n");
             await promptHelper.doYouWishToContinue('n');
+        }
+        else {
+            clm.error("System requirements not met.\n");
         }
 
         configStore.setSystemInfo({ cores: numOfCores, disk: totalSpaceGB, memory: totalMemoryGB, platform: os.platform(), user: os.userInfo().username });

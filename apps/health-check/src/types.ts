@@ -15,6 +15,7 @@ export type BackupInfo = {
 
 export enum NodeState {
     DownloadInProgress = 'DownloadInProgress',
+    Initial = 'Initial',
     Leaving = 'Leaving',
     Observing = 'Observing',
     Offline = 'Offline',

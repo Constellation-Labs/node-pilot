@@ -11,7 +11,7 @@ export const notifyUtils = {
         const {webHookEnabled=false} = storeUtils.getUserInfo();
 
         if (webHookEnabled) {
-            const diskInfo = await shellUtils.runCommandWithOutput("df -h / | tail -1 | awk '{print $4 \"/\" $2}'").then(res => res.trim()).catch(() => '');
+            const diskInfo = await shellUtils.runCommandWithOutput("df -h / | tail -1 | awk '{print $3 \"/\" $2}'").then(res => res.trim()).catch(() => '');
             const network = APP_ENV.CL_APP_ENV;
             msg = `${APP_ENV.CL_EXTERNAL_IP} v${APP_ENV.PILOT_VERSION} ${diskInfo} - ${msg}`;
             // post using fetch

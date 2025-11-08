@@ -79,7 +79,7 @@ export const nodeUtils = {
         if (!hasJoined) {
             const {clusterQueue=0, isHydrateRunning} = storeUtils.getTimerInfo();
             const {error,lastError,pilotSession='0'} = storeUtils.getNodeStatusInfo();
-            if (state === 'Ready') {
+            if (state === NodeState.Ready) {
                 logger.log(`Node has joined the cluster. Current state: ${state}.`);
                 storeUtils.setNodeStatusInfo({clusterSession, error: '', hasJoined: true, lastError: error || lastError, pilotSession: APP_ENV.NODE_PILOT_SESSION});
                 const { fatal: hadFatal = false, upgrade = false } = storeUtils.getTimerInfo();
@@ -98,7 +98,7 @@ export const nodeUtils = {
                     logger.log(`Node has started a new session.`);
                 }
             }
-            else if (state === 'ReadyToJoin') {
+            else if (state === NodeState.ReadyToJoin) {
 
                 if (Number(clusterSession) + clusterQueue > Date.now()) {
                     logger.log(`Node is in queue to join the cluster. Time remaining: ${Math.round((clusterQueue + Number(clusterSession) - Date.now())/1000)}s`);
@@ -140,6 +140,9 @@ export const nodeUtils = {
                     }
 
                 }
+            }
+            else if (state !== NodeState.Initial) {
+                storeUtils.setNodeStatusInfo({ pilotSession: APP_ENV.NODE_PILOT_SESSION});
             }
         }
 
@@ -234,6 +237,11 @@ export const nodeUtils = {
         return fetch(`http://localhost:${APP_ENV.CL_PUBLIC_HTTP_PORT}/${path}`)
             .then(d => d.json())
             .then(d => {
+                const {unavailableCount=0} = storeUtils.getNodeStatusInfo();
+                if (unavailableCount > 0) {
+                    logger.log(`Local node recovered: ${unavailableCount}`);
+                }
+
                 storeUtils.setNodeStatusInfo({unavailableCount: 0});
                 return d;
             })

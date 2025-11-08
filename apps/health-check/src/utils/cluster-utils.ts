@@ -223,7 +223,7 @@ export const clusterUtils = {
             this.getReleaseVersion(),
             nodeUtils.getNodeVersion()
         ]);
-        logger.log('hasVersionChanged' +
+        logger.debug('hasVersionChanged' +
             `    Cluster: ${clusterVersion}` +
             `    Node: ${nodeVersion}` +
             `    Match: ${clusterVersion === nodeVersion}`)

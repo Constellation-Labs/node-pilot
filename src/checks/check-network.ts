@@ -20,9 +20,9 @@ export const checkNetwork = {
 
     async checkForExistingNodeIdInCluster() {
 
-        if(configStore.hasProjectFlag('duplicateNodeIdChecked')) {
-            return;
-        }
+        // if(configStore.hasProjectFlag('duplicateNodeIdChecked')) {
+        //     return;
+        // }
 
         clm.preStep('Checking for existing Node ID in cluster...');
 
@@ -38,7 +38,7 @@ export const checkNetwork = {
             clm.error(`Or to change the node ID, configure the Key File: use ${chalk.cyan('cpilot config')}, and select ${chalk.cyan('Key File')}`);
         }
 
-        configStore.setProjectFlag('duplicateNodeIdChecked', true);
+        // configStore.setProjectFlag('duplicateNodeIdChecked', true);
         clm.postStep('✅ No duplicate Node found.');
     },
 

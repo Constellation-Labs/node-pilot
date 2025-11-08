@@ -52,7 +52,7 @@ class CellFormatter {
         if (value === 'Ready') return this.style(value, "green")
         if (value === 'HydratingSnapshots') return this.style(value, "cyan")
         if (value === 'ReadyToJoin' || value === 'JoiningCluster') return this.style(value, "yellow", "bold")
-        if (value === 'Restarting') return this.style(value, "yellow", "bold")
+        if (value.startsWith('Start')) return this.style(value, "yellow")
         if (value.startsWith('Ready')) return this.style(value, "green")
 
         return this.style(value, "white")

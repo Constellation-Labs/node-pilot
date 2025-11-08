@@ -12,9 +12,13 @@ import {dockerService} from "../services/docker-service.js";
 import {shellService} from "../services/shell-service.js";
 import {checkNetwork} from "./check-network.js";
 
-function getJavaMemoryOptions(mem: number) {
-    const linuxOpt = (os.platform() === 'linux') ? ' -XX:+UseZGC' : '';
-    return `-Xms${mem}g -Xmx${mem}g -XX:+UnlockExperimentalVMOptions${linuxOpt} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./heap_dumps/ -XX:+ExitOnOutOfMemoryError`;
+function getJavaMemoryOptions(network: NetworkType, mem: number) {
+    if (network === 'testnet') {
+        const linuxOpt = (os.platform() === 'linux') ? ' -XX:+UseZGC' : '';
+        return `-Xms${mem}g -Xmx${mem}g -XX:+UnlockExperimentalVMOptions${linuxOpt} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./heap_dumps/ -XX:+ExitOnOutOfMemoryError`;
+    }
+
+    return `-Xms1024M -Xmx${mem}g -Xss256K`;
 }
 
 export const checkProject = {
@@ -42,6 +46,7 @@ export const checkProject = {
             configStore.setEnvLayerInfo(currentNetwork, layersToRun[0], { CL_DOCKER_JAVA_OPTS: '-Xms1024M -Xmx7G -Xss256K' });
         }
         else if (name === 'hypergraph') {
+            clm.preStep('Configuring Java memory for Hypergraph...');
             // prompt to use all detected memory
             let answer = await number({
                 default: xmx-1,
@@ -55,8 +60,10 @@ export const checkProject = {
             let mainLayerMem = 0;
 
             if (currentNetwork === 'testnet') {
-                subLayerMem = layersToRun.length > 1 ? Math.floor(answer / 2) : 0;
-                mainLayerMem = answer - subLayerMem;
+                // Divide equally between layers with max of 10GB each
+                subLayerMem = layersToRun.length > 1 ? Math.floor(answer / layersToRun.length) : 0;
+                subLayerMem = Math.min(subLayerMem, 10);
+                mainLayerMem = Math.min(10, answer - subLayerMem);
             }
             else {
                 subLayerMem = layersToRun.length > 1 ? Math.floor(answer / 3) : 0;
@@ -69,7 +76,7 @@ export const checkProject = {
                 const network = type.toUpperCase();
                 const logMethod = type === currentNetwork ? clm.postStep : clm.debug;
                 logMethod(`${network}:: ${layersToRun[0]} memory allocation: ${mainLayerMem}GB`);
-                configStore.setEnvLayerInfo(type, layersToRun[0], { CL_DOCKER_JAVA_OPTS: getJavaMemoryOptions(mainLayerMem) });
+                configStore.setEnvLayerInfo(type, layersToRun[0], { CL_DOCKER_JAVA_OPTS: getJavaMemoryOptions(currentNetwork, mainLayerMem) });
 
                 if (subLayerMem) {
                     logMethod(`${network}:: ${layersToRun[1]} memory allocation: ${subLayerMem}GB`);
