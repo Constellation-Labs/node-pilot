@@ -10,7 +10,7 @@ export const shellService = {
 
     async checkCommandAvailable(cmd: string) {
         clm.debug(`Checking if command ${cmd} is available...`);
-        return this.runCommand(`command -v ${cmd}`)
+        return this.runCommand(`command -v ${cmd}`, undefined, process.env.DEBUG !== 'true')
             .then(() =>  true)
             .catch((error) => {
                 clm.debug(`Run command error: ${error}`);
@@ -20,10 +20,11 @@ export const shellService = {
 
     async execDockerShell(serviceName: string, command: string) {
         const { projectDir } = configStore.getProjectInfo();
+        const silent = process.env.DEBUG !== 'true';
 
         clm.debug(`Running command: docker compose exec ${serviceName} bash -c "${command}"`);
 
-        const result = shell.exec(`docker compose exec ${serviceName} bash -c "${command}"`, { cwd: projectDir, silent: true });
+        const result = shell.exec(`docker compose exec ${serviceName} bash -c "${command}"`, { cwd: projectDir, silent });
 
         if (result.stderr && result.code > 0) {
             clm.warn(`Command Failed - ${command} with stderr: ${result.stderr}`);
@@ -65,7 +66,7 @@ export const shellService = {
         clm.debug(`END ${command}. Exit code: ${result.code}`);
 
         if (result.code > 0) {
-            throw new Error(`Failed running command: ${result.stderr}`);
+            throw new Error(`Failed running command. Exited with error message:\n${result.stderr}`);
         }
 
         return result;
@@ -74,7 +75,11 @@ export const shellService = {
     async runCommandWithOutput(command: string, env?: object) {
         const result = await this.runCommand(command, env, true);
 
-        return result.stdout.trim();
+        const output = result.stdout.trim();
+
+        clm.debug(`Command Output: "${output}"`);
+
+        return output;
     },
 
     async runProjectCommand (command: string, env?: object, silent = false) {
@@ -87,7 +92,7 @@ export const shellService = {
             nodeEnv = { ...env, ...process.env };
         }
 
-        clm.debug(`START Running command: "${command}" in directory: "${projectDir}"`);
+        clm.debug(`START Running command: "${command}" in directory: "${projectDir}"`);// with env: ${JSON.stringify(nodeEnv)}`);
 
         return new Promise<string>((resolve, reject) => {
             shell.exec(command, {async: true, cwd: projectDir, env: nodeEnv, silent}, (code, stdout, stderr) => {

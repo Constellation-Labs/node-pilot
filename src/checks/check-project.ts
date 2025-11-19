@@ -14,8 +14,10 @@ import {checkNetwork} from "./check-network.js";
 
 function getJavaMemoryOptions(network: NetworkType, mem: number) {
     if (network === 'testnet') {
-        const linuxOpt = (os.platform() === 'linux') ? ' -XX:+UseZGC' : '';
-        return `-Xms${mem}g -Xmx${mem}g -XX:+UnlockExperimentalVMOptions${linuxOpt} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./heap_dumps/ -XX:+ExitOnOutOfMemoryError`;
+        const linuxOpt = (os.platform() === 'linux') ? ' -XX:+UseZGC -XX:+ZGenerational -XX:ZAllocationSpikeTolerance=5 -XX:ZCollectionInterval=10' : '';
+        // return `-Xms${mem}g -Xmx${mem}g -XX:+UnlockExperimentalVMOptions${linuxOpt} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./heap_dumps/ -XX:+ExitOnOutOfMemoryError`;
+        return `-Xms${mem}g -Xmx${mem}g${linuxOpt} -XX:+UseStringDeduplication`;
+
     }
 
     return `-Xms1024M -Xmx${mem}g -Xss256K`;
@@ -61,8 +63,8 @@ export const checkProject = {
 
             if (currentNetwork === 'testnet') {
                 // Divide equally between layers with max of 10GB each
-                subLayerMem = layersToRun.length > 1 ? Math.floor(answer / layersToRun.length) : 0;
-                subLayerMem = Math.min(subLayerMem, 10);
+                subLayerMem = layersToRun.length > 1 ? Math.floor(answer / 3) : 0;
+                subLayerMem = Math.min(subLayerMem, 5);
                 mainLayerMem = Math.min(10, answer - subLayerMem);
             }
             else {
@@ -76,7 +78,7 @@ export const checkProject = {
                 const network = type.toUpperCase();
                 const logMethod = type === currentNetwork ? clm.postStep : clm.debug;
                 logMethod(`${network}:: ${layersToRun[0]} memory allocation: ${mainLayerMem}GB`);
-                configStore.setEnvLayerInfo(type, layersToRun[0], { CL_DOCKER_JAVA_OPTS: getJavaMemoryOptions(currentNetwork, mainLayerMem) });
+                configStore.setEnvLayerInfo(type, layersToRun[0], { CL_DOCKER_JAVA_OPTS: getJavaMemoryOptions(type, mainLayerMem) });
 
                 if (subLayerMem) {
                     logMethod(`${network}:: ${layersToRun[1]} memory allocation: ${subLayerMem}GB`);
@@ -157,10 +159,9 @@ export const checkProject = {
             configStore.setNetworkInfo({ type: rInfo.network, version: rInfo.version });
         }
 
-        const clusterVersion = await clusterService.getReleaseVersion();
-
         if (!requiresInstall) {
             const nInfo = configStore.getNetworkInfo();
+            const clusterVersion = await clusterService.getReleaseVersion();
             if (nInfo.version !== clusterVersion) {
                 const answer = await input({
                     default: 'y',

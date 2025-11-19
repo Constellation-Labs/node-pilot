@@ -90,12 +90,22 @@ export const clusterUtils = {
 
         const ordinalToCheck = Math.min(clusterOrdinal, ordinal);
 
+        if (Number.isNaN(ordinalToCheck)) {
+            throw new TypeError(`Unable to determine latest snapshot to check hash for. Cluster: ${clusterOrdinal}, Node: ${ordinal}`);
+        }
+
         const nodeOrdinalHash = await nodeUtils.getNodeOrdinalHash(ordinalToCheck);
         const clusterOrdinalHash = await this.getClusterOrdinalHash(ordinalToCheck);
 
         logger.debug("Comparing snapshot hashes for ordinal " + ordinalToCheck);
         logger.debug("  Local : " + nodeOrdinalHash);
         logger.debug(`  Cluster: ${clusterOrdinalHash}`);
+
+        // TODO - prevent false positives
+        //  x. are actual hashes and not failed request
+        //  x. Witness mismatched hashes from different nodes
+        //  3. Witness mismatch hash from a source node
+
 
         if (nodeOrdinalHash === clusterOrdinalHash) {
             storeUtils.setNodeStatusInfo({hashMismatchCount: 0});
@@ -169,6 +179,10 @@ export const clusterUtils = {
             const url = `${lbUrl}/${APP_ENV.SNAPSHOT_URL_PATH}/${ordinal}/hash${sticky}`;
             return fetch(url)
                 .then(res => res.json())
+                .then((h: string) => {
+                    Buffer.from(h, 'hex');
+                    return h;
+                })
                 .catch(() => {
                     logger.warn(`Failed to fetch from ${url}. Falling back to source node.`);
                     return this.getSourceNodeOrdinalHash(ordinal);
@@ -205,11 +219,19 @@ export const clusterUtils = {
     },
 
     async getSourceNodeLatestOrdinal(): Promise<number> {
-        return this.makeSourceNodeRequest(`${APP_ENV.SNAPSHOT_URL_PATH}/latest`).then(i => i.value.ordinal);
+        return this.makeSourceNodeRequest(`${APP_ENV.SNAPSHOT_URL_PATH}/latest`).then(i => i.value.ordinal)
     },
 
     async getSourceNodeOrdinalHash(ordinal: number): Promise<string> {
-        return this.makeSourceNodeRequest(`${APP_ENV.SNAPSHOT_URL_PATH}/${ordinal}/hash`);
+        const url = `${APP_ENV.SNAPSHOT_URL_PATH}/${ordinal}/hash`;
+        return this.makeSourceNodeRequest(url)
+            .then((h: string) => {
+                Buffer.from(h, 'hex');
+                return h;
+            })
+            .catch(() => {
+                throw new Error(`Failed to fetch from Source Node ${url}.`);
+            })
     },
 
     async hasHealableErrors() {

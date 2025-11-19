@@ -4,8 +4,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
+import packageJson from '../package.json' with {type: 'json'};
 import {clm} from "./clm.js";
 import {ClusterStats, TessellationLayer} from "./types.js";
+
+const pilotReleaseInfo = { name: packageJson.name, version: packageJson.version };
 
 class EmptyStorage extends JSONStorage {
     constructor() {super("/tmp");}
@@ -106,6 +109,10 @@ class ConfigStore {
 
     getNetworkInfo(): NetworkInfo {
         return this.projectStore.getItem('network');
+    }
+
+    getPilotReleaseInfo() {
+        return pilotReleaseInfo;
     }
 
     getProjectInfo(): ProjectInfo {

@@ -1,6 +1,6 @@
 FROM ubuntu:22.04
 
-RUN apt update && apt install -y openjdk-11-jre
+RUN apt update && apt install -y openjdk-21-jre
 
 RUN apt install -y curl jq wget
 
@@ -39,7 +39,7 @@ COPY dist/gl0.jar /app/jars/gl0.jar
 #COPY ./health-check /health-check
 #RUN chmod +x /health-check/bin/run.sh
 #RUN chmod +x /health-check/bin/hydrate.sh
-RUN npm install -g "@constellation-network/node-pilot-health-check@0.0.26"
+RUN npm install -g "@constellation-network/node-pilot-health-check@0.0.28"
 
 # Add entrypoint
 COPY ./entrypoint.sh /app/entrypoint.sh

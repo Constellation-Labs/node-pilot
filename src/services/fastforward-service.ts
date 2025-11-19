@@ -42,17 +42,17 @@ export class FastforwardService {
 
             clm.debug(error);
 
-            const {projectDir} = configStore.getProjectInfo();
+            // const {projectDir} = configStore.getProjectInfo();
 
-            const dataDir = path.join(projectDir, 'gl0', 'data', 'incremental_snapshot', 'ordinal');
+            // const dataDir = path.join(projectDir, 'gl0', 'data', 'incremental_snapshot', 'ordinal');
 
-            if (fs.existsSync(dataDir) && fs.readdirSync(dataDir).length > 0) {
-                clm.warn('Failed to fast forward to latest snapshot. Skipping...');
-                await promptHelper.doYouWishToContinue();
-                return;
-            }
+            // if (fs.existsSync(dataDir) && fs.readdirSync(dataDir).length > 0) {
+            //     clm.warn('Failed to fast forward to latest snapshot. Skipping...');
+            //     await promptHelper.doYouWishToContinue();
+            //     return;
+            // }
 
-            clm.error('Failed to fast forward to latest snapshot. Please try again later.');
+            clm.error('Failed to fast forward to latest snapshot. Please try again later or skip this step when prompted.');
         })
     }
 

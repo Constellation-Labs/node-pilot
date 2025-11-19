@@ -104,6 +104,9 @@ export const projectHelper = {
         }
 
         await this.installProject(name, projectFolder);
+
+        // Set the project version to match the latest Pilot version. This prevents previous migration scripts from running.
+        configStore.setProjectInfo({version: configStore.getPilotReleaseInfo().version});
     },
 
     //  curl -s https://api.github.com/repos/Constellation-Labs/pacaswap-metagraph/releases/latest | jq -r '.assets[] | select(.name | contains("node-pilot"))'
@@ -115,16 +118,16 @@ export const projectHelper = {
     async installHypergraph() {
         await this.installEmbedded('hypergraph');
 
-        const {projectDir} = configStore.getProjectInfo();
-        const {platform} = configStore.getSystemInfo();
-
         this.prepareDataFolder();
 
-        if (platform === 'linux') {
-            const layerDir = path.join(projectDir,'gl0');
-            // set permission for group "docker" on the layer folder and any subfolders created later
-            await shellService.runCommand(`sudo setfacl -Rm g:docker:rwX -dm g:docker:rwX ${layerDir}`)
-        }
+        // const {projectDir} = configStore.getProjectInfo();
+        // const {platform} = configStore.getSystemInfo();
+        //
+        // if (platform === 'linux') {
+        //     const layerDir = path.join(projectDir,'gl0');
+        //     // set permission for group "docker" on the layer folder and any subfolders created later
+        //     await shellService.runCommand(`sudo setfacl -Rm g:docker:rwX -dm g:docker:rwX ${layerDir}`)
+        // }
 
         this.importEnvFiles();
     },
@@ -215,23 +218,23 @@ export const projectHelper = {
         }
     },
 
-    async upgradeEmbedded (name: string)   {
+    upgradeEmbedded (name: string)   {
         const projectFolder = path.resolve(path.dirname(fileURLToPath(import.meta.url)), `../../projects/${name}`);
 
         if (!fs.existsSync(projectFolder)) {
             clm.error(`Project folder not found: ${projectFolder}`);
         }
 
-        await this.upgradeProject(name, projectFolder);
+        this.upgradeProject(name, projectFolder);
     },
 
-    async upgradeHypergraph() {
-        await this.upgradeEmbedded('hypergraph');
+    upgradeHypergraph() {
+        this.upgradeEmbedded('hypergraph');
 
         this.importEnvFiles();
     },
 
-    async upgradeProject(name: string, projectFolder: string) {
+    upgradeProject(name: string, projectFolder: string) {
         const {projectDir} = configStore.getProjectInfo();
 
         clm.debug(`Upgrading project from ${projectFolder} to ${projectDir}`);

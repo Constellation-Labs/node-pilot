@@ -67,5 +67,5 @@ check_docker() {
 
 # Run all checks
 echo "🔍 Checking and installing required dependencies..."
-check_acl
+# check_acl
 check_docker

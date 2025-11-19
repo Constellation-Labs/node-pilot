@@ -68,12 +68,18 @@ export const nodeUtils = {
 
         storeUtils.setNodeStatusInfo({clusterState});
 
-        let {hasJoined = false} = storeUtils.getNodeStatusInfo();
+        let {error, hasJoined = false} = storeUtils.getNodeStatusInfo();
 
-        if (hasJoined && OutOfClusterStates.has(state)) {
-            logger.log(`Node left the cluster. Current state: ${state}`);
-            storeUtils.setNodeStatusInfo({hasJoined: false});
-            hasJoined = false;
+        if (hasJoined) {
+            if (OutOfClusterStates.has(state)) {
+                logger.log(`Node left the cluster. Current state: ${state}`);
+                storeUtils.setNodeStatusInfo({hasJoined: false});
+                hasJoined = false;
+            }
+            else if (error && state === NodeState.Ready) {
+                // Node has recoverable from error.
+                storeUtils.setNodeStatusInfo({error: ''});
+            }
         }
 
         if (!hasJoined) {
@@ -88,7 +94,7 @@ export const nodeUtils = {
                     await notifyUtils.notify(`Node has been upgraded and is READY`);
                     storeUtils.setTimerInfo({upgrade: false});
                 }
-                else if (hadFatal) {
+                else if (hadFatal && error) {
                     logger.fatal(`Node has recovered`);
                     await notifyUtils.notify(`Node has recovered from "${error}" and is READY`);
                     storeUtils.setTimerInfo({fatal: false});
@@ -177,7 +183,15 @@ export const nodeUtils = {
     },
 
     async getNodeOrdinalHash(ordinal: number): Promise<string> {
-        return this.makeNodeRequest(`${APP_ENV.SNAPSHOT_URL_PATH}/${ordinal}/hash`);
+        const url = `${APP_ENV.SNAPSHOT_URL_PATH}/${ordinal}/hash`;
+        return this.makeNodeRequest(url)
+            .then((h: string) => {
+                Buffer.from(h, 'hex');
+                return h;
+            })
+            .catch(() => {
+                throw new Error(`Unable to retrieve ${url} from node.`);
+            });
     },
 
     async getNodeVersion() {

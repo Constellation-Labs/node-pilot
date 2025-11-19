@@ -32,7 +32,7 @@ export default class Config extends Command {
                 { name: 'Java Memory', value: 'javaMemory' },
                 { name: 'Key File', value: 'keyFile' },
                 { name: 'Layers To Run', value: 'layersToRun' },
-                { name: `Network`, value: 'network' },
+                { name: `Hypergraph Network`, value: 'network' },
 
             ],
             message: 'What would you like to change?:',

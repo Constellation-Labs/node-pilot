@@ -191,10 +191,6 @@ export const checkNetwork = {
 
                 return true;
             })
-            .catch(() => {
-
-                clm.error(`${type} is not in service. Please try again later.`);
-                return false;
-            });
+            .catch(() => false);
     }
 }
