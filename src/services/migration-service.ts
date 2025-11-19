@@ -10,6 +10,7 @@ export const migrationService = {
         const migrations: Record<string, () => void> = {
             '0.12.5': m0125,
             '0.13.9': m0139,
+            '0.14.0-intnet.1': m0140intnet1,
             // add more migrations as needed
         };
 
@@ -43,6 +44,10 @@ export const migrationService = {
     }
 
 };
+
+function m0140intnet1() {
+    configStore.setProjectFlag('javaMemoryChecked', false);
+}
 
 function m0139() {
     clm.step('Running migration 0.13.9...');

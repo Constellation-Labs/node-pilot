@@ -20,6 +20,12 @@ function getJavaMemoryOptions(network: NetworkType, mem: number) {
 
     }
 
+    if (network === 'integrationnet') {
+        const linuxOpt = (os.platform() === 'linux') ? ' -XX:+UseZGC -XX:+ZGenerational' : '';
+        // return `-Xms${mem}g -Xmx${mem}g -XX:+UnlockExperimentalVMOptions${linuxOpt} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./heap_dumps/ -XX:+ExitOnOutOfMemoryError`;
+        return `-Xms${mem}g -Xmx${mem}g${linuxOpt} -XX:+UseStringDeduplication`;
+    }
+
     return `-Xms1024M -Xmx${mem}g -Xss256K`;
 }
 
