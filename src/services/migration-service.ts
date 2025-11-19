@@ -10,7 +10,7 @@ export const migrationService = {
 
     async runMigrations() {
         const migrations: Record<string, () => Promise<void>> = {
-            '0.8.0': m080,
+            // '0.8.0': m080,
             '0.12.3': m0123,
             // add more migrations as needed
         };
@@ -48,8 +48,8 @@ export const migrationService = {
 
 async function m0123() {
     clm.step('Running migration 0.12.3...');
-    const {type} = configStore.getNetworkInfo();
-    if (type === 'integrationnet') {
+    const netInfo = configStore.getNetworkInfo();
+    if (netInfo && netInfo.type === 'integrationnet') {
         clm.preStep('Installing Node Pilot IntegrationNet version...')
         await shellService.runCommand('sudo npm install -g @constellation-network/node-pilot@intnet')
         clm.postStep('IntegrationNet version installed successfully.');
@@ -58,7 +58,7 @@ async function m0123() {
     }
 }
 
-async function m080() {
-    clm.step('Running migration 0.8.0...');
-    configStore.setProjectFlag('javaMemoryChecked', false);
-}
+// async function m080() {
+//     clm.step('Running migration 0.8.0...');
+//     configStore.setProjectFlag('javaMemoryChecked', false);
+// }
