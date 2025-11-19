@@ -1,14 +1,17 @@
+import chalk from "chalk";
 import semver from "semver";
 
 import packageJson from '../../package.json' with {type: 'json'};
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
+import {shellService} from "./shell-service.js";
 
 export const migrationService = {
 
-    runMigrations() {
-        const migrations: Record<string, () => void> = {
+    async runMigrations() {
+        const migrations: Record<string, () => Promise<void>> = {
             '0.8.0': m080,
+            '0.12.3': m0123,
             // add more migrations as needed
         };
 
@@ -33,7 +36,8 @@ export const migrationService = {
             clm.preStep(`Migration versions to run: ${migrationVersions}`);
 
             for (const version of migrationVersions) {
-                migrations[version]();
+                // eslint-disable-next-line no-await-in-loop
+                await migrations[version]();
             }
         }
 
@@ -42,7 +46,19 @@ export const migrationService = {
 
 };
 
-function m080() {
+async function m0123() {
+    clm.step('Running migration 0.12.3...');
+    const {type} = configStore.getNetworkInfo();
+    if (type === 'integrationnet') {
+        clm.preStep('Installing Node Pilot IntegrationNet version...')
+        await shellService.runCommand('sudo npm install -g @constellation-network/node-pilot@intnet')
+        clm.postStep('IntegrationNet version installed successfully.');
+        clm.warn(`Run ${chalk.cyanBright('cpilot')} again to start using the IntegrationNet version.`);
+        process.exit(0);
+    }
+}
+
+async function m080() {
     clm.step('Running migration 0.8.0...');
     configStore.setProjectFlag('javaMemoryChecked', false);
 }
