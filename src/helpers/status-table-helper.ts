@@ -104,7 +104,7 @@ export const statusTableHeader = [
     { color: 'white', formatter: formatState, headerColor: 'whiteBright', value: 'Cluster State', width: 16},
     { color: 'white', formatter: formatCpu, headerColor: 'whiteBright', value: 'CPU Usage', width: 12 },
     { color: 'white', formatter: formatMem, headerColor: 'whiteBright', value: 'Mem Usage', width: 12 },
-    { color: 'white', formatter: formatError, headerColor: 'whiteBright', value: 'Error', width: 22},
+    { color: 'white', formatter: formatError, headerColor: 'whiteBright', value: 'Last Error', width: 22},
 ];
 
 export const glHeader1 = [
@@ -120,7 +120,7 @@ export const glHeader2 = [
     { color: 'white', formatter: formatState, headerColor: 'whiteBright', value: 'Cluster State', width: 22},
     { color: 'white', formatter: formatCpu, headerColor: 'whiteBright', value: 'CPU Usage', width: 13 },
     { color: 'white', formatter: formatMem, headerColor: 'whiteBright', value: 'Mem Usage', width: 16 },
-    { color: 'white', formatter: formatError, headerColor: 'whiteBright', value: 'Error', width: 22},
+    { color: 'white', formatter: formatError, headerColor: 'whiteBright', value: 'Last Error', width: 22},
 ];
 
 

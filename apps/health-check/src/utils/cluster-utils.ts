@@ -111,14 +111,21 @@ export const clusterUtils = {
             storeUtils.setNodeStatusInfo({hashMismatchCount: 0});
         }
         else {
-            logger.log(`    Hash mismatch detected at ordinal ${ordinalToCheck} - Node: ${nodeOrdinalHash}, Cluster: ${clusterOrdinalHash}`);
-            if (hashMismatchCount < 1) {
+            logger.log(`    Hash mismatch detected at ordinal ${ordinalToCheck} - Node: ${nodeOrdinalHash}, Cluster: ${clusterOrdinalHash}, count: ${hashMismatchCount}`);
+            if (hashMismatchCount < 2) {
                 storeUtils.setNodeStatusInfo({hashMismatchCount: hashMismatchCount+1});
             }
             else {
-                storeUtils.setNodeStatusInfo({error: 'hash mismatch:forked'});
-                await nodeUtils.leaveCluster();
-                throw new Error('Hash mismatch');
+                const sourceNodeOrdinalHash = await this.getSourceNodeOrdinalHash(ordinalToCheck);
+                logger.log(`    Source Node Hash compare ordinal ${ordinalToCheck} - Node: ${nodeOrdinalHash}, Source Node: ${sourceNodeOrdinalHash}`);
+                if (nodeOrdinalHash === sourceNodeOrdinalHash) {
+                    storeUtils.setNodeStatusInfo({hashMismatchCount: 0});
+                }
+                else {
+                    storeUtils.setNodeStatusInfo({error: 'hash mismatch:forked'});
+                    await nodeUtils.leaveCluster();
+                    throw new Error('Hash mismatch');
+                }
             }
         }
     },

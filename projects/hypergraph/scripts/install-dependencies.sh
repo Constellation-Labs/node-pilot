@@ -218,8 +218,8 @@ check_curl() {
 
 # Run all checks
 echo "🔍 Checking and installing required dependencies..."
-check_java
-check_java_home
+#check_java
+#check_java_home
 check_jq
 check_wget
 check_curl

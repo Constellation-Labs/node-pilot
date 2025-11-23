@@ -38,7 +38,7 @@ export const projectHelper = {
 
             if (deleteJars) {
                 // eslint-disable-next-line no-await-in-loop
-                await shellService.runProjectCommand(`sudo rm -rf ${layer}/dist`);
+                await shellService.runProjectCommand(`sudo rm -rf dist`);
             }
         }
 

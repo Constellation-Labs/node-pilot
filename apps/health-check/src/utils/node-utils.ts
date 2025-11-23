@@ -68,7 +68,7 @@ export const nodeUtils = {
 
         storeUtils.setNodeStatusInfo({clusterState});
 
-        let {error, hasJoined = false} = storeUtils.getNodeStatusInfo();
+        let {error, errorDate, hasJoined = false} = storeUtils.getNodeStatusInfo();
 
         if (hasJoined) {
             if (OutOfClusterStates.has(state)) {
@@ -76,10 +76,10 @@ export const nodeUtils = {
                 storeUtils.setNodeStatusInfo({hasJoined: false});
                 hasJoined = false;
             }
-            else if (error && state === NodeState.Ready) {
-                // Node has recoverable from error.
-                storeUtils.setNodeStatusInfo({error: ''});
-            }
+            else if (error && state === NodeState.Ready && errorDate && Date.now() - errorDate > 60_000) {
+                    // Node has recoverable from error.
+                    storeUtils.setNodeStatusInfo({error: ''});
+                }
         }
 
         if (!hasJoined) {
@@ -87,7 +87,7 @@ export const nodeUtils = {
             const {error,lastError,pilotSession='0'} = storeUtils.getNodeStatusInfo();
             if (state === NodeState.Ready) {
                 logger.log(`Node has joined the cluster. Current state: ${state}.`);
-                storeUtils.setNodeStatusInfo({clusterSession, error: '', hasJoined: true, lastError: error || lastError, pilotSession: APP_ENV.NODE_PILOT_SESSION});
+                storeUtils.setNodeStatusInfo({clusterSession, error: '', hashMismatchCount: 0, hasJoined: true, lastError: error || lastError, pilotSession: APP_ENV.NODE_PILOT_SESSION, unavailableCount: 0});
                 const { fatal: hadFatal = false, upgrade = false } = storeUtils.getTimerInfo();
                 if (upgrade) {
                     logger.log(`Node has upgraded`);
@@ -241,7 +241,7 @@ export const nodeUtils = {
 
         const cliPort = APP_ENV.CL_CLI_HTTP_PORT;
 
-        logger.log(`${APP_ENV.CL_TESSELATION_LAYER} is leaving the cluster.`);
+        logger.log(`Sent leave cluster command for ${APP_ENV.CL_TESSELATION_LAYER}.`);
 
         await fetch(`http://localhost:${cliPort}/cluster/leave`, { method: 'POST' } )
     },

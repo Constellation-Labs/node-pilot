@@ -35,6 +35,7 @@ export const checkNetwork = {
         if (!isDockerRunning && found) {
             clm.warn('Node ID already exists in the cluster.');
             clm.warn('You need to shutdown your node from a previous installation before continuing.');
+            clm.warn('If you recently left the cluster, you may need to wait for your Node Id to be cleared. ~1 minute');
             clm.error(`Or to change the node ID, configure the Key File: use ${chalk.cyan('cpilot config')}, and select ${chalk.cyan('Key File')}`);
         }
 

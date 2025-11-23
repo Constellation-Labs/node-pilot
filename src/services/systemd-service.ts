@@ -11,7 +11,7 @@ export const systemdService = {
     async install() {
         const platform = os.platform();
         if (platform !== 'linux') {
-            clm.warn('Node Pilot services can only be installed on Linux systems. Skipping systemd service installation.\n');
+            clm.warn('systemd services can only be installed on Linux systems. Skipping...\n');
             return;
         }
 
@@ -31,7 +31,7 @@ export const systemdService = {
     async uninstall() {
         const platform = os.platform();
         if (platform !== 'linux') {
-            clm.warn('Node Pilot services can only be installed on Linux systems. Skipping systemd service uninstallation.\n');
+            clm.warn('systemd services can only be installed on Linux systems. Skipping...\n');
         }
 
         const scriptFile = path.resolve(path.dirname(fileURLToPath(import.meta.url)), `../../scripts/uninstall_services.sh`);

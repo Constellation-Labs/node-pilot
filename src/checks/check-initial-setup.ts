@@ -61,8 +61,9 @@ export const checkInitialSetup = {
         const usersWithPilot = [];
         for (const folder of userFolders) {
             const dirPath = path.join(homeFolder, folder, '.node-pilot');
+            const prefix = isLinux ? 'sudo ' : '';
             // eslint-disable-next-line no-await-in-loop
-            const exists = await shellService.runCommandWithOutput(`sudo test -d "${dirPath}" && echo 1 || echo 0`);
+            const exists = await shellService.runCommandWithOutput(`${prefix}test -d "${dirPath}" && echo 1 || echo 0`);
             if (exists === '1') usersWithPilot.push(folder);
         }
 
