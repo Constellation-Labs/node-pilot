@@ -48,10 +48,10 @@ export const healUtils = {
             const seedFile = path.resolve('/app', 'seedlist');
             if (fs.existsSync(seedFile)) {
                 fs.writeFileSync(seedFile, content);
-                storeUtils.setNodeStatusInfo({error: 'node:invalid-seedlist'});
+                storeUtils.setNodeStatusInfo({error: 'node:seedlist-changed'});
                 storeUtils.setTimerInfo({fatal:false}); // reset fatal flag
                 await nodeUtils.leaveCluster();
-                throw new Error('node:invalid-seedlist');
+                throw new Error('node:seedlist-changed');
             }
         }
     },

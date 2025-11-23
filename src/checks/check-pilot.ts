@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import os from "node:os";
 import semver from "semver";
 
@@ -93,6 +94,15 @@ export const checkNodePilot = {
         if (hasMajorMinorChange) {
             clm.step('Updating scripts and configuration files...');
             projectHelper.upgradeHypergraph();
+
+            if (fs.existsSync('/var/run/reboot-required')) {
+                clm.warn('A system update and reboot is required.');
+                await promptHelper.doYouWishToContinue();
+                await shellService.runCommand('sudo apt-get update && sudo apt-get upgrade -y');
+                if (await promptHelper.confirmPrompt('Do you want to reboot now?')) {
+                    await shellService.runCommand('sudo reboot');
+                }
+            }
         }
 
         clm.postStep('Update completed. Run cpilot again to use the latest version');

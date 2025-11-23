@@ -95,7 +95,15 @@ export const archiveUtils = {
                     }
 
                     if (this.hasDownloadedRange(startOrdinal.toString(), endOrdinal.toString())) {
-                        logger.log('Skipping already downloaded archive: ' + filename);
+                        // Don't skip and redownload if the missing ordinal is in an archive.
+                        // it should have already been downloaded, but it is coming up missing again due to a previous bad archive file.
+                        if (startOrdinal < ordinal && ordinal < endOrdinal) {
+                            logger.log('Detected missing snapshot from a previously downloaded archive. Attempting again. Adding archive to download: ' + filename);
+                            archives.push({ endOrdinal, startOrdinal, url: host + '/' + filename });
+                        }
+                        else {
+                            logger.log('Skipping already downloaded archive: ' + filename);
+                        }
                     }
                     else {
                         logger.log('Adding archive to download: ' + filename);

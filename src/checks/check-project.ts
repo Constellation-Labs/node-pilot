@@ -23,7 +23,7 @@ function getJavaMemoryOptions(network: NetworkType, mem: number) {
     if (network === 'integrationnet') {
         const linuxOpt = (os.platform() === 'linux') ? ' -XX:+UseZGC -XX:+ZGenerational' : '';
         // return `-Xms${mem}g -Xmx${mem}g -XX:+UnlockExperimentalVMOptions${linuxOpt} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./heap_dumps/ -XX:+ExitOnOutOfMemoryError`;
-        return `-Xms${mem}g -Xmx${mem}g${linuxOpt} -XX:+UseStringDeduplication`;
+        return `-Xms${mem-2}g -Xmx${mem}g${linuxOpt} -XX:+UseStringDeduplication`;
     }
 
     return `-Xms1024M -Xmx${mem}g -Xss256K`;
@@ -67,7 +67,7 @@ export const checkProject = {
             let subLayerMem = 0;
             let mainLayerMem = 0;
 
-            if (currentNetwork === 'testnet') {
+            if (currentNetwork === 'testnet' || currentNetwork === 'integrationnet') {
                 // Divide equally between layers with max of 10GB each
                 subLayerMem = layersToRun.length > 1 ? Math.floor(answer / 3) : 0;
                 subLayerMem = Math.min(subLayerMem, 5);
