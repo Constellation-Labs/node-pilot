@@ -31,7 +31,7 @@ export async function main() {
 
     let { semaphore=0 } = storeUtils.getTimerInfo();
 
-    if (semaphore > 0 && semaphore + 1000 * 60 > Date.now()) {
+    if (semaphore > 0 && semaphore + 1000 * 90 > Date.now()) {
         const waitSeconds = Math.round((Date.now() - semaphore) / 1000);
         logger.log(`Semaphore is active. Waiting for ${waitSeconds}s before starting health check...`);
         return;

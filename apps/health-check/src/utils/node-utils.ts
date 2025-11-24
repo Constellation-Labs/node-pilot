@@ -113,7 +113,7 @@ export const nodeUtils = {
 
                 logger.log(`Node is ready to join the cluster. Current state: ${state}. Last session: ${pilotSession}. Node Pilot session: ${APP_ENV.NODE_PILOT_SESSION}`);
 
-                await healUtils.detectClusterUpgradeStatus()
+                await healUtils.detectClusterUpgradeStatus();
                 await healUtils.detectSeedlistDoesNotMatch();
 
                 if (pilotSession === APP_ENV.NODE_PILOT_SESSION) {
@@ -148,6 +148,7 @@ export const nodeUtils = {
                 }
             }
             else if (state !== NodeState.Initial) {
+                // Node state is not Initial or ReadyToJoin, meaning user must have started the join process manually.
                 storeUtils.setNodeStatusInfo({ pilotSession: APP_ENV.NODE_PILOT_SESSION});
             }
         }
@@ -222,7 +223,7 @@ export const nodeUtils = {
 
         storeUtils.setNodeStatusInfo({pilotSession: APP_ENV.NODE_PILOT_SESSION});
 
-        const state = await this.getCurrentState();
+        const { state } = storeUtils.getNodeStatusInfo();
 
         if (state === NodeState.Offline || state === NodeState.Leaving ) {
             logger.log(`Node has already left the cluster. Current state: "${state}".`);

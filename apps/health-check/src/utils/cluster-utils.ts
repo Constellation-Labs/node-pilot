@@ -3,6 +3,7 @@ import path from "node:path";
 import {APP_ENV} from "../app-env.js";
 import {logger} from "../logger.js";
 import {NodeInfo} from "../types.js";
+import {healUtils} from "./heal-utils.js";
 import {nodeUtils} from "./node-utils.js";
 import {notifyUtils} from "./notify-utils.js";
 import {shellUtils} from "./shell-utils.js";
@@ -18,11 +19,13 @@ export const clusterUtils = {
 
         if (clusterSession !== nodeClusterSession) {
             logger.error(`Session fork detected. Current session: ${clusterSession}, Node session: ${nodeClusterSession}`);
+
             if (await this.hasVersionChanged()) {
                 logger.log(`    Network version has changed. Waiting for auto-upgrade...`);
                 const {upgrade} = storeUtils.getTimerInfo();
                 if (!upgrade) {
                     storeUtils.setTimerInfo({upgrade: true});
+                    await healUtils.downloadLatestSeedList();
                     await notifyUtils.notify(`Network version has changed. Waiting for auto-upgrade...`);
                 }
 
@@ -30,7 +33,9 @@ export const clusterUtils = {
                 throw new Error('Cluster upgrade in progress.');
             }
             else {
+                await healUtils.downloadLatestSeedList();
                 storeUtils.setNodeStatusInfo({error: 'cluster:forked'});
+                await nodeUtils.leaveCluster();
                 throw new Error('RESTART_REQUIRED');
             }
         }

@@ -54,8 +54,8 @@ check_java() {
     Darwin)
       if command -v brew >/dev/null 2>&1; then
         echo "Installing Java 21 using Homebrew..."
-        brew tap adoptopenjdk/openjdk
-        brew install --cask adoptopenjdk21
+        brew untap adoptopenjdk/openjdk
+        brew install --cask temurin21
       else
         echo "⚠️ Homebrew not found. Please install Java 21 manually."
         return 1
@@ -218,8 +218,8 @@ check_curl() {
 
 # Run all checks
 echo "🔍 Checking and installing required dependencies..."
-#check_java
-#check_java_home
+check_java
+check_java_home
 check_jq
 check_wget
 check_curl
