@@ -1,4 +1,4 @@
-import {checkbox, input, select} from "@inquirer/prompts";
+import {checkbox, input, number, select} from "@inquirer/prompts";
 import chalk from "chalk";
 
 import {clm} from "../clm.js";
@@ -8,6 +8,19 @@ import {nodeService} from "../services/node-service.js";
 import {TessellationLayer} from "../types.js";
 
 export const promptHelper = {
+
+    async configurePorts() {
+        const defaults = { cl1: [9300,9301], dl1: [9400,9401], gl0: [9000,9001], gl1: [9100,9101], ml0: [9200,9201] };
+        const { layersToRun } = configStore.getProjectInfo();
+        const {type: network} = configStore.getNetworkInfo();
+        for (const layer of layersToRun) {
+            // eslint-disable-next-line no-await-in-loop
+            const port1 = await number({ default: defaults[layer][0], message: `${layer} Public Port:`, required: true, validate: v => v !== undefined && v > 0 && v <= 65_535 });
+            // eslint-disable-next-line no-await-in-loop
+            const port2 = await number({ default: defaults[layer][1], message: `${layer} P2P Port:`, required: true, validate: v => v !== undefined && v > 0 && v <= 65_535 });
+            configStore.setEnvLayerInfo(network, layer, { CL_P2P_HTTP_PORT: port2.toString(), CL_PUBLIC_HTTP_PORT: port1.toString()});
+        }
+    },
 
     async confirmPrompt(msg: string) {
         const result = await input({
@@ -44,8 +57,8 @@ export const promptHelper = {
     },
 
     async selectLayers() {
-        const { name } = configStore.getProjectInfo();
-        const choices = name === 'hypergraph' ? ['gl0','gl1'] : ['ml0', 'cl1', 'dl1'];
+        const { name, type } = configStore.getProjectInfo();
+        const choices = type === 'hypergraph' ? ['gl0','gl1'] : ['ml0', 'cl1', 'dl1'];
         const result: TessellationLayer[] = await checkbox({ choices, message: `Select network layers to run for ${chalk.cyan(name)}:`, validate: v => v.length > 0 });
 
         configStore.setProjectInfo({layersToRun: result});

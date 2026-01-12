@@ -5,11 +5,12 @@ import path from "node:path";
 
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
+import {pilotManager} from "./pilot-manager.js";
 
 export const configHelper = {
 
     assertProject(prefix = '') {
-        if (configStore.hasProjects()) return;
+        if (pilotManager.hasProjects()) return;
         clm.error(prefix + 'Please create a new project first.');
     },
 

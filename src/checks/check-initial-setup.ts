@@ -1,10 +1,11 @@
-import chalk from "chalk";
+
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
+import {pilotManager} from "../helpers/pilot-manager.js";
 import {shellService} from "../services/shell-service.js";
 import {systemdService} from "../services/systemd-service.js";
 import {checkDependencies} from "./check-dependencies.js";
@@ -32,7 +33,7 @@ export const checkInitialSetup = {
         await checkDependencies();
         await this.checkExistingUsers();
 
-        if(configStore.getSystemInfo() === null) {
+        if(pilotManager.getSystemInfo() === null) {
             await checkHardware.systemRequirements();
         }
 

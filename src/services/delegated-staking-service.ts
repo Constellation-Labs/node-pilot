@@ -5,6 +5,7 @@ import path from "node:path";
 
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
+import {NodeParams} from "../types.js";
 import {clusterService} from "./cluster-service.js";
 import {shellService} from "./shell-service.js";
 
@@ -68,12 +69,12 @@ export const delegatedStakingService = {
         return fs.readFileSync(path.join(projectDir, 'event'), 'utf8');
     },
 
-    async getNodeParams() {
+    async getNodeParams(): Promise<NodeParams> {
 
         const {nodeId} = configStore.getProjectInfo();
 
         return clusterService.getNodeParams(nodeId)
-            .then((params: NodeParamsDto) => {
+            .then((params) => {
                 if (!params) {
                     return {description: '', lastRef: {hash: '0000000000000000000000000000000000000000000000000000000000000000', ordinal: 0}, name: '', rewardFraction: 5}
                 }
@@ -89,21 +90,3 @@ export const delegatedStakingService = {
             });
     }
 };
-
-type NodeParamsDto = {
-    "lastRef": {
-        "hash": string
-        "ordinal": number,
-    }
-    "latest": {
-        "value": {
-            "delegatedStakeRewardParameters": {
-                "rewardFraction": number
-            },
-            "nodeMetadataParameters": {
-                "description": string
-                "name": string,
-            }
-        }
-    }
-}

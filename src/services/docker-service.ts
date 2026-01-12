@@ -2,6 +2,7 @@ import ora from "ora";
 
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
+import {pilotManager} from "../helpers/pilot-manager.js";
 import {projectHelper} from "../helpers/project-helper.js";
 import {TessellationLayer} from "../types.js";
 import {shellService} from "./shell-service.js";
@@ -45,7 +46,7 @@ export const dockerService = {
             await this.dockerDown();
         }
 
-        configStore.setProjectStatusToRunning(true);
+        pilotManager.setProjectStatusToRunning(true);
 
         await run('up -d');
     },
@@ -60,7 +61,7 @@ export const dockerService = {
             await this.dockerDown();
         }
 
-        configStore.setProjectStatusToRunning(true);
+        pilotManager.setProjectStatusToRunning(true);
 
         await projectHelper.generateLayerEnvFiles();
         await run('up -d');

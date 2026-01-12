@@ -1,6 +1,6 @@
 import chalk from "chalk";
 
-import {configStore} from "./config-store.js";
+import {pilotManager} from "./helpers/pilot-manager.js";
 import {serviceLog} from "./helpers/service-log.js";
 
 /*
@@ -44,7 +44,7 @@ export const clm = {
 }
 
 function o(): OutStream {
-    return configStore.isRestarting() ? serviceLog : console
+    return pilotManager.isRestarting() ? serviceLog : console
 }
 
 type OutStream = {

@@ -2,6 +2,7 @@ import chalk from "chalk";
 
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
+import {pilotManager} from "../helpers/pilot-manager.js";
 import {NodeInfo, TessellationLayer} from "../types.js";
 import {clusterService} from "./cluster-service.js";
 import {shellService} from "./shell-service.js";
@@ -40,7 +41,7 @@ export const nodeService = {
     },
 
     async isPortExposed(port: number) {
-        const command = configStore.getSystemInfo().platform === 'linux' ? `ss -tuln | grep 0.0.0.0:${port}` : `netstat -an | grep '*.${port}'`;
+        const command = pilotManager.getSystemInfo().platform === 'linux' ? `ss -tuln | grep 0.0.0.0:${port}` : `netstat -an | grep '*.${port}'`;
         return shellService.runCommandWithOutput(command).then(o => o.length > 0);
     },
 
@@ -50,7 +51,7 @@ export const nodeService = {
     },
 
     async isPortOpen(port: number) {
-        const command = configStore.getSystemInfo().platform === 'linux' ? `ss -tuln | grep :${port}` : `netstat -an | grep '.${port}'`;
+        const command = pilotManager.getSystemInfo().platform === 'linux' ? `ss -tuln | grep :${port}` : `netstat -an | grep '.${port}'`;
         return shellService.runCommandWithOutput(command).then(o => o.length > 0);
     },
 

@@ -177,14 +177,6 @@ export const checkNetwork = {
 
         return clusterService.getClusterInfo()
             .then(async nodes =>  {
-                const someAreReady = nodes.some(node => node.state === 'Ready');
-                if (!someAreReady) {
-                    if (nodes.length > 0) {
-                        clm.warn(`Found ${nodes.length} nodes in the cluster, but none are READY.`);
-                    }
-
-                    throw new Error(`Network is not connectable.`);
-                }
 
                 clm.debug(`${type} is live. Found ${nodes.length} nodes in the cluster.`);
 

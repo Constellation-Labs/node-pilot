@@ -3,7 +3,7 @@ import ora from "ora";
 
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
-import {ClusterConsensusInfo, ClusterInfo, NodeInfo, TessellationLayer} from "../types.js";
+import {ClusterConsensusInfo, ClusterInfo, NodeInfo, NodeParamsDto, TessellationLayer} from "../types.js";
 import {FastforwardService} from "./fastforward-service.js";
 
 export const clusterService = {
@@ -41,16 +41,34 @@ export const clusterService = {
         spinner.stop();
     },
 
-    async getClusterInfo(layer?: TessellationLayer): Promise<ClusterInfo[]> {
-        return this.makeClusterRequestGet('cluster/info', layer);
+    async getClusterInfo(layer?: TessellationLayer) {
+        return this.makeClusterRequestGet<ClusterInfo[]>('cluster/info', layer)
+            .then(cInfo => {
+                if (!isClusterReady(cInfo)) {
+                    return this.makeClusterRequestGet<ClusterInfo[]>('cluster/info', layer, '?sticky=false')
+                        .then(cInfo => {
+                            if (!isClusterReady(cInfo)) {
+                                if (cInfo.length > 0) {
+                                    clm.warn(`Found ${cInfo.length} nodes in the cluster, but none are READY.`);
+                                }
+
+                                throw new Error(`Network is not connectable.`);
+                            }
+
+                            return cInfo;
+                        })
+                }
+
+                return cInfo;
+            })
     },
 
-    async getClusterNodeInfo(layer?: TessellationLayer): Promise<NodeInfo> {
-        return this.makeClusterRequestGet('node/info', layer);
+    async getClusterNodeInfo(layer?: TessellationLayer) {
+        return this.makeClusterRequestGet<NodeInfo>('node/info', layer);
     },
 
-    async getLatestConsensusInfo(layer?: TessellationLayer): Promise<ClusterConsensusInfo> {
-         return this.makeClusterRequestGet('consensus/latest/peers', layer);
+    async getLatestConsensusInfo(layer?: TessellationLayer){
+         return this.makeClusterRequestGet<ClusterConsensusInfo>('consensus/latest/peers', layer);
     },
 
     getLayer0() {
@@ -58,33 +76,41 @@ export const clusterService = {
     },
 
     async getNodeParams(id: string) {
-        return this.makeClusterRequestGet(`node-params/${id}`, 'gl0');
+        return this.makeClusterRequestGet<NodeParamsDto>(`node-params/${id}`, 'gl0');
     },
 
     async getReleaseVersion() {
-        return this.getClusterNodeInfo().then(i => i.version);
+        clm.debug('Getting release version...');
+        return this.makeRandomSourceNodeRequest<NodeInfo>('node/info').then(i => i.version)
+            .catch(() => {
+                clm.debug(`Failed to get random source node. Attempting cluster node...`);
+                return this.makeClusterRequestGet<NodeInfo>('node/info').then(i => i.version)
+            });
     },
 
-    async getSourceNodeInfo(layer: TessellationLayer): Promise<NodeInfo> {
-        return this.makeSourceNodeRequest('node/info', layer);
+    async getSourceNodeInfo(layer: TessellationLayer) {
+        return this.makeRandomSourceNodeRequest<NodeInfo>('node/info', layer);
     },
 
     async getSourceNodeLatestOrdinal(layer: TessellationLayer): Promise<number> {
-        return this.makeSourceNodeRequest('global-snapshots/latest', layer).then(i => i.value.ordinal);
+        return this.makeRandomSourceNodeRequest<{ value: { ordinal: number }}>('global-snapshots/latest', layer).then(i => i.value.ordinal);
     },
 
-    async getSourceNodeOrdinalHash(layer: TessellationLayer, ordinal: number): Promise<string> {
-        return this.makeSourceNodeRequest(`global-snapshots/${ordinal}/hash`, layer);
+    async getSourceNodeOrdinalHash(layer: TessellationLayer, ordinal: number) {
+        return this.makeRandomSourceNodeRequest<string>(`global-snapshots/${ordinal}/hash`, layer);
     },
 
-    async makeClusterRequestGet(path: string, layer?: TessellationLayer) {
+    async makeClusterRequestGet<T>(path: string, layer?: TessellationLayer, params = ''): Promise<T> {
 
         layer = layer || this.getLayer0();
         const {type} = configStore.getNetworkInfo();
         const envLayerInfo = configStore.getEnvLayerInfo(type, layer);
 
+
         if (envLayerInfo.CL_LB) {
-            return fetch(`${envLayerInfo.CL_LB}/${path}`)
+            const url = `${envLayerInfo.CL_LB}/${path}${params}`;
+            clm.debug(`makeClusterRequestGet ${url}`);
+            return fetch(url)
                 .then(res => {
                     if (res.ok) {
                         return res.json()
@@ -99,8 +125,13 @@ export const clusterService = {
 
                 })
                 .catch(() => {
-                    clm.debug(`Failed to get node info from ${envLayerInfo.CL_LB}/${path}. Attempting source node...`);
-                    return this.makeSourceNodeRequest(path, layer);
+                    if (!params) {
+                        return this.makeClusterRequestGet(path, layer, '?sticky=false');
+                    }
+
+                    // clm.debug(`Failed to get cluster GET from ${envLayerInfo.CL_LB}/${path}. Attempting source node...`);
+                    // return this.makeRandomSourceNodeRequest(path, layer);
+                    throw new Error(`Unable to connect to cluster at ${envLayerInfo.CL_LB}/${path}`)
                 });
         }
 
@@ -121,18 +152,22 @@ export const clusterService = {
         .then(res => res.json())
     },
 
+    async makeRandomSourceNodeRequest<T>(path: string, layer?: TessellationLayer) {
+        return this.makeClusterRequestGet<T>(path, layer, '?source_node=true&sticky=false');
+    },
+
     async makeSourceNodeRequest(path: string, layer: TessellationLayer) {
         const {type} = configStore.getNetworkInfo();
 
-        const {CL_PUBLIC_HTTP_PORT} = configStore.getEnvLayerInfo(type, layer);
+        const {CL_SOURCE_HTTP_PORT} = configStore.getEnvLayerInfo(type, layer);
         const {CL_L0_PEER_HTTP_HOST} = configStore.getEnvNetworkInfo(type);
 
-        clm.debug(`http://${CL_L0_PEER_HTTP_HOST}:${CL_PUBLIC_HTTP_PORT}/${path}`);
+        clm.debug(`http://${CL_L0_PEER_HTTP_HOST}:${CL_SOURCE_HTTP_PORT}/${path}`);
 
-        return fetch(`http://${CL_L0_PEER_HTTP_HOST}:${CL_PUBLIC_HTTP_PORT}/${path}`)
+        return fetch(`http://${CL_L0_PEER_HTTP_HOST}:${CL_SOURCE_HTTP_PORT}/${path}`)
             .then(res =>  res.json())
             .catch(() => {
-                throw new Error(`Unable to connect to source node at http://${CL_L0_PEER_HTTP_HOST}:${CL_PUBLIC_HTTP_PORT}/${path}`)
+                throw new Error(`Unable to connect to source node at http://${CL_L0_PEER_HTTP_HOST}:${CL_SOURCE_HTTP_PORT}/${path}`)
             })
     },
 
@@ -141,3 +176,6 @@ export const clusterService = {
     }
 };
 
+function isClusterReady(info: ClusterInfo[]) {
+    return info.some(node => node.state === 'Ready');
+}

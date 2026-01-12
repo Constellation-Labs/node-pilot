@@ -5,6 +5,7 @@ import ora from "ora";
 import {clm} from "../clm.js";
 import {configStore, NetworkType} from "../config-store.js";
 import {configHelper} from "../helpers/config-helper.js";
+import {pilotManager} from "../helpers/pilot-manager.js";
 import {projectHelper} from "../helpers/project-helper.js";
 import {promptHelper} from "../helpers/prompt-helper.js";
 import {clusterService} from "../services/cluster-service.js";
@@ -16,7 +17,7 @@ function getJavaMemoryOptions(network: NetworkType, mem: number) {
     if (network === 'testnet') {
         const linuxOpt = (os.platform() === 'linux') ? ' -XX:+UseZGC -XX:+ZGenerational -XX:ZAllocationSpikeTolerance=5 -XX:ZCollectionInterval=10' : '';
         // return `-Xms${mem}g -Xmx${mem}g -XX:+UnlockExperimentalVMOptions${linuxOpt} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./heap_dumps/ -XX:+ExitOnOutOfMemoryError`;
-        return `-Xms${mem}g -Xmx${mem}g${linuxOpt} -XX:+UseStringDeduplication`;
+        return `-Xms${mem-2}g -Xmx${mem}g${linuxOpt} -XX:+UseStringDeduplication`;
 
     }
 
@@ -41,7 +42,7 @@ export const checkProject = {
     },
 
     async configureJavaMemoryArguments() {
-        const {memory} = configStore.getSystemInfo();
+        const {memory} = pilotManager.getSystemInfo();
         const {layersToRun, name} = configStore.getProjectInfo();
         const {type: currentNetwork} = configStore.getNetworkInfo();
 
@@ -97,6 +98,7 @@ export const checkProject = {
     },
 
     async hasVersionChanged() {
+        clm.debug('Checking for network version change...');
         const clusterVersion = await clusterService.getReleaseVersion();
 
         const rInfo = await configHelper.getReleaseInfo();
@@ -108,7 +110,7 @@ export const checkProject = {
         let updateNetworkType = false;
         let updateLayers = false;
 
-        if (!configStore.hasProjects()) {
+        if (!pilotManager.isProjectInstalled()) {
             await projectHelper.selectProject();
             await checkNetwork.configureIpAddress();
             updateNetworkType = true;
@@ -126,6 +128,7 @@ export const checkProject = {
         if (!layersToRun || updateLayers) {
             await promptHelper.selectLayers();
             await this.configureJavaMemoryArguments();
+            projectHelper.updateDockerEnv();
         }
     },
 
@@ -204,7 +207,7 @@ export const checkProject = {
             await dockerService.dockerDown();
         }
 
-        const showSpinner = !configStore.isRestarting()
+        const showSpinner = !pilotManager.isRestarting()
 
         const spinner = ora('');
 

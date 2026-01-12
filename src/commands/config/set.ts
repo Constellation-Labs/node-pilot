@@ -22,8 +22,13 @@ export default class ConfigSet extends Command {
         const {args} = await this.parse(ConfigSet)
         const {layersToRun} = configStore.getProjectInfo();
 
-        if (args.name.startsWith('key')) {
+        if (args.name.startsWith('key:')) {
             clm.error(`Key properties cannot be set directly. Please run ${chalk.cyan('cpilot config')} and select ${chalk.cyan('Key Info')} to manage the key file.`);
+        }
+
+        if (args.name.startsWith('docker:')) {
+            // Note: Multiple places need to be updated (LayerInfo and DockerInfo). It's easier to require the user to run the config command to update docker properties.
+            clm.error(`Docker ports cannot be set directly. Please run ${chalk.cyan('cpilot config')} and select ${chalk.cyan('Container Ports')} to manage.`);
         }
 
         const {type: network} = configStore.getNetworkInfo();

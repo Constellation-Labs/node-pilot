@@ -1,5 +1,3 @@
-
-
 import { createPrompt, useKeypress } from '@inquirer/core';
 import chalk from "chalk";
 import fs from "node:fs";
@@ -8,6 +6,7 @@ import ttyTable from "tty-table";
 
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
+import {pilotManager} from "./pilot-manager.js";
 import {formatTimeAgo, glHeader1, glHeader2, NodeStatusInfo, statusTableHeader} from "./status-table-helper.js";
 
 export class StatusTable {
@@ -50,15 +49,15 @@ export class StatusTable {
 
     private getProjectInfo() {
         const appPath = os.homedir() + '/.node-pilot';
-        const activeProject = configStore.getActiveProject();
-        const projects = configStore.getRunningProjects();
+        const activeProject = pilotManager.getActiveProject();
+        const projects = pilotManager.getRunningProjects();
         if (!activeProject || projects.length === 0)  {
             clm.error("No projects are running.");
         }
 
         const info = [];
         for (const project of projects) {
-            configStore.setActiveProject(project);
+            pilotManager.setActiveProject(project);
             const {layersToRun} = configStore.getProjectInfo();
             const {type:network} = configStore.getNetworkInfo();
             for (const layer of layersToRun) {
@@ -66,7 +65,7 @@ export class StatusTable {
             }
         }
 
-        configStore.setActiveProject(activeProject);
+        pilotManager.setActiveProject(activeProject);
 
         return info;
     }

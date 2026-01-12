@@ -2,6 +2,7 @@ import {Command} from '@oclif/core'
 
 import {configStore} from "../config-store.js";
 import {configHelper} from "../helpers/config-helper.js";
+import {pilotManager} from "../helpers/pilot-manager.js";
 import {dockerService} from "../services/docker-service.js";
 import {nodeService} from "../services/node-service.js";
 
@@ -19,7 +20,7 @@ export default class Shutdown extends Command {
     public async run(): Promise<void> {
         configHelper.assertProject('No project found. ');
         const {layersToRun} = configStore.getProjectInfo();
-        configStore.setProjectStatusToRunning(false);
+        pilotManager.setProjectStatusToRunning(false);
         await nodeService.leaveClusterAllLayers();
         await nodeService.pollForLayersState(layersToRun, 'Offline');
         await dockerService.dockerDown();

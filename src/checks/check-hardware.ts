@@ -4,7 +4,7 @@ import os from "node:os";
 import ttyTable from "tty-table";
 
 import {clm} from "../clm.js";
-import {configStore} from "../config-store.js";
+import {pilotManager} from "../helpers/pilot-manager.js";
 import {promptHelper} from "../helpers/prompt-helper.js";
 
 export const checkHardware = {
@@ -64,7 +64,7 @@ export const checkHardware = {
             clm.error("System requirements not met.\n");
         }
 
-        configStore.setSystemInfo({ cores: numOfCores, disk: totalSpaceGB, memory: totalMemoryGB, platform: os.platform(), user: os.userInfo().username });
+        pilotManager.setSystemInfo({ cores: numOfCores, disk: totalSpaceGB, memory: totalMemoryGB, platform: os.platform(), user: os.userInfo().username });
 
     }
 }

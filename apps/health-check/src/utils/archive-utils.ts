@@ -14,9 +14,9 @@ import {storeUtils} from "./store-utils.js";
 
 // http://5.161.243.241:7777/hash.txt
 const remoteIndexMap = {
-    integrationnet: "http://5.161.243.241:7777", // http://5.161.243.241:7777/hash.txt
-    mainnet:  "http://116.203.215.246:7777", // http://128.140.33.142:7777/hash.txt
-    testnet: "http://65.108.87.84:7777" // http://65.108.87.84:7777/hash.txt
+    integrationnet: "http://37.27.92.171:7777", // http://5.161.243.241:7777/hash.txt, http://37.27.92.171:7777/hash.txt
+    mainnet:  "http://116.203.215.246:7777", // http://116.203.215.246:7777/hash.txt, http://37.27.88.199:7777/hash.txt
+    testnet: "http://46.62.246.239:7777" // http://46.62.246.239:7777/hash.txt
 }
 
 type ArchiveInfo = { endOrdinal: number; startOrdinal: number, url: string };

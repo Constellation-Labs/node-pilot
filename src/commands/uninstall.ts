@@ -16,6 +16,8 @@ export default class Uninstall extends Command {
 
   public async run(): Promise<void> {
 
+      await promptHelper.shutdownNodeIfRunning();
+
       const user = os.userInfo().username;
 
       clm.warn(`You are about to uninstall Node Pilot for ${chalk.cyan(user)}.\nThis will also remove all the data and logs from your validator node.`)
@@ -24,7 +26,6 @@ export default class Uninstall extends Command {
       clm.preStep('Uninstalling Node Pilot...');
 
       await systemdService.uninstall();
-
 
       const homeDir = os.homedir();
       const nodePilotDir = `${homeDir}/.node-pilot`;

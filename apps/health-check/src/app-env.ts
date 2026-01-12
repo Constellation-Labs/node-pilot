@@ -2,6 +2,8 @@ import * as fs from "node:fs";
 
 import packageJson from '../package.json' with {type: 'json'};
 
+const LAYER_PORTS: Record<string, number[]> = { cl1: [9300,9301], dl1: [9400,9401], gl0: [9000,9001], gl1: [9010,9011], ml0: [9200,9201] };
+
 class AppEnv {
 
     CL_APP_ENV: string;
@@ -17,6 +19,8 @@ class AppEnv {
     CL_LB: string;
     CL_P2P_HTTP_PORT: string;
     CL_PUBLIC_HTTP_PORT: string;
+    CL_SOURCE_NODE_HOST: string;
+    CL_SOURCE_NODE_PORT: string;
     CL_TESSELATION_LAYER: string;
     IS_GLOBAL_LAYER = false;
     NODE_PILOT_SESSION: string;
@@ -31,6 +35,8 @@ class AppEnv {
         this.CL_GLOBAL_L0_PEER_ID = env.CL_GLOBAL_L0_PEER_ID;
         this.CL_GLOBAL_L0_PEER_HTTP_PORT = env.CL_GLOBAL_L0_PEER_HTTP_PORT || '9000';
         this.CL_GLOBAL_L0_PEER_HTTP_HOST = env.CL_GLOBAL_L0_PEER_HTTP_HOST;
+        this.CL_SOURCE_NODE_HOST = env.CL_SOURCE_NODE_HOST || env.CL_L0_PEER_HTTP_HOST;
+        this.CL_SOURCE_NODE_PORT = env.CL_SOURCE_NODE_PORT;
         this.CL_L0_PEER_HTTP_HOST = env.CL_L0_PEER_HTTP_HOST;
         this.CL_L0_PEER_HTTP_PORT = env.CL_L0_PEER_HTTP_PORT || '9000';
         this.CL_L0_PEER_ID = env.CL_L0_PEER_ID;
@@ -48,8 +54,14 @@ class AppEnv {
         this.PILOT_VERSION = packageJson.version;
 
         if (this.CL_TESSELATION_LAYER) {
-            this.IS_GLOBAL_LAYER = this.CL_TESSELATION_LAYER.charAt(0) === 'g';
-            this.SNAPSHOT_URL_PATH = this.IS_GLOBAL_LAYER ? 'global-snapshots' : 'snapshots';
+            if (LAYER_PORTS[this.CL_TESSELATION_LAYER]) {
+                this.IS_GLOBAL_LAYER = this.CL_TESSELATION_LAYER.charAt(0) === 'g';
+                this.SNAPSHOT_URL_PATH = this.IS_GLOBAL_LAYER ? 'global-snapshots' : 'snapshots';
+                this.CL_SOURCE_NODE_PORT = this.CL_SOURCE_NODE_PORT || LAYER_PORTS[this.CL_TESSELATION_LAYER][0].toString();
+            }
+            else {
+                console.error(`ERROR: Invalid CL_TESSELATION_LAYER value: ${this.CL_TESSELATION_LAYER}. Valid values are: ${Object.keys(LAYER_PORTS).join(', ')}`);
+            }
         }
         else {
             console.error("WARNING: environment variable CL_TESSELATION_LAYER is not set. Health check will be disabled.");

@@ -114,7 +114,6 @@ export const nodeUtils = {
                 logger.log(`Node is ready to join the cluster. Current state: ${state}. Last session: ${pilotSession}. Node Pilot session: ${APP_ENV.NODE_PILOT_SESSION}`);
 
                 await healUtils.detectClusterUpgradeStatus();
-                await healUtils.detectSeedlistDoesNotMatch();
 
                 if (pilotSession === APP_ENV.NODE_PILOT_SESSION) {
                     const {isRunning, pid} = storeUtils.getArchiveInfo();

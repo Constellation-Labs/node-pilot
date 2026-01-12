@@ -12,6 +12,7 @@ import {shellService} from "../services/shell-service.js";
 import {TessellationLayer} from "../types.js";
 import {configHelper} from "./config-helper.js";
 import {getLayerEnvFileContent} from "./env-templates.js";
+import {pilotManager} from "./pilot-manager.js";
 import {promptHelper} from "./prompt-helper.js";
 
 export const projectHelper = {
@@ -96,14 +97,15 @@ export const projectHelper = {
         // TODO: verify all required env variables are present
     },
 
-    async installEmbedded (name: string)   {
-        const projectFolder = path.resolve(path.dirname(fileURLToPath(import.meta.url)), `../../projects/${name}`);
+    async installEmbedded (embeddedName: string, projectName: string, projectType: 'hypergraph' | 'metagraph')   {
+        const projectFolder = path.resolve(path.dirname(fileURLToPath(import.meta.url)), `../../projects/${embeddedName}`);
 
         if (!fs.existsSync(projectFolder)) {
             clm.error(`Project folder not found: ${projectFolder}`);
         }
 
-        await this.installProject(name, projectFolder);
+        await this.installProject(projectName, projectType, projectFolder);
+        // this.installServiceScripts();
 
         // Set the project version to match the latest Pilot version. This prevents previous migration scripts from running.
         configStore.setProjectInfo({version: configStore.getPilotReleaseInfo().version});
@@ -116,40 +118,34 @@ export const projectHelper = {
     },
 
     async installHypergraph() {
-        await this.installEmbedded('hypergraph');
-
+        const name = pilotManager.getActiveProject() || 'hypergraph';
+        await this.installEmbedded('hypergraph', name, 'hypergraph');
         this.prepareDataFolder();
-
-        // const {projectDir} = configStore.getProjectInfo();
-        // const {platform} = configStore.getSystemInfo();
-        //
-        // if (platform === 'linux') {
-        //     const layerDir = path.join(projectDir,'gl0');
-        //     // set permission for group "docker" on the layer folder and any subfolders created later
-        //     await shellService.runCommand(`sudo setfacl -Rm g:docker:rwX -dm g:docker:rwX ${layerDir}`)
-        // }
-
         this.importEnvFiles();
     },
 
-    async installProject(name: string, projectFolder: string) {
+    async installProject(name: string, type: 'hypergraph' | 'metagraph', projectFolder: string) {
 
-        if (!configStore.hasProjects()) {
-            // On first install, copy scripts
-            const scriptsFolder = path.resolve(path.dirname(fileURLToPath(import.meta.url)), `../../scripts`);
-            const projectDir = path.join(configStore.getAppDir(), 'scripts');
-            clm.debug(`Installing node pilot scripts from ${scriptsFolder} to ${projectDir}`);
-            fs.mkdirSync(projectDir, {recursive: true});
-            fs.cpSync(scriptsFolder, projectDir, {recursive: true});
-        }
-
-        await configStore.applyNewProjectStore(name);
+        await pilotManager.applyNewProjectStore(name, type);
 
         const {projectDir} = configStore.getProjectInfo();
 
         clm.debug(`Installing project from ${projectFolder} to ${projectDir}`);
 
         fs.cpSync(projectFolder, projectDir, {recursive: true});
+    },
+
+    installServiceScripts() {
+        const scriptFile = path.join(pilotManager.getAppDir(), 'scripts', 'restart-unhealthy.sh');
+        if (!fs.existsSync(scriptFile)) {
+            const content = `#!/usr/bin/env bash
+            
+docker ps -q -f health=unhealthy | xargs --no-run-if-empty docker restart
+`;
+            fs.writeFileSync(scriptFile, content);
+            fs.chmodSync(scriptFile, '755');
+            clm.postStep(`Created script at ${scriptFile}`);
+        }
     },
 
     prepareDataFolder() {
@@ -189,7 +185,7 @@ export const projectHelper = {
             const ghRepoRegex = /^https?:\/\/(?:www\.)?github\.com\/([A-Za-z0-9](?:-?[A-Za-z0-9]){0,38})\/([A-Za-z0-9._-]+)(?:\.git)?\/?$/;
 
             if (project === 'dor') {
-                await this.installEmbedded('dor');
+                await this.installEmbedded('dor', 'dor', 'metagraph');
             } else if (project === 'custom') {
                 let repo = await input({
                     message: `Enter Github repository URL:`,
@@ -218,6 +214,40 @@ export const projectHelper = {
         }
     },
 
+    updateDockerEnv() {
+
+        const {type: network} = configStore.getNetworkInfo();
+
+        let CL_GL0_PUBLIC_PORT = '';
+        let CL_GL0_P2P_PORT = '';
+        let CL_GL1_PUBLIC_PORT = '';
+        let CL_GL1_P2P_PORT = '';
+
+        const {layersToRun} = configStore.getProjectInfo();
+
+        for (const layer of layersToRun) {
+            const info = configStore.getEnvLayerInfo(network, layer);
+            switch (layer) {
+                case 'gl0': {
+                    CL_GL0_P2P_PORT = info.CL_P2P_HTTP_PORT;
+                    CL_GL0_PUBLIC_PORT = info.CL_PUBLIC_HTTP_PORT;
+                    break;
+                }
+
+                case 'gl1': {
+                    CL_GL1_P2P_PORT = info.CL_P2P_HTTP_PORT;
+                    CL_GL1_PUBLIC_PORT = info.CL_PUBLIC_HTTP_PORT;
+                    break;
+                }
+            }
+        }
+
+        configStore.setDockerEnvInfo({
+            CL_GL0_P2P_PORT,  CL_GL0_PUBLIC_PORT,
+            CL_GL1_P2P_PORT, CL_GL1_PUBLIC_PORT
+        });
+    },
+
     upgradeEmbedded (name: string)   {
         const projectFolder = path.resolve(path.dirname(fileURLToPath(import.meta.url)), `../../projects/${name}`);
 
@@ -232,6 +262,10 @@ export const projectHelper = {
         this.upgradeEmbedded('hypergraph');
 
         this.importEnvFiles();
+
+        this.updateDockerEnv();
+
+        this.installServiceScripts();
     },
 
     upgradeProject(name: string, projectFolder: string) {

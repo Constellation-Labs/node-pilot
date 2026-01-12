@@ -82,22 +82,23 @@ export class FastforwardService {
         clm.postStep(`✅ Fastforward to snapshot ${chalk.bold(ordinal)} completed.`);
     }
 
-    private async fetchLatestSnapshot(): Promise<[number,string,string]> {
-        const url = `${this.lbUrl}/global-snapshots/latest/combined`;
-        clm.debug('Fetching latest snapshot ordinal from: ' + chalk.cyan(url));
-        return fetch(url)
-            .then(res => {
-                if (!res.ok) {
-                    throw new Error(`Failed to fetch latest snapshot ordinal: ${res.statusText}`);
-                }
+    private async fetchLatestSnapshot() {
+        const processResult = (d: {value: { ordinal: number }}[]) => {
+            const {ordinal} = d[0].value;
+            clm.debug('fetchLatestSnapshot - ' + chalk.cyan(ordinal));
+            return [ordinal,d[0],d[1]] as [number,object,object]
+        }
 
-                return res.json();
+        const url = `${this.lbUrl}/global-snapshots/latest/combined?source_node=true&sticky=false`;
+        clm.debug('Fetching latest snapshot from a source node: ' + chalk.cyan(url));
+        return fetch(url)
+            .then(res => res.json())
+            .then(processResult)
+            .catch(() => {
+                const url = `${this.lbUrl}/global-snapshots/latest/combined?sticky=false`;
+                clm.debug('FALLBACK: Fetching latest snapshot from cluster: ' + chalk.cyan(url));
+                return fetch(url).then(res => res.json()).then(processResult)
             })
-            .then(data => {
-                const {ordinal} = data[0].value;
-                clm.debug('fetchLatestSnapshot - ' + chalk.cyan(ordinal));
-                return [ordinal,data[0],data[1]]
-            });
     }
 
     private async fetchSnapshot(ordinal: number): Promise<string> {

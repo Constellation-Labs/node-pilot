@@ -54,8 +54,8 @@ check_java() {
     Darwin)
       if command -v brew >/dev/null 2>&1; then
         echo "Installing Java 21 using Homebrew..."
-        brew untap adoptopenjdk/openjdk
-        brew install --cask temurin21
+#        if brew tap | grep -q '^adoptopenjdk/openjdk$'; then brew untap adoptopenjdk/openjdk; fi
+        brew install --cask temurin@21
       else
         echo "⚠️ Homebrew not found. Please install Java 21 manually."
         return 1

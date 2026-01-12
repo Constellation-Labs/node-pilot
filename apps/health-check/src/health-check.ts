@@ -3,6 +3,7 @@ import {logger} from "./logger.js";
 import {NodeState, TessellationLayer, TimerInfo} from "./types.js";
 import {checkUtils} from "./utils/check-utils.js";
 import {clusterUtils} from "./utils/cluster-utils.js";
+import {healUtils} from "./utils/heal-utils.js";
 import {nodeUtils} from "./utils/node-utils.js";
 import {storeUtils} from "./utils/store-utils.js";
 
@@ -104,16 +105,10 @@ class HealthCheck {
                 const timeDiff = currentTime - startTime;
 
                 if (timeDiff >= MAX_TIME) {
-                    // const {clusterOrdinal, ordinal} = storeUtils.getNodeStatusInfo();
-                    // const distance = Math.abs(clusterOrdinal - ordinal);
-                    // if (distance < 20) {
-                    //     logger.log(`${layer} has been in ${currentState} state for more than ${Math.round(timeDiff/60)} minutes. Cluster distance: ${distance}`);
-                    // }
-                    // else {
-                        storeUtils.setNodeStatusInfo({error: `stalled:${currentState}`});
-                        await nodeUtils.leaveCluster();
-                        throw new Error(`${layer} has been in ${currentState} state for more than ${Math.round(MAX_TIME / 60)} minutes - exiting...`);
-                    // }
+                    await healUtils.detectSeedlistDoesNotMatch();
+                    storeUtils.setNodeStatusInfo({error: `stalled:${currentState}`});
+                    await nodeUtils.leaveCluster();
+                    throw new Error(`${layer} has been in ${currentState} state for more than ${Math.round(MAX_TIME / 60)} minutes - exiting...`);
                 } else {
                     const remainingTime = MAX_TIME - timeDiff;
                     storeUtils.setNodeStatusInfo({state: currentState + ` (${remainingTime}s)`});

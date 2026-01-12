@@ -1,5 +1,5 @@
 
-import {Command} from '@oclif/core'
+import {Command} from "@oclif/core";
 
 import {checkInitialSetup} from "../checks/check-initial-setup.js";
 import {checkLayers} from "../checks/check-layers.js";

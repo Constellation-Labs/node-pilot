@@ -1,8 +1,10 @@
+import {select} from "@inquirer/prompts";
 // src/base.ts
 import { Command, Flags } from '@oclif/core';
 
-import {configStore} from "./config-store.js";
+import {clm} from "./clm.js";
 import {configHelper} from "./helpers/config-helper.js";
+import {pilotManager} from "./helpers/pilot-manager.js";
 
 export abstract class BaseCommand extends Command {
     static baseFlags = {
@@ -10,14 +12,21 @@ export abstract class BaseCommand extends Command {
             char: 'p',
             description: 'Specify the project name to use',
             helpGroup: 'GLOBAL', // Optional: Group this flag in the help output
-            options: configStore.getProjects()
+            // options: configStore.getProjects()
         })
     };
 
-    checkProject(flags: { project?: string }) {
+    async checkProject(flags: { project?: string }) {
         configHelper.assertProject('No project found. ');
         if (flags.project) {
-            configStore.setActiveProject(flags.project);
+            const projects = pilotManager.getProjects();
+            if (projects.includes(flags.project)) {
+                pilotManager.setActiveProject(flags.project);
+                clm.postStep(`Active project set to ${flags.project}`);
+            }
+            else {
+                await select({choices: [...projects, `Create new project [${flags.project}]`], message: 'Change active project'})
+            }
         }
     }
 }

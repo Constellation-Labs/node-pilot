@@ -11,6 +11,8 @@ export const migrationService = {
             '0.12.5': m0125,
             '0.13.9': m0139,
             '0.14.0-intnet.1': m0140intnet1,
+            '0.18.7-intnet': m01807,
+            '0.19.2-intnet': m0192intnet
             // add more migrations as needed
         };
 
@@ -44,6 +46,15 @@ export const migrationService = {
     }
 
 };
+function m0192intnet() {
+    clm.step('Running migration 0.19.2-intnet...');
+    projectHelper.upgradeHypergraph();
+}
+
+function m01807() {
+    clm.step('Running migration 0.18.7...');
+    projectHelper.upgradeHypergraph();
+}
 
 function m0140intnet1() {
     configStore.setProjectFlag('javaMemoryChecked', false);

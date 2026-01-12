@@ -35,6 +35,7 @@ export default class Config extends Command {
                 { name: 'Layers To Run', value: 'layersToRun' },
                 { name: 'Constellation Network', value: 'network' },
                 { name: 'External IP Address', value: 'externalIp' },
+                { name: 'Container Ports', value: 'ports' },
             ],
             message: 'What would you like to change?:',
         });
@@ -49,6 +50,10 @@ export default class Config extends Command {
         else if (answer === 'delegatedStaking') {
             await delegatedStakingService.configureNodeParams();
         }
+        else if (answer === 'ports') {
+            await promptHelper.configurePorts();
+            projectHelper.updateDockerEnv();;
+        }
         else if (answer === 'javaMemory') {
             await promptHelper.shutdownNodeIfRunning();
             await checkProject.configureJavaMemoryArguments();
@@ -62,6 +67,7 @@ export default class Config extends Command {
             await promptHelper.shutdownNodeIfRunning();
             await promptHelper.selectLayers();
             await checkProject.configureJavaMemoryArguments();
+            projectHelper.updateDockerEnv();
         }
         else if (answer === 'network') {
             clm.warn('Changing the network will DELETE all the data and logs from the validator node.');
@@ -69,6 +75,7 @@ export default class Config extends Command {
             const {layersToRun} = configStore.getProjectInfo();
             await projectHelper.cleanup(layersToRun,true,true,true)
             await promptHelper.selectNetwork();
+            projectHelper.updateDockerEnv();
             await checkNodePilot.checkVersion(); // each network may have its own release
             await checkProject.runInstall();
         }

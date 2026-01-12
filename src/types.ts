@@ -66,3 +66,29 @@ export type NodeDiagnosticInfo = {
     state: string
     version: string;
 }
+
+export type NodeParamsDto = {
+    "lastRef": {
+        "hash": string
+        "ordinal": number,
+    }
+    "latest": {
+        "value": {
+            "delegatedStakeRewardParameters": {
+                "rewardFraction": number
+            },
+            "nodeMetadataParameters": {
+                "description": string
+                "name": string,
+            }
+        }
+    }
+}
+
+export type NodeParams = {
+    description: string,
+    lastRef: { hash: string, ordinal: number},
+    name: string,
+    reward?: number
+    rewardFraction?: number
+}
