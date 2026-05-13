@@ -54,15 +54,13 @@ export const delegatedStakingService = {
 
     async generateNodeParamPayload(rewardFraction: number, name: string, description: string, lastRef: { hash: string, ordinal: number}) {
 
-        name = name.replaceAll(/['"]/g, match => `\\${match}`);
-        description = description.replaceAll(/['"]/g, match => `\\${match}`);
         rewardFraction = Math.max(.05, Math.min(.1, rewardFraction));
 
         const env= configStore.getEnvInfo();
         const {projectDir} = configStore.getProjectInfo();
         fs.writeFileSync(path.join(projectDir, 'parent.json'), JSON.stringify(lastRef));
 
-        const command = `java -jar dist/wallet.jar create-node-params --reward-fraction ${rewardFraction} --name $'${name}' --description $'${description}' -p 'parent.json'`;
+        const command = `java -jar dist/wallet.jar create-node-params --reward-fraction ${rewardFraction} --name ${shQuote(name)} --description ${shQuote(description)} -p 'parent.json'`;
 
         await shellService.runProjectCommand(command, env);
 
@@ -90,3 +88,16 @@ export const delegatedStakingService = {
             });
     }
 };
+
+// Wrap a string as a single-quoted POSIX shell argument.
+// POSIX single quotes have NO escape mechanism — backslashes inside
+// '...' are literal — so 'It\'s great' does NOT work (the second '
+// closes the string, leaving the rest unquoted/unclosed).
+// To embed a ', splice three adjacent tokens:
+//   'It'  +  \'  +  's great'
+//   (close)  (escaped ' outside any quotes)  (reopen)
+// The shell concatenates adjacent tokens into one argument:
+//   It's great  →  'It'\''s great'
+function shQuote(s: string): string {
+    return `'${s.replaceAll("'", String.raw`'\''`)}'`;
+}
