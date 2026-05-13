@@ -61,7 +61,8 @@ export const checkHardware = {
             await promptHelper.doYouWishToContinue('n');
         }
         else {
-            clm.error("System requirements not met.\n");
+            clm.warn("System recommendations not met. The validator node may not function properly.\n");
+            await promptHelper.doYouWishToContinue('n');
         }
 
         pilotManager.setSystemInfo({ cores: numOfCores, disk: totalSpaceGB, memory: totalMemoryGB, platform: os.platform(), user: os.userInfo().username });

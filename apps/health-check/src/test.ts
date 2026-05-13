@@ -1,10 +1,20 @@
-import {archiveUtils} from "./utils/archive-utils.js";
+// import {archiveUtils} from "./utils/archive-utils.js";
 
-// eslint-disable-next-line unicorn/prefer-top-level-await
-archiveUtils.checkForCorruptAndMissingSnapshots().then(() => {});
 
-// import {backupUtils} from "./utils/backup-utils";
+// archiveUtils.checkForCorruptAndMissingSnapshots().then(() => {});
+
+// import {nodeUtils} from "./utils/node-utils.js";
 //
-// backupUtils.backupLogs();
+// const ordinal = nodeUtils.getNodeLatestOrdinalOnDisk()
+//
+// console.log(ordinal);
 
-// PATH_LOGS=/Users/ffox/.node-pilot/hypergraph/app-data/gl0-logs PATH_DATA=/Users/ffox/.node-pilot/hypergraph/app-data/gl0-data CL_L0_PEER_HTTP_HOST=13.52.205.240 tsx src/test.ts
+import {backupUtils} from "./utils/backup-utils.js";
+
+backupUtils.cleanLogs();
+
+// import {notifyUtils} from "./utils/notify-utils.js";
+//
+// notifyUtils.notify('test');
+
+// PATH_LOGS=/Users/ffox/.node-pilot/hypergraph/gl0/logs PATH_DATA=/Users/ffox/.node-pilot/hypergraph/gl0/data CL_L0_PEER_HTTP_HOST=13.52.205.240 tsx src/test.ts

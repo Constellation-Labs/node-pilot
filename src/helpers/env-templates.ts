@@ -1,4 +1,4 @@
-import {EnvCombinedInfo, EnvInfo} from "../config-store.js";
+import {EnvCombinedInfo} from "../config-store.js";
 import {TessellationLayer} from "../types.js";
 
 export function getLayerEnvFileContent(layer: TessellationLayer, env: EnvCombinedInfo) {
@@ -30,14 +30,6 @@ CL_GLOBAL_L0_PEER_ID=${env.CL_GLOBAL_L0_PEER_ID}
 CL_PUBLIC_HTTP_PORT=${env.CL_PUBLIC_HTTP_PORT}
 CL_P2P_HTTP_PORT=${env.CL_P2P_HTTP_PORT}
 CL_CLI_HTTP_PORT=${env.CL_CLI_HTTP_PORT}
-`;
-}
-
-export function getKeyFileContent(env: EnvInfo) {
-    return `
-export CL_KEYSTORE='${env.CL_KEYSTORE}'
-export CL_KEYALIAS='${env.CL_KEYALIAS}'
-export CL_PASSWORD='${env.CL_PASSWORD}'
 `;
 }
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+  #!/usr/bin/env bash
 
 # Check and install Node.js
 check_node() {

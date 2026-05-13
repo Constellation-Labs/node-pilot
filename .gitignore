@@ -7,6 +7,10 @@ dist
 /tmp
 node_modules
 oclif.manifest.json
+/keys
+
+source-nodes.env
+yarn.lock
 
 *.p12
 notes.txt
