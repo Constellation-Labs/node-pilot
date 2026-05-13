@@ -132,6 +132,8 @@ export const checkNodePilot = {
             distTag = 'omegatest';
         } else if (pilotVersion.includes('intnet')) {
             distTag = 'intnet';
+        } else if (pilotVersion.includes('devnet')) {
+            distTag = 'devnet';
         }
 
         const latestVer = semver.parse(result['dist-tags'][distTag]);
@@ -199,7 +201,7 @@ export const checkNodePilot = {
 }
 
 
-type PackageDistTag = 'intnet' | 'latest' | 'omegatest' | 'testnet';
+type PackageDistTag = 'devnet' | 'intnet' | 'latest' | 'omegatest' | 'testnet';
 
 type PackageInfo = {
     'dist-tags': Record<PackageDistTag, string>;

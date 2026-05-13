@@ -21,7 +21,10 @@
     "version": "oclif readme && git add README.md",
     "start": "./bin/dev.js",
     "debug": "DEBUG=true ./bin/dev.js",
-    "pub": "npm publish --access public --tag testnet"
+    "pub:mainnet": "npm publish --access public",
+    "pub:testnet": "npm publish --access public --tag testnet",
+    "pub:intnet": "npm publish --access public --tag intnet",
+    "pub:devnet": "npm publish --access public --tag devnet"
   },
   "types": "dist/index.d.ts",
   "engines": {

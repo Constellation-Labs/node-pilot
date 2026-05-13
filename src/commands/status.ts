@@ -29,7 +29,7 @@ export async function checkInstallationAndConfigurationStatus() {
     await checkProject.projectInstallation();
     await checkNodePilot.checkVersion();
 
-    migrationService.runMigrations();
+    await migrationService.runMigrations();
 
     await checkProject.checkJavaMemory();
     await checkNetwork.checkExternalIpAddress();

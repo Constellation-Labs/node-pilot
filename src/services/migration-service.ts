@@ -3,16 +3,18 @@ import semver from "semver";
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
 import {projectHelper} from "../helpers/project-helper.js";
+import {shellService} from "./shell-service.js";
 
 export const migrationService = {
 
-    runMigrations() {
-        const migrations: Record<string, () => void> = {
+    async runMigrations() {
+        const migrations: Record<string, () => Promise<void> | void> = {
             '0.12.5': m0125,
             '0.13.9': m0139,
             '0.14.0-intnet.1': m0140intnet1,
             '0.18.7-intnet': m01807,
-            '0.19.2-intnet': m0192intnet
+            '0.19.2-intnet': m0192intnet,
+            '0.24.0-0': m0240
             // add more migrations as needed
         };
 
@@ -38,7 +40,8 @@ export const migrationService = {
             clm.preStep(`Migration versions to run: ${migrationVersions}`);
 
             for (const version of migrationVersions) {
-                migrations[version]();
+                // eslint-disable-next-line no-await-in-loop
+                await migrations[version]();
             }
         }
 
@@ -46,6 +49,26 @@ export const migrationService = {
     }
 
 };
+
+async function m0240() {
+    clm.step('Running migration 0.24.0 — refreshing project files for Java 21 unified runtime...');
+    configStore.setProjectFlag('javaMemoryChecked', false);
+    projectHelper.upgradeHypergraph();
+    await shellService.runProjectCommand('bash scripts/install-dependencies.sh');
+    await refreshJavaHome();
+}
+
+async function refreshJavaHome() {
+    if (process.platform !== 'linux') return;
+    const javaHome = await shellService
+        .runCommandWithOutput('dirname "$(dirname "$(readlink -f "$(which java)")")"')
+        .catch(() => '');
+    if (javaHome) {
+        process.env.JAVA_HOME = javaHome;
+        clm.debug(`JAVA_HOME refreshed to ${javaHome} for current process`);
+    }
+}
+
 function m0192intnet() {
     clm.step('Running migration 0.19.2-intnet...');
     projectHelper.upgradeHypergraph();
