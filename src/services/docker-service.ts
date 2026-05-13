@@ -23,7 +23,10 @@ export const dockerService = {
                 clm.preStep('Building the node container...');
             }
 
-            await shellService.runProjectCommand('bash scripts/docker-build.sh', undefined, silent);
+            const {type: network} = configStore.getNetworkInfo();
+            const JAVA_VERSION = network === 'mainnet' ? '11' : '21';
+
+            await shellService.runProjectCommand('bash scripts/docker-build.sh', {JAVA_VERSION}, silent);
 
             if (silent) {
                 spinner.stop();

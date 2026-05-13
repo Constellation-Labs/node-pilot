@@ -3,22 +3,49 @@ import semver from "semver";
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
 import {projectHelper} from "../helpers/project-helper.js";
+import {dockerService} from "./docker-service.js";
+import {nodeService} from "./node-service.js";
 import {shellService} from "./shell-service.js";
+
+/*
+ * Migration contract:
+ * - Keyed by the lowest pilot version that needs this work applied. Use
+ *   semver pre-release tags to control which dist-tags fire (e.g.,
+ *   '0.24.0-0' fires for both -devnet and the release; '0.24.0-intnet'
+ *   only for intnet builds).
+ * - Migrations must be IDEMPOTENT — assume they may re-run if a later
+ *   migration fails. Use configStore flags to guard one-shot operations.
+ * - Set requiresNodeRestart: true when the migration touches files that
+ *   are baked into the image or read at container start. The framework
+ *   will leave the cluster, stop the node, run the body, rebuild the
+ *   image, and restart.
+ */
+
+type Migration = {
+    description: string;
+    requiresNodeRestart?: boolean;
+    run: () => Promise<void> | void;
+};
+
+const migrations: Record<string, Migration> = {
+    '0.24.0-0': {
+        description: 'host Java 21; container Java is network-aware (11 for mainnet, 21 elsewhere)',
+        requiresNodeRestart: true,
+        async run() {
+            configStore.setProjectFlag('javaMemoryChecked', false);
+            projectHelper.upgradeHypergraph();
+            const {type: network} = configStore.getNetworkInfo();
+            const JAVA_VERSION = network === 'mainnet' ? '11' : '21';
+            await shellService.runProjectCommand('bash scripts/install-dependencies.sh', {JAVA_VERSION});
+            await refreshJavaHome();
+        }
+    }
+};
 
 export const migrationService = {
 
     async runMigrations() {
-        const migrations: Record<string, () => Promise<void> | void> = {
-            '0.12.5': m0125,
-            '0.13.9': m0139,
-            '0.14.0-intnet.1': m0140intnet1,
-            '0.18.7-intnet': m01807,
-            '0.19.2-intnet': m0192intnet,
-            '0.24.0-0': m0240
-            // add more migrations as needed
-        };
-
-        const {version='0.0.0'} = configStore.getProjectInfo();
+        const {version = '0.0.0'} = configStore.getProjectInfo();
         const {version: pilotVersion} = configStore.getPilotReleaseInfo();
 
         const lastMigratedVersion = semver.parse(version);
@@ -29,20 +56,25 @@ export const migrationService = {
         }
 
         clm.debug(`Running migrations from ${lastMigratedVersion.version} to ${currentVersion.version}`);
-        clm.debug(`semver.gt(v, version): ${semver.gt('0.8.0', version)}`);
-        clm.debug(`semver.lte(v, currentVersion.version): ${semver.lte('0.8.0', currentVersion.version)}`)
 
-        const migrationVersions = Object.keys(migrations)
+        const migrationKeys = Object.keys(migrations)
             .filter(v => semver.gt(v, version) && semver.lte(v, currentVersion.version))
             .sort(semver.compare);
 
-        if (migrationVersions.length > 0) {
-            clm.preStep(`Migration versions to run: ${migrationVersions}`);
+        if (migrationKeys.length === 0) {
+            clm.debug('No migrations applicable.');
+            configStore.setProjectInfo({version: currentVersion.toString()});
+            return;
+        }
 
-            for (const version of migrationVersions) {
-                // eslint-disable-next-line no-await-in-loop
-                await migrations[version]();
-            }
+        const summary = migrationKeys.map(k => `${k} (${migrations[k].description})`).join(', ');
+        clm.preStep(`Migration versions to run: ${summary}`);
+
+        for (const key of migrationKeys) {
+            // eslint-disable-next-line no-await-in-loop
+            await runMigration(key, migrations[key]);
+            // Stamp per-migration so a later failure doesn't re-run earlier ones.
+            configStore.setProjectInfo({version: key});
         }
 
         configStore.setProjectInfo({version: currentVersion.toString()});
@@ -50,12 +82,31 @@ export const migrationService = {
 
 };
 
-async function m0240() {
-    clm.step('Running migration 0.24.0 — refreshing project files for Java 21 unified runtime...');
-    configStore.setProjectFlag('javaMemoryChecked', false);
-    projectHelper.upgradeHypergraph();
-    await shellService.runProjectCommand('bash scripts/install-dependencies.sh');
-    await refreshJavaHome();
+async function runMigration(key: string, migration: Migration) {
+    clm.step(`Running migration ${key} — ${migration.description}...`);
+
+    if (!migration.requiresNodeRestart) {
+        await migration.run();
+        return;
+    }
+
+    const wasRunning = await dockerService.isRunning();
+    if (wasRunning) {
+        clm.preStep('Shutting down node to apply migration changes...');
+        const {layersToRun} = configStore.getProjectInfo();
+        await nodeService.leaveClusterAllLayers();
+        await nodeService.pollForLayersState(layersToRun, 'Offline');
+        await dockerService.dockerDown();
+    }
+
+    await migration.run();
+
+    if (wasRunning) {
+        clm.preStep('Rebuilding container with refreshed Dockerfile...');
+        await dockerService.dockerBuild();
+        clm.preStep('Restarting node...');
+        await dockerService.dockerRestartAll();
+    }
 }
 
 async function refreshJavaHome() {
@@ -68,42 +119,3 @@ async function refreshJavaHome() {
         clm.debug(`JAVA_HOME refreshed to ${javaHome} for current process`);
     }
 }
-
-function m0192intnet() {
-    clm.step('Running migration 0.19.2-intnet...');
-    projectHelper.upgradeHypergraph();
-}
-
-function m01807() {
-    clm.step('Running migration 0.18.7...');
-    projectHelper.upgradeHypergraph();
-}
-
-function m0140intnet1() {
-    configStore.setProjectFlag('javaMemoryChecked', false);
-}
-
-function m0139() {
-    clm.step('Running migration 0.13.9...');
-    configStore.setProjectFlag('javaMemoryChecked', false);
-    projectHelper.upgradeHypergraph();
-}
-
-function m0125() {
-    clm.step('Running migration 0.12.5...');
-    configStore.setProjectFlag('javaMemoryChecked', false);
-    // projectHelper.upgradeHypergraph();
-    // installJava21();
-}
-
-// function installJava21() {
-//     const pilotDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), `../..`);
-//     clm.debug(`Running install-java-21.sh from ${pilotDir}`);
-//
-//     const result = shell.exec('bash install-java-21.sh', {cwd: pilotDir});
-//
-//     if (result.code > 0) {
-//         console.log(result.stderr);
-//         clm.error(`Failed to install dependencies. Please try again after resolving any errors.`);
-//     }
-// }

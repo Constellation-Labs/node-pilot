@@ -44,7 +44,11 @@ if [ -f "$OUTPUT_DIR/version.sh" ]; then
   fi
 else
   [[ -z "${NETWORK}" ]] && { echo "No network specified."; usage; }
-  bash "$SCRIPT_DIR/install-dependencies.sh"
+  if [ "$NETWORK" = "mainnet" ]; then
+    JAVA_VERSION=11 bash "$SCRIPT_DIR/install-dependencies.sh"
+  else
+    JAVA_VERSION=21 bash "$SCRIPT_DIR/install-dependencies.sh"
+  fi
   INSTALLED_NETWORK_TYPE=""
 fi
 

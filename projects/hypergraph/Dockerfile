@@ -1,6 +1,8 @@
 FROM ubuntu:22.04
 
-RUN apt update && apt install -y openjdk-21-jre
+ARG JAVA_VERSION=21
+
+RUN apt update && apt install -y openjdk-${JAVA_VERSION}-jre
 
 RUN apt install -y curl jq wget
 

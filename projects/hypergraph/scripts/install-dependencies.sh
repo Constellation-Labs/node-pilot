@@ -21,57 +21,66 @@ check_java_home() {
     
 }
 
-# Check and install Java 21
+# Check and install Java. Version is controlled by the JAVA_VERSION env
+# var (default 21). For mainnet (JAVA_VERSION=11), accept any existing
+# Java install — host utilities (keytool.jar, wallet.jar) work fine on
+# 11 or newer, so don't force-upgrade users who already have a JDK.
 check_java() {
-#  echo "Checking for Java 21..."
+  JAVA_VERSION="${JAVA_VERSION:-21}"
+
   if command -v java >/dev/null 2>&1; then
-    java_version=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}')
-#    echo "Found Java version: $java_version"
-    if [[ "$java_version" == 21* ]] || [[ "$java_version" == 1.21* ]]; then
-      echo "✅ Java 21 is installed."
+    java_version_str=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}')
+
+    if [[ "$JAVA_VERSION" == "11" ]]; then
+      # Mainnet: accept whatever's installed (don't force-upgrade)
+      echo "✅ Java is installed: $java_version_str (mainnet — keeping existing JDK)"
       return 0
-    else
-      echo "⚠️ Java is installed but not version 21. Will attempt to install Java 21."
     fi
+
+    if [[ "$java_version_str" == "$JAVA_VERSION"* ]] || [[ "$java_version_str" == "1.$JAVA_VERSION"* ]]; then
+      echo "✅ Java $JAVA_VERSION is installed."
+      return 0
+    fi
+
+    echo "⚠️ Java is installed but not version $JAVA_VERSION. Will attempt to install Java $JAVA_VERSION."
   else
-    echo "⚠️ Java not found. Will attempt to install Java 21."
+    echo "⚠️ Java not found. Will attempt to install Java $JAVA_VERSION."
   fi
 
 
   case "$(uname)" in
     Linux)
       if command -v apt >/dev/null 2>&1; then
-        echo "Installing Java 21 using apt..."
-        sudo apt install -y openjdk-21-jdk
+        echo "Installing Java $JAVA_VERSION using apt..."
+        sudo apt install -y "openjdk-${JAVA_VERSION}-jdk"
       elif command -v yum >/dev/null 2>&1; then
-        echo "Installing Java 21 using yum..."
-        sudo yum install -y java-21-openjdk-devel
+        echo "Installing Java $JAVA_VERSION using yum..."
+        sudo yum install -y "java-${JAVA_VERSION}-openjdk-devel"
       else
-        echo "⚠️ Unsupported Linux distribution. Please install Java 21 manually."
+        echo "⚠️ Unsupported Linux distribution. Please install Java $JAVA_VERSION manually."
         return 1
       fi
       ;;
     Darwin)
       if command -v brew >/dev/null 2>&1; then
-        echo "Installing Java 21 using Homebrew..."
-#        if brew tap | grep -q '^adoptopenjdk/openjdk$'; then brew untap adoptopenjdk/openjdk; fi
-        brew install --cask temurin@21
+        echo "Installing Java $JAVA_VERSION using Homebrew..."
+        brew install --cask "temurin@${JAVA_VERSION}"
       else
-        echo "⚠️ Homebrew not found. Please install Java 21 manually."
+        echo "⚠️ Homebrew not found. Please install Java $JAVA_VERSION manually."
         return 1
       fi
       ;;
     MINGW*|MSYS*|CYGWIN*)
-      echo "On Windows, please install Java 21 manually from https://adoptopenjdk.net/"
+      echo "On Windows, please install Java $JAVA_VERSION manually from https://adoptium.net/"
       return 1
       ;;
     *)
-      echo "⚠️ Unsupported OS: $(uname). Please install Java 21 manually."
+      echo "⚠️ Unsupported OS: $(uname). Please install Java $JAVA_VERSION manually."
       return 1
       ;;
   esac
 
-  echo "✅ Java 21 installation complete."
+  echo "✅ Java $JAVA_VERSION installation complete."
   return 0
 }
 
