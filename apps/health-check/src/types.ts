@@ -76,6 +76,7 @@ export type TimerInfo = {
     isHydrateRunning: boolean;
     lastState: string;
     observingStartTime: number;
+    semaphore: number;
     upgrade: boolean
     waitForDownloadStartTime: number;
 }

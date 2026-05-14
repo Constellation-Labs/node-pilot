@@ -1,8 +1,7 @@
-
+import fs from "node:fs";
 import os from "node:os";
 import semver from "semver";
 
-import packageJson from '../../package.json' with {type: 'json'};
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
 import {healthCheckConfig} from "../helpers/health-check-config.js";
@@ -11,6 +10,7 @@ import {promptHelper} from "../helpers/prompt-helper.js";
 import {dockerService} from "../services/docker-service.js";
 import {nodeService} from "../services/node-service.js";
 import {shellService} from "../services/shell-service.js";
+import {checkInitialSetup} from "./check-initial-setup.js";
 
 const REGISTRY_URL = 'https://registry.npmjs.org/';
 
@@ -25,6 +25,22 @@ export const checkNodePilot = {
         await this.promptDiscordRegistration();
 
         configStore.setProjectFlag('discordChecked', true);
+    },
+
+    async checkMultipleUsers() {
+
+        if(configStore.hasProjectFlag('multipleUsersChecked')) {
+            return;
+        }
+
+        const {currentUser, otherUsers} = await checkInitialSetup.getExistingInstallations();
+
+        if (otherUsers.length > 0) {
+            clm.warn(`Multiple users have Node Pilot installed.\n    ${currentUser} <-- current user\n    ${otherUsers.join('\n    ')}`);
+            clm.error('Login and run "cpilot uninstall" to remove the extra installation(s).');
+        }
+
+        configStore.setProjectFlag('multipleUsersChecked', true);
     },
 
     async checkVersion () {
@@ -77,7 +93,16 @@ export const checkNodePilot = {
         await shellService.runCommand(`sudo npm install -g @constellation-network/node-pilot@${latestVer.version}`);
         if (hasMajorMinorChange) {
             clm.step('Updating scripts and configuration files...');
-            await projectHelper.upgradeHypergraph();
+            projectHelper.upgradeHypergraph();
+
+            if (fs.existsSync('/var/run/reboot-required')) {
+                clm.warn('A system update and reboot is required.');
+                await promptHelper.doYouWishToContinue();
+                await shellService.runCommand('sudo apt-get update && sudo apt-get upgrade -y');
+                if (await promptHelper.confirmPrompt('Do you want to reboot now?')) {
+                    await shellService.runCommand('sudo reboot');
+                }
+            }
         }
 
         clm.postStep('Update completed. Run cpilot again to use the latest version');
@@ -85,7 +110,9 @@ export const checkNodePilot = {
     },
 
     async compareVersions() {
-        const packageUrl = new URL(encodeURIComponent(packageJson.name).replace(/^%40/, '@'), REGISTRY_URL);
+        const { name: pilotReleaseName, version: pilotVersion } = configStore.getPilotReleaseInfo();
+
+        const packageUrl = new URL(encodeURIComponent(pilotReleaseName).replace(/^%40/, '@'), REGISTRY_URL);
 
         const headers = {
             accept: 'application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*',
@@ -94,15 +121,30 @@ export const checkNodePilot = {
         const result: PackageInfo = await fetch(packageUrl.toString(), {headers}).then(res => res.json()).catch(() => null);
 
         if (!result) {
-            return { currentVer: undefined, latestVer:undefined };
+            return {currentVer: undefined, latestVer: undefined};
         }
 
-        const {type} = configStore.getNetworkInfo();
+        let distTag: PackageDistTag = 'latest';
 
-        const networkTag = type === 'testnet' ? 'testnet' : 'latest';
+        if (pilotVersion.includes('testnet')) {
+            distTag = 'testnet';
+        } else if (pilotVersion.includes('omegatest')) {
+            distTag = 'omegatest';
+        } else if (pilotVersion.includes('intnet')) {
+            distTag = 'intnet';
+        } else if (pilotVersion.includes('devnet')) {
+            distTag = 'devnet';
+        }
 
-        const latestVer = semver.parse(result['dist-tags'][networkTag]);
-        const currentVer = semver.parse(packageJson.version);
+        const latestVer = semver.parse(result['dist-tags'][distTag]);
+        const currentVer = semver.parse(pilotVersion);
+
+        if (latestVer !== null && currentVer !== null) {
+            clm.debug(`Current version: ${currentVer?.version}, Latest version: ${latestVer?.version}`);
+        }
+        else {
+            clm.warn(`Unable to resolve version from dist-tag ${distTag} - ${JSON.stringify(result['dist-tags'])}`)
+        }
 
         return {currentVer, latestVer};
     },
@@ -153,17 +195,15 @@ export const checkNodePilot = {
 
         if (hasMajorMinorChange) {
             clm.step('Updating scripts and configuration files...');
-            await projectHelper.upgradeHypergraph();
+            projectHelper.upgradeHypergraph();
         }
     }
 }
 
 
+type PackageDistTag = 'devnet' | 'intnet' | 'latest' | 'omegatest' | 'testnet';
 
 type PackageInfo = {
-    'dist-tags': {
-        latest: string;
-        testnet: string;
-    };
+    'dist-tags': Record<PackageDistTag, string>;
     modified: string;
 }

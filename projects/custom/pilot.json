@@ -1,0 +1,9 @@
+{
+  "name": "custom",
+  "projects": [
+    { "name":  "hg-intnet-1", "network": "intnet", "key":  "key1.p12", "layers": "gl0" },
+    { "name":  "hg-intnet-2", "network": "intnet", "key":  "key2.p12", "layers": "gl0" },
+    { "name":  "hg-intnet-3", "network": "intnet", "key":  "key3.p12", "layers": "gl0" }
+  ]
+}
+

@@ -35,25 +35,35 @@ export const backupUtils = {
 
     // Remove all subdirectories but the last two created
     cleanLogs() {
-        const backupDir = `${APP_ENV.PATH_LOGS}/autoheal-restarts`;
 
-        if (!fs.existsSync(backupDir)) return;
-
-        const subDirs = fs.readdirSync(backupDir);
-
-        if (subDirs.length <= 1) return;
-
-        logger.log(`Cleaning logs in ${backupDir}. Found ${subDirs.length} subdirectories`);
-
-        const sortedSubDirs = subDirs
-            .map(name => path.join(backupDir, name))
-            .filter(p => fs.statSync(p).isDirectory())
-            .sort((a, b) => fs.statSync(a).ctimeMs - fs.statSync(b).ctimeMs);
+        const sortedSubDirs = this.getBackupFolders();
 
         const toDelete = sortedSubDirs.slice(0, -1);
         for (const dir of toDelete) {
             logger.log(`Deleting ${dir}`);
             fs.rmSync(dir, {force: true, recursive: true});
         }
+    },
+
+    getBackupFolders(): string[] {
+        const backupDir = `${APP_ENV.PATH_LOGS}/autoheal-restarts`;
+
+        if (!fs.existsSync(backupDir)) return [];
+
+        const subDirs = fs.readdirSync(backupDir);
+
+        if (subDirs.length <= 1) return [];
+
+        logger.log(`Cleaning logs in ${backupDir}. Found ${subDirs.length} subdirectories`);
+
+        return subDirs
+            .map(name => path.join(backupDir, name))
+            .filter(p => fs.statSync(p).isDirectory())
+            .sort((a, b) => fs.statSync(a).ctimeMs - fs.statSync(b).ctimeMs);
+    },
+
+    getLastBackupFolder(): string {
+        return this.getBackupFolders().at(-1) ?? '';
     }
+
 };

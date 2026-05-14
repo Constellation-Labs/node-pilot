@@ -38,22 +38,26 @@ export const healUtils = {
         if (APP_ENV.CL_APP_ENV === 'mainnet' || APP_ENV.CL_TESSELATION_LAYER !== 'gl0') return;
 
         const dir= APP_ENV.PATH_LOGS;
-
+        logger.log(`Running detectSeedlistDoesNotMatch`);
         const dataDir = path.join(dir, 'app.log');
         const result = await shellUtils.runCommandWithOutput(`grep -i 'SeedlistDoesNotMatch' ${dataDir}`).catch(() => '');
         logger.log(`detectSeedlistDoesNotMatch from ${dir} - ${result}`);
         if (result) {
-            const url = `https://constellationlabs-dag.s3.us-west-1.amazonaws.com/${APP_ENV.CL_APP_ENV}-seedlist`;
-            const content = await fetch(url).then(res => res.text());
-            const seedFile = path.resolve('/app', 'seedlist');
-            if (fs.existsSync(seedFile)) {
-                fs.writeFileSync(seedFile, content);
-                storeUtils.setNodeStatusInfo({error: 'node:invalid-seedlist'});
-                storeUtils.setTimerInfo({fatal:false}); // reset fatal flag
-                await nodeUtils.leaveCluster();
-                throw new Error('node:invalid-seedlist');
-            }
+            await this.downloadLatestSeedList();
+            storeUtils.setNodeStatusInfo({error: 'node:seedlistchanged'});
+            storeUtils.setTimerInfo({fatal: false}); // reset fatal flag
+            await nodeUtils.leaveCluster();
+            throw new Error('node:seedlist-changed');
         }
+    },
+
+    async downloadLatestSeedList() {
+        if (APP_ENV.CL_APP_ENV === 'mainnet' || APP_ENV.CL_TESSELATION_LAYER !== 'gl0') return;
+        const url = `https://constellationlabs-dag.s3.us-west-1.amazonaws.com/${APP_ENV.CL_APP_ENV}-seedlist`;
+        const content = await fetch(url).then(res => res.text());
+        const seedFile = path.resolve('/app', 'seedlist');
+        logger.log(`Downloading latest seedlist from ${url} to ${seedFile}`);
+        fs.writeFileSync(seedFile, content);
     },
 
     async getOldestMissingOrdinalFromLogs() {

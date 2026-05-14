@@ -1,9 +1,9 @@
 import {Command} from '@oclif/core'
 
-import packageJson from '../../package.json' with {type: 'json'};
 import {checkNodePilot} from "../checks/check-pilot.js";
 import {configStore} from "../config-store.js";
 import {configHelper} from "../helpers/config-helper.js";
+import {pilotManager} from "../helpers/pilot-manager.js";
 
 export default class Info extends Command {
 
@@ -16,15 +16,22 @@ export default class Info extends Command {
         configHelper.assertProject('No project info found. ');
 
         const projectInfo = configStore.getProjectInfo();
+        const projects = pilotManager.getProjects();
         const networkInfo = configStore.getNetworkInfo();
         const {CL_EXTERNAL_IP: currentIpAddress} = configStore.getEnvInfo();
         const {CL_DOCKER_JAVA_OPTS} = configStore.getEnvLayerInfo(networkInfo.type, 'gl0');
+        const {version} = configStore.getPilotReleaseInfo();
 
         // Project Name
         configHelper.showEnvInfo('Project Name', projectInfo.name);
 
+        // Active Project
+        if (projects.length > 1) {
+            configHelper.showEnvInfo('Project List', projects.join(', '));
+        }
+
         // Pilot Version
-        configHelper.showEnvInfo('Node Pilot Version', packageJson.version);
+        configHelper.showEnvInfo('Node Pilot Version', version);
 
         // External IP Address
         configHelper.showEnvInfo('External IP Address', currentIpAddress);

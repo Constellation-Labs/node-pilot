@@ -32,16 +32,15 @@ export const checkNodeCtl = {
         if (hasNodeAdminUser) {
             const isDockerRunning = await dockerService.isRunning();
             const isPortOpen = await nodeService.isPortInUse(9000);
-            clm.step(chalk.bold('NODECTL has been detected.'));
 
             if (!isDockerRunning && isPortOpen) {
-                clm.error('Please shutdown any Nodes being managed by NODECTL before proceeding.');
+                clm.error('Detected port 9000 already in use. Please shutdown any Nodes before proceeding.');
             }
 
             const cnPath = path.resolve('/var/tessellation/nodectl/cn-config.yaml');
 
             if (fs.existsSync(cnPath)) {
-
+                clm.step(chalk.bold('NODECTL has been detected.'));
                 const answer = await input({
                     default: 'y',
                     message: 'Would you like to import key file from nodectl? (y/n): '
@@ -49,6 +48,9 @@ export const checkNodeCtl = {
                 if (answer.toLowerCase() === 'y') {
                     await this.importKeyInfo(cnPath);
                 }
+
+                clm.warn(`You will need to uninstall nodectl before proceeding. \nPlease run the following command to uninstall it: ${chalk.cyanBright("sudo nodectl uninstall")}`);
+                process.exit(0);
             }
         }
 

@@ -14,9 +14,9 @@ import {storeUtils} from "./store-utils.js";
 
 // http://5.161.243.241:7777/hash.txt
 const remoteIndexMap = {
-    integrationnet: "http://5.161.243.241:7777",
-    mainnet:  "http://116.203.215.246:7777", // http://128.140.33.142:7777/hash.txt",
-    testnet: "http://65.108.87.84:7777"
+    integrationnet: "http://37.27.92.171:7777", // http://5.161.243.241:7777/hash.txt, http://37.27.92.171:7777/hash.txt
+    mainnet:  "http://116.203.215.246:7777", // http://116.203.215.246:7777/hash.txt, http://37.27.88.199:7777/hash.txt
+    testnet: "http://46.62.246.239:7777" // http://46.62.246.239:7777/hash.txt
 }
 
 type ArchiveInfo = { endOrdinal: number; startOrdinal: number, url: string };
@@ -95,7 +95,15 @@ export const archiveUtils = {
                     }
 
                     if (this.hasDownloadedRange(startOrdinal.toString(), endOrdinal.toString())) {
-                        logger.log('Skipping already downloaded archive: ' + filename);
+                        // Don't skip and redownload if the missing ordinal is in an archive.
+                        // it should have already been downloaded, but it is coming up missing again due to a previous bad archive file.
+                        if (startOrdinal < ordinal && ordinal < endOrdinal) {
+                            logger.log('Detected missing snapshot from a previously downloaded archive. Attempting again. Adding archive to download: ' + filename);
+                            archives.push({ endOrdinal, startOrdinal, url: host + '/' + filename });
+                        }
+                        else {
+                            logger.log('Skipping already downloaded archive: ' + filename);
+                        }
                     }
                     else {
                         logger.log('Adding archive to download: ' + filename);

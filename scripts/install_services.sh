@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -Eeuo pipefail
+IFS=$'\n\t'
 
 # Find cpilot in PATH
 CPILOT=$(command -v cpilot)
@@ -16,7 +18,7 @@ if [ "$CURRENT_USER" = "root" ]; then
   UNIT_TARGET="multi-user.target"
 else
   IS_ROOT=false
-  HOME_DIR=$(eval echo ~$CURRENT_USER)
+  HOME_DIR=$(eval echo ~"$CURRENT_USER")
   WORKING_DIR="$HOME_DIR/.config/systemd/user"
   UNIT_TARGET="default.target"
 fi
@@ -24,9 +26,13 @@ fi
 BIN_DIRECTORY="$HOME_DIR/.node-pilot/scripts"
 
 mkdir -p "$BIN_DIRECTORY"
-
-# Create working directory if it doesn't exist
 mkdir -p "$WORKING_DIR"
+
+# Only check the first service file for existence
+if [ -f "$WORKING_DIR/restart-unhealthy.service" ]; then
+  echo "restart-unhealthy.service already exists in $WORKING_DIR. Skipping installation."
+  exit 0
+fi
 
 # Create restart-unhealthy.service
 cat << EOF > "$WORKING_DIR/restart-unhealthy.service"
@@ -61,7 +67,6 @@ cat << EOF > "$BIN_DIRECTORY/restart-unhealthy.sh"
 #!/usr/bin/env bash
 docker ps -q -f health=unhealthy | xargs --no-run-if-empty docker restart
 EOF
-
 chmod +x "$BIN_DIRECTORY/restart-unhealthy.sh"
 
 # Create node-pilot-autostart.service

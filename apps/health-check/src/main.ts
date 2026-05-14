@@ -29,6 +29,18 @@ export async function main() {
         return;
     }
 
+    let { semaphore=0 } = storeUtils.getTimerInfo();
+
+    if (semaphore > 0 && semaphore + 1000 * 90 > Date.now()) {
+        const waitSeconds = Math.round((Date.now() - semaphore) / 1000);
+        logger.log(`Semaphore is active. Waiting for ${waitSeconds}s before starting health check...`);
+        return;
+    }
+
+    semaphore = Date.now();
+
+    storeUtils.setTimerInfo({ semaphore });
+
     const currentDateTime = new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' });
     const {session:startTime='0'} = storeUtils.getNodeStatusInfo();
     if (startTime) {
@@ -67,8 +79,11 @@ export async function main() {
 
                 throw new Error('Service Unhealthy');
             }
-
-
+        })
+        .finally(() => {
+            const waitSeconds = Math.round((Date.now() - semaphore) / 1000);
+            logger.log(`$$ Health check completed in ${waitSeconds}s`);
+            storeUtils.setTimerInfo({ semaphore: 0});
         });
 
 }

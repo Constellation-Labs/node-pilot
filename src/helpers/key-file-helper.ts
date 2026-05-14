@@ -73,6 +73,21 @@ export const keyFileHelper = {
         return shellService.runCommandWithOutput(`java -jar ${projectDir}/dist/wallet.jar show-id`, env);
     },
 
+    async getKeyInfoFromParams(params: { CL_KEYALIAS: string, CL_KEYSTORE: string, CL_PASSWORD: string }) {
+        if (fs.existsSync(params.CL_KEYSTORE)) {
+            throw new Error(`A key file already exists. Please delete it first. ${params.CL_KEYSTORE}`);
+        }
+
+        const { projectDir } = configStore.getProjectInfo();
+
+        await shellService.runCommand(`java -jar ${projectDir}/dist/keytool.jar generate`, params);
+
+        const id =  await shellService.runCommandWithOutput(`java -jar ${projectDir}/dist/wallet.jar show-id`, params);
+        const address = await shellService.runCommandWithOutput(`java -jar ${projectDir}/dist/wallet.jar show-address`, params);;
+
+        return {address, id};
+    },
+
     async importKeyFile() {
         const p12Files = fs.readdirSync(os.homedir())
             .filter(file => file.endsWith('.p12'))

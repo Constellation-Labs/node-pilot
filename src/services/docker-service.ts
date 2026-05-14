@@ -2,6 +2,7 @@ import ora from "ora";
 
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
+import {pilotManager} from "../helpers/pilot-manager.js";
 import {projectHelper} from "../helpers/project-helper.js";
 import {TessellationLayer} from "../types.js";
 import {shellService} from "./shell-service.js";
@@ -22,7 +23,10 @@ export const dockerService = {
                 clm.preStep('Building the node container...');
             }
 
-            await shellService.runProjectCommand('bash scripts/docker-build.sh', undefined, silent);
+            const {type: network} = configStore.getNetworkInfo();
+            const JAVA_VERSION = network === 'mainnet' ? '11' : '21';
+
+            await shellService.runProjectCommand('bash scripts/docker-build.sh', {JAVA_VERSION}, silent);
 
             if (silent) {
                 spinner.stop();
@@ -45,7 +49,7 @@ export const dockerService = {
             await this.dockerDown();
         }
 
-        configStore.setProjectStatusToRunning(true);
+        pilotManager.setProjectStatusToRunning(true);
 
         await run('up -d');
     },
@@ -60,7 +64,7 @@ export const dockerService = {
             await this.dockerDown();
         }
 
-        configStore.setProjectStatusToRunning(true);
+        pilotManager.setProjectStatusToRunning(true);
 
         await projectHelper.generateLayerEnvFiles();
         await run('up -d');

@@ -8,15 +8,17 @@ services:
 #    volumes:
 #      - /var/run/docker.sock:/var/run/docker.sock
   gl0:
-    image: constellationnetwork/tessellation${CL_DOCKER_CORE_REPO:-}:${DOCKER_IMAGE_VERSION:-latest}
+    image: constellationnetwork/tessellation${CL_DOCKER_CORE_REPO:-}:${DOCKER_IMAGE_VERSION:-test}
     networks:
       - tessellation-network
     restart: unless-stopped
     env_file:
       - gl0.env
     ports:
-      - "9000:9000"  # Public HTTP
-      - "9001:9001"  # P2P HTTP
+#      - "9000:9000"  # Public HTTP
+#      - "9001:9001"  # P2P HTTP
+      - "${CL_GL0_PUBLIC_PORT:-9000}:${CL_GL0_PUBLIC_PORT:-9000}"  # Public HTTP
+      - "${CL_GL0_P2P_PORT:-9001}:${CL_GL0_P2P_PORT:-9001}"  # P2P HTTP
     volumes:
       - ./gl0/data:/app/data
       - ./gl0/logs:/app/logs
@@ -26,22 +28,24 @@ services:
       test: ["CMD", "cpilotHC"]
 #      test: ["CMD", "/health-check/bin/run.sh"]
       interval: 15s
-      retries: 1
+      retries: 3
       timeout: 15s
       start_period: 60s
     profiles: ["gl0"]
 #    labels:
 #      autoheal: "true"
   gl1:
-    image: constellationnetwork/tessellation${CL_DOCKER_CORE_REPO:-}:${DOCKER_IMAGE_VERSION:-latest}
+    image: constellationnetwork/tessellation${CL_DOCKER_CORE_REPO:-}:${DOCKER_IMAGE_VERSION:-test}
     restart: unless-stopped
     networks:
       - tessellation-network
     env_file:
       - gl1.env
     ports:
-      - "9010:9010"  # Public HTTP
-      - "9011:9011"  # P2P HTTP
+#      - "9010:9010"  # Public HTTP
+#      - "9011:9011"  # P2P HTTP
+      - "${CL_GL1_PUBLIC_PORT:-9010}:${CL_GL1_PUBLIC_PORT:-9010}"  # Public HTTP
+      - "${CL_GL1_P2P_PORT:-9011}:${CL_GL1_P2P_PORT:-9011}"  # P2P HTTP
     volumes:
       - ./gl1/data:/app/data
       - ./gl1/logs:/app/logs
@@ -50,7 +54,7 @@ services:
       test: ["CMD", "cpilotHC"]
 #      test: ["CMD", "/health-check/bin/run.sh"]
       interval: 15s
-      retries: 1
+      retries: 3
       timeout: 15s
       start_period: 60s
     profiles: ["gl1"]

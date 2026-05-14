@@ -11,6 +11,7 @@ import {configHelper} from "../helpers/config-helper.js";
 import {keyFileHelper} from "../helpers/key-file-helper.js";
 import {projectHelper} from "../helpers/project-helper.js";
 import {promptHelper} from "../helpers/prompt-helper.js";
+import {delegatedStakingService} from "../services/delegated-staking-service.js";
 
 export default class Config extends Command {
 
@@ -27,13 +28,14 @@ export default class Config extends Command {
 
         const answer = await select({
             choices: [
-                { name: 'External IP Address', value: 'externalIp' },
-                { name: `Discord Alerts`, value: 'discordAlerts' },
-                { name: 'Java Memory', value: 'javaMemory' },
                 { name: 'Key File', value: 'keyFile' },
+                { name: 'Java Memory', value: 'javaMemory' },
+                { name: `Discord Alerts`, value: 'discordAlerts' },
+                { name: `Delegated Staking`, value: 'delegatedStaking' },
                 { name: 'Layers To Run', value: 'layersToRun' },
-                { name: `Network`, value: 'network' },
-
+                { name: 'Constellation Network', value: 'network' },
+                { name: 'External IP Address', value: 'externalIp' },
+                { name: 'Container Ports', value: 'ports' },
             ],
             message: 'What would you like to change?:',
         });
@@ -44,6 +46,13 @@ export default class Config extends Command {
         }
         else if (answer === 'discordAlerts') {
             await checkNodePilot.promptDiscordRegistration();
+        }
+        else if (answer === 'delegatedStaking') {
+            await delegatedStakingService.configureNodeParams();
+        }
+        else if (answer === 'ports') {
+            await promptHelper.configurePorts();
+            projectHelper.updateDockerEnv();;
         }
         else if (answer === 'javaMemory') {
             await promptHelper.shutdownNodeIfRunning();
@@ -58,6 +67,7 @@ export default class Config extends Command {
             await promptHelper.shutdownNodeIfRunning();
             await promptHelper.selectLayers();
             await checkProject.configureJavaMemoryArguments();
+            projectHelper.updateDockerEnv();
         }
         else if (answer === 'network') {
             clm.warn('Changing the network will DELETE all the data and logs from the validator node.');
@@ -65,6 +75,7 @@ export default class Config extends Command {
             const {layersToRun} = configStore.getProjectInfo();
             await projectHelper.cleanup(layersToRun,true,true,true)
             await promptHelper.selectNetwork();
+            projectHelper.updateDockerEnv();
             await checkNodePilot.checkVersion(); // each network may have its own release
             await checkProject.runInstall();
         }

@@ -35,6 +35,7 @@ export const checkNetwork = {
         if (!isDockerRunning && found) {
             clm.warn('Node ID already exists in the cluster.');
             clm.warn('You need to shutdown your node from a previous installation before continuing.');
+            clm.warn('If you recently left the cluster, you may need to wait for your Node Id to be cleared. ~1 minute');
             clm.error(`Or to change the node ID, configure the Key File: use ${chalk.cyan('cpilot config')}, and select ${chalk.cyan('Key File')}`);
         }
 
@@ -176,14 +177,6 @@ export const checkNetwork = {
 
         return clusterService.getClusterInfo()
             .then(async nodes =>  {
-                const someAreReady = nodes.some(node => node.state === 'Ready');
-                if (!someAreReady) {
-                    if (nodes.length > 0) {
-                        clm.warn(`Found ${nodes.length} nodes in the cluster, but none are READY.`);
-                    }
-
-                    throw new Error(`Network is not connectable.`);
-                }
 
                 clm.debug(`${type} is live. Found ${nodes.length} nodes in the cluster.`);
 
@@ -191,10 +184,6 @@ export const checkNetwork = {
 
                 return true;
             })
-            .catch(() => {
-
-                clm.error(`${type} is not in service. Please try again later.`);
-                return false;
-            });
+            .catch(() => false);
     }
 }

@@ -1,13 +1,13 @@
-import {input} from "@inquirer/prompts";
+
 import {JSONStorage} from "node-localstorage";
 import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
 
-import {clm} from "./clm.js";
+import packageJson from '../package.json' with {type: 'json'};
 import {ClusterStats, TessellationLayer} from "./types.js";
 
-class EmptyStorage extends JSONStorage {
+const pilotReleaseInfo = { name: packageJson.name, version: packageJson.version };
+
+export class EmptyStorage extends JSONStorage {
     constructor() {super("/tmp");}
 
     getItem(_key: string) { return null; }
@@ -17,66 +17,7 @@ class EmptyStorage extends JSONStorage {
 
 class ConfigStore {
 
-    private pilotStore: JSONStorage;
-    private projectStore: JSONStorage;
-
-    constructor() {
-        const appDir = path.join(os.homedir(), '.node-pilot');
-
-        if (!fs.existsSync(appDir)) {
-            fs.mkdirSync(path.join(appDir, 'logs'), {recursive: true});
-        }
-
-        this.pilotStore = new JSONStorage(path.join(appDir,'config'));
-
-        const appInfo = this.pilotStore.getItem('pilot') as PilotInfo;
-        if (!appInfo) {
-            this.pilotStore.setItem('pilot', { appDir, project: 'undefined', projects: [], restarting: 0, running: [] } as PilotInfo);
-        }
-
-        const { project } = this.pilotStore.getItem('pilot') as PilotInfo;
-        this.projectStore = project === 'undefined' ? new EmptyStorage() : new JSONStorage(path.join(appDir, project, 'config'));
-    }
-
-    async applyNewProjectStore(name: string) {
-
-        const { appDir, projects }  = this.pilotStore.getItem('pilot') as PilotInfo;
-        const projectDir = path.join(appDir, name);
-
-        if (projects.includes(name)) {
-
-            const answer = await input({default: 'n', message: `Project ${name} already exists. Do you want to reinstall? (y/n):`});
-            if (answer === 'y') {
-                this.projectStore = new JSONStorage(path.join(projectDir,'config'));
-                this.projectStore.clear();
-                fs.rmSync(projectDir, { force: true, recursive: true });
-                this.pilotStore.setItem('pilot', { appDir, project: name, projects });
-            }
-            else {
-                clm.error(`Project ${name} already exists.`);
-            }
-        }
-        else {
-            this.setPilotInfo({ project: name, projects: [...projects, name] });
-        }
-
-        fs.mkdirSync(path.join(projectDir,'config'), {recursive: true});
-
-        this.projectStore = new JSONStorage(path.join(projectDir,'config'));
-
-        this.setDockerEnvInfo({ DOCKER_IMAGE_VERSION: 'test' });
-        this.setProjectInfo({ name, projectDir })
-    }
-
-    getActiveProject() {
-        const { project }  = this.pilotStore.getItem('pilot') as PilotInfo;
-        return project;
-    }
-
-    getAppDir(): string {
-        const { appDir }  = this.pilotStore.getItem('pilot') as PilotInfo;
-        return appDir;
-    }
+    private projectStore: JSONStorage = new EmptyStorage();
 
     getDockerEnvInfo(): object {
         return this.projectStore.getItem('docker');
@@ -105,25 +46,15 @@ class ConfigStore {
     }
 
     getNetworkInfo(): NetworkInfo {
-        return this.projectStore.getItem('network');
+        return this.projectStore.getItem('network') || {};
+    }
+
+    getPilotReleaseInfo() {
+        return pilotReleaseInfo;
     }
 
     getProjectInfo(): ProjectInfo {
         return this.projectStore.getItem('project') || {};
-    }
-
-    getProjects() {
-        const { projects } = this.pilotStore.getItem('pilot') as PilotInfo;
-        return projects;
-    }
-
-    getRunningProjects(): string[] {
-        const { running }  = this.pilotStore.getItem('pilot') as PilotInfo;
-        return running;
-    }
-
-    getSystemInfo(): SystemInfo {
-        return this.pilotStore.getItem('system');
     }
 
     hasProjectFlag(name: string) {
@@ -131,41 +62,12 @@ class ConfigStore {
         return flags[name] || false;
     }
 
-    hasProjects() {
-        const { projects } = this.pilotStore.getItem('pilot') as PilotInfo;
-        return projects.length > 0;
-    }
-
-    isRestarting() {
-        const {restarting}  = this.pilotStore.getItem('pilot') as PilotInfo;
-        if (restarting && restarting + 1000 * 60 * 5 < Date.now()) {
-            this.setIsRestarting(0);
-            return false;
-        }
-
-        return restarting > 0;
-    }
-
-
-    setActiveProject(name: string) {
-        const { appDir, project, projects }  = this.pilotStore.getItem('pilot') as PilotInfo;
-
-        if (projects && projects.includes(name)) {
-            if (project === name) return;
-            this.projectStore = new JSONStorage(path.join(appDir, name, 'config'));
-            this.setPilotInfo({ project: name });
-        }
-        else {
-            throw new Error(`Project ${name} doesn't exist.`);
-        }
-    }
-
     setClusterStats(info: Partial<ClusterStats>) {
         const oldInfo = this.projectStore.getItem('cluster-stats');
         this.projectStore.setItem('cluster-stats', { ...oldInfo, ...info });
     }
 
-    setDockerEnvInfo(info: Partial<{ DOCKER_IMAGE_VERSION: string, DOCKER_USER_ID: string}>) {
+    setDockerEnvInfo(info: Partial<DockerEnvInfo>) {
         const oldInfo = this.projectStore.getItem('docker');
         this.projectStore.setItem('docker', { ...oldInfo, ...info });
     }
@@ -188,13 +90,15 @@ class ConfigStore {
         this.projectStore.setItem('network-env', { ...networks, [network]: { ...networks[network], ...info } } );
     }
 
-    setIsRestarting(val: number) {
-        this.setPilotInfo({restarting: val})
-    }
-
     setNetworkInfo(info: Partial<NetworkInfo>) {
         const oldInfo = this.projectStore.getItem('network');
         this.projectStore.setItem('network', { ...oldInfo, ...info });
+    }
+
+
+    setProjectConfig(config: string) {
+        const projectExists = fs.existsSync(config);
+        this.projectStore = projectExists ? new JSONStorage(config) : new EmptyStorage();
     }
 
     setProjectFlag(name: string, value: boolean){
@@ -209,32 +113,7 @@ class ConfigStore {
         this.projectStore.setItem('project', { ...oldInfo, ...info });
     }
 
-    setProjectStatusToRunning(isRunning: boolean) {
-        const { project, running }  = this.pilotStore.getItem('pilot') as PilotInfo;
-        if (isRunning) {
-            if (running.includes(project)) return;
-            this.setPilotInfo({ running: [...running, project] });
-        }
-        else {
-            if (!running.includes(project)) return;
-            running.splice(running.indexOf(project), 1);
-            this.setPilotInfo({ running });
-        }
-    }
 
-    setSystemInfo(info: Partial<SystemInfo>) {
-        const oldInfo = this.projectStore.getItem('system');
-        this.pilotStore.setItem('system', { ...oldInfo, ...info });
-    }
-
-    private getPilotInfo(): PilotInfo {
-        return this.pilotStore.getItem('pilot') as PilotInfo;
-    }
-
-    private setPilotInfo(info: Partial<PilotInfo>) {
-        const oldInfo = this.pilotStore.getItem('pilot') as PilotInfo;
-        this.pilotStore.setItem('pilot', { ...oldInfo, ...info });
-    }
 }
 
 export const configStore = new ConfigStore();
@@ -243,12 +122,14 @@ export const configStore = new ConfigStore();
 //     [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 // };
 
-type PilotInfo = {
-    appDir: string;
-    project: string;
-    projects: string[];
-    restarting: number;
-    running: string[];
+
+
+export type DockerEnvInfo = {
+    CL_GL0_P2P_PORT: string;
+    CL_GL0_PUBLIC_PORT: string;
+    CL_GL1_P2P_PORT: string;
+    CL_GL1_PUBLIC_PORT: string;
+    DOCKER_IMAGE_VERSION: string;
 }
 
 export type EnvInfo = EnvKeyInfo & {
@@ -296,7 +177,7 @@ export const networkEnvNames = {
     CL_L0_PEER_HTTP_PORT: 1,
     CL_L0_PEER_ID: 1,
     CL_L0_PEER_P2P_PORT: 1,
-    CL_L0_TOKEN_IDENTIFIER: 1,
+    CL_L0_TOKEN_IDENTIFIER: 1
 }
 
 export type EnvLayerInfo = EnvPeerInfo & {
@@ -305,6 +186,7 @@ export type EnvLayerInfo = EnvPeerInfo & {
     CL_LB: string;
     CL_P2P_HTTP_PORT: string;
     CL_PUBLIC_HTTP_PORT: string;
+    CL_SOURCE_HTTP_PORT: string;
 }
 
 // NETWORK LAYER
@@ -320,7 +202,8 @@ export const layerEnvNames = {
     CL_L0_PEER_P2P_PORT: 1,
     CL_LB: 1,
     CL_P2P_HTTP_PORT: 1,
-    CL_PUBLIC_HTTP_PORT: 1
+    CL_PUBLIC_HTTP_PORT: 1,
+    CL_SOURCE_HTTP_PORT: 1
 }
 
 // export const keyInfoNames = {
@@ -349,6 +232,7 @@ export type ProjectInfo = {
     name: string;
     nodeId: string;
     projectDir: string;
+    type: 'hypergraph' | 'metagraph';
     version: string;
 }
 

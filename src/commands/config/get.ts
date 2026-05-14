@@ -48,10 +48,13 @@ export default class ConfigGet extends Command {
             const layersList = layersToRun.map(l => (Object.keys(layerEnvNames).map(k => ({name: `${l}:${k}`, value: gl(l)[k as keyof EnvLayerInfo]}))));
             const keyInfo = this.getKeyInfo();
             const keyInfoList = Object.keys(keyInfo).map(k => ({name: 'key:'+k, value: keyInfo[k as keyof typeof keyInfo]}));
+            const dockerInfo = configStore.getDockerEnvInfo();
+            const dockerInfoList = Object.keys(dockerInfo).map(k => ({name: 'docker:'+k, value: dockerInfo[k as keyof typeof dockerInfo]}));
 
             configHelper.showEnvInfoList(networkList);
             configHelper.showEnvInfoList(keyInfoList);
             configHelper.showEnvInfoList(layersList.flat());
+            configHelper.showEnvInfoList(dockerInfoList);
         }
         else if (args.name.includes(':')) {
             const [layer, name] = args.name.split(':') as [string | TessellationLayer, string];
@@ -74,6 +77,11 @@ export default class ConfigGet extends Command {
             else {
                 clm.warn('Invalid layer property. Valid properties are: ' + Object.keys(layerEnvNames).join(', '));
             }
+        }
+        else if(args.name === 'docker') {
+            const dockerInfo = configStore.getDockerEnvInfo();
+            const dockerInfoList = Object.keys(dockerInfo).map(k => ({name: 'docker:'+k, value: dockerInfo[k as keyof typeof dockerInfo]}));
+            configHelper.showEnvInfoList(dockerInfoList);
         }
         else if(args.name === 'key') {
             const keyInfo = this.getKeyInfo();

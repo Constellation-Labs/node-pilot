@@ -3,6 +3,7 @@ import path from "node:path";
 import {APP_ENV} from "../app-env.js";
 import {logger} from "../logger.js";
 import {NodeInfo} from "../types.js";
+import {healUtils} from "./heal-utils.js";
 import {nodeUtils} from "./node-utils.js";
 import {notifyUtils} from "./notify-utils.js";
 import {shellUtils} from "./shell-utils.js";
@@ -16,13 +17,19 @@ export const clusterUtils = {
 
         logger.log(`Checking for session fork.`);
 
+        if (Number.isNaN(clusterSession) || Number.isNaN(nodeClusterSession)) {
+            throw new TypeError(`Unable to determine cluster session. Cluster: ${clusterSession}, Node: ${nodeClusterSession}`);
+        }
+
         if (clusterSession !== nodeClusterSession) {
             logger.error(`Session fork detected. Current session: ${clusterSession}, Node session: ${nodeClusterSession}`);
+
             if (await this.hasVersionChanged()) {
                 logger.log(`    Network version has changed. Waiting for auto-upgrade...`);
                 const {upgrade} = storeUtils.getTimerInfo();
                 if (!upgrade) {
                     storeUtils.setTimerInfo({upgrade: true});
+                    await healUtils.downloadLatestSeedList();
                     await notifyUtils.notify(`Network version has changed. Waiting for auto-upgrade...`);
                 }
 
@@ -30,7 +37,9 @@ export const clusterUtils = {
                 throw new Error('Cluster upgrade in progress.');
             }
             else {
+                await healUtils.downloadLatestSeedList();
                 storeUtils.setNodeStatusInfo({error: 'cluster:forked'});
+                await nodeUtils.leaveCluster();
                 throw new Error('RESTART_REQUIRED');
             }
         }
@@ -90,6 +99,10 @@ export const clusterUtils = {
 
         const ordinalToCheck = Math.min(clusterOrdinal, ordinal);
 
+        if (Number.isNaN(ordinalToCheck)) {
+            throw new TypeError(`Unable to determine latest snapshot to check hash for. Cluster: ${clusterOrdinal}, Node: ${ordinal}`);
+        }
+
         const nodeOrdinalHash = await nodeUtils.getNodeOrdinalHash(ordinalToCheck);
         const clusterOrdinalHash = await this.getClusterOrdinalHash(ordinalToCheck);
 
@@ -97,18 +110,34 @@ export const clusterUtils = {
         logger.debug("  Local : " + nodeOrdinalHash);
         logger.debug(`  Cluster: ${clusterOrdinalHash}`);
 
+        // TODO - prevent false positives
+        //  x. are actual hashes and not failed request
+        //  x. Witness mismatched hashes from different nodes
+        //  3. Witness mismatch hash from a source node
+
+
         if (nodeOrdinalHash === clusterOrdinalHash) {
             storeUtils.setNodeStatusInfo({hashMismatchCount: 0});
         }
         else {
-            logger.log(`    Hash mismatch detected at ordinal ${ordinalToCheck} - Node: ${nodeOrdinalHash}, Cluster: ${clusterOrdinalHash}`);
-            if (hashMismatchCount < 1) {
+            logger.log(`    Hash mismatch detected at ordinal ${ordinalToCheck} - Local Node: ${nodeOrdinalHash}, LB Node: ${clusterOrdinalHash}, count: ${hashMismatchCount}`);
+            if (hashMismatchCount < 2) {
                 storeUtils.setNodeStatusInfo({hashMismatchCount: hashMismatchCount+1});
             }
             else {
-                storeUtils.setNodeStatusInfo({error: 'hash mismatch:forked'});
-                await nodeUtils.leaveCluster();
-                throw new Error('Hash mismatch');
+                const sourceNodeOrdinalHash = await this.getSourceNodeOrdinalHash(ordinalToCheck);
+                logger.log(`    Source Node Hash compare ordinal ${ordinalToCheck} - Local Node: ${nodeOrdinalHash}, Source Node: ${sourceNodeOrdinalHash}`);
+                if (nodeOrdinalHash === sourceNodeOrdinalHash) {
+                    storeUtils.setNodeStatusInfo({hashMismatchCount: 0});
+                }
+                else { // if (process.env.DEBUG === 'true') {
+                    logger.log(`    Source Node Hash mismatch detected at ordinal ${ordinalToCheck} - Local Node: ${nodeOrdinalHash}, Source Node: ${sourceNodeOrdinalHash}`);
+                }
+                // else {
+                //     storeUtils.setNodeStatusInfo({error: 'hash mismatch:forked'});
+                //     await nodeUtils.leaveCluster();
+                //     throw new Error('Hash mismatch');
+                // }
             }
         }
     },
@@ -147,14 +176,19 @@ export const clusterUtils = {
         return this.getSourceNodeLatestOrdinal();
     },
 
-    async getClusterNodeInfo(): Promise<NodeInfo> {
+    async getClusterNodeInfo(params=''): Promise<NodeInfo> {
         const lbUrl = APP_ENV.CL_LB;
         if (lbUrl) {
-            return fetch(`${lbUrl}/node/info`) // ?sticky=false
+            const url = `${lbUrl}/node/info${params}`;
+            return fetch(url)
                 .then(res => res.json())
                 .catch(() => {
-                    logger.warn(`Failed to fetch node info from ${lbUrl}. Falling back to source node.`);
-                    return this.getSourceNodeInfo();
+                    if (params) {
+                        logger.warn(`Failed to fetch node info from ${url}. Falling back to source node.`);
+                        return this.getSourceNodeInfo();
+                    }
+
+                    return this.getClusterNodeInfo('?sticky=false');
                 })
         }
 
@@ -169,6 +203,10 @@ export const clusterUtils = {
             const url = `${lbUrl}/${APP_ENV.SNAPSHOT_URL_PATH}/${ordinal}/hash${sticky}`;
             return fetch(url)
                 .then(res => res.json())
+                .then((h: string) => {
+                    Buffer.from(h, 'hex');
+                    return h;
+                })
                 .catch(() => {
                     logger.warn(`Failed to fetch from ${url}. Falling back to source node.`);
                     return this.getSourceNodeOrdinalHash(ordinal);
@@ -205,11 +243,19 @@ export const clusterUtils = {
     },
 
     async getSourceNodeLatestOrdinal(): Promise<number> {
-        return this.makeSourceNodeRequest(`${APP_ENV.SNAPSHOT_URL_PATH}/latest`).then(i => i.value.ordinal);
+        return this.makeSourceNodeRequest(`${APP_ENV.SNAPSHOT_URL_PATH}/latest`).then(i => i.value.ordinal)
     },
 
     async getSourceNodeOrdinalHash(ordinal: number): Promise<string> {
-        return this.makeSourceNodeRequest(`${APP_ENV.SNAPSHOT_URL_PATH}/${ordinal}/hash`);
+        const path = `${APP_ENV.SNAPSHOT_URL_PATH}/${ordinal}/hash`;
+        return this.makeSourceNodeRequest(path)
+            .then((h: string) => {
+                Buffer.from(h, 'hex');
+                return h;
+            })
+            .catch(() => {
+                throw new Error(`Failed to fetch from Source Node ${path}.`);
+            })
     },
 
     async hasHealableErrors() {
@@ -230,11 +276,29 @@ export const clusterUtils = {
         return nodeVersion !== clusterVersion;
     },
 
-    async makeSourceNodeRequest(path: string) {
-        return fetch(`http://${APP_ENV.CL_L0_PEER_HTTP_HOST}:${APP_ENV.CL_PUBLIC_HTTP_PORT}/${path}`)
+    async makeDirectSourceNodeRequest(path: string) {
+        const url = `http://${APP_ENV.CL_SOURCE_NODE_HOST}:${APP_ENV.CL_SOURCE_NODE_PORT}/${path}`;
+        logger.log(`makeDirectSourceNodeRequest - ${url}`);
+        return fetch(url)
             .then(res =>  res.json())
             .catch(() => {
-                throw new Error(`Unable to connect to source node at ${APP_ENV.CL_L0_PEER_HTTP_HOST}:${APP_ENV.CL_PUBLIC_HTTP_PORT}.`);
+                throw new Error(`Unable to connect to source node - ${url}`);
             })
+    },
+
+    async makeSourceNodeRequest(path: string) {
+        const lbUrl = APP_ENV.CL_LB;
+        if (lbUrl) {
+            const url = `${lbUrl}/${path}?source_node=true&sticky=false`;
+            logger.debug('Making source node request to: ' + url);
+            return fetch(url)
+                .then(res => res.json())
+                .catch(() => {
+                    console.error(`Failed to fetch from ${url}. Falling back to direct source node request.`);
+                    return this.makeDirectSourceNodeRequest(path);
+                })
+        }
+
+        return this.makeDirectSourceNodeRequest(path);
     }
 }

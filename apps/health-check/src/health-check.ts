@@ -3,11 +3,12 @@ import {logger} from "./logger.js";
 import {NodeState, TessellationLayer, TimerInfo} from "./types.js";
 import {checkUtils} from "./utils/check-utils.js";
 import {clusterUtils} from "./utils/cluster-utils.js";
+import {healUtils} from "./utils/heal-utils.js";
 import {nodeUtils} from "./utils/node-utils.js";
 import {storeUtils} from "./utils/store-utils.js";
 
-// @ts-expect-error
-const MAX_STATE_TIME: Record<NodeState, number> = {
+
+const MAX_STATE_TIME: Record<string, number> = {
     [NodeState.Observing]: 600, // 10 minutes
     [NodeState.SessionStarted]: 480, // 8 minutes
     [NodeState.WaitingForDownload]: 120, // 30s - happened during joining
@@ -104,9 +105,10 @@ class HealthCheck {
                 const timeDiff = currentTime - startTime;
 
                 if (timeDiff >= MAX_TIME) {
+                    await healUtils.detectSeedlistDoesNotMatch();
                     storeUtils.setNodeStatusInfo({error: `stalled:${currentState}`});
                     await nodeUtils.leaveCluster();
-                    throw new Error(`${layer} has been in ${currentState} state for more than ${Math.round(MAX_TIME/60)} minutes - exiting...`);
+                    throw new Error(`${layer} has been in ${currentState} state for more than ${Math.round(MAX_TIME / 60)} minutes - exiting...`);
                 } else {
                     const remainingTime = MAX_TIME - timeDiff;
                     storeUtils.setNodeStatusInfo({state: currentState + ` (${remainingTime}s)`});

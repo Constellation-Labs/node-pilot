@@ -1,16 +1,16 @@
-import {Args, Flags} from '@oclif/core'
+import {Args, Command, Flags} from '@oclif/core'
 
-import {BaseCommand} from "../base-command.js";
 import {checkProject} from "../checks/check-project.js";
 import {clm} from "../clm.js";
 import {configStore} from "../config-store.js";
 import {configHelper} from "../helpers/config-helper.js";
+import {pilotManager} from "../helpers/pilot-manager.js";
 import {serviceLog} from "../helpers/service-log.js";
 import {dockerService} from "../services/docker-service.js";
 import {nodeService} from "../services/node-service.js";
 import {TessellationLayer} from "../types.js";
 
-export default class Restart extends BaseCommand {
+export default class Restart extends Command {
     static override args = {
         layer: Args.string({description: 'network layer to restart. e.g. gl0'}),
     }
@@ -25,17 +25,16 @@ export default class Restart extends BaseCommand {
 
     public async run(): Promise<void> {
         const {args, flags} = await this.parse(Restart);
-        this.checkProject(flags);
 
         configHelper.assertProject('No project found. ');
 
         if (flags.update) {
             serviceLog.log('Executing "cpilot restart --update" at ' + new Date().toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}));
             this.setIsRestarting(true);
-            const project = configStore.getActiveProject();
-            const activeProjects = configStore.getRunningProjects();
+            const project = pilotManager.getActiveProject();
+            const activeProjects = pilotManager.getRunningProjects();
             for (const project of activeProjects) {
-                configStore.setActiveProject(project);
+                pilotManager.setActiveProject(project);
                 // eslint-disable-next-line no-await-in-loop
                 if(await checkProject.hasVersionChanged()) {
                     serviceLog.log('    ' + project + ' version has changed. Restarting...');
@@ -47,7 +46,7 @@ export default class Restart extends BaseCommand {
                 }
             }
 
-            configStore.setActiveProject(project);
+            pilotManager.setActiveProject(project);
             this.setIsRestarting(false);
             return;
         }
@@ -55,16 +54,16 @@ export default class Restart extends BaseCommand {
         if (flags.autostart) {
             serviceLog.log('Executing "cpilot restart --autostart" at ' + new Date().toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}));
             this.setIsRestarting(true);
-            const project = configStore.getActiveProject();
-            const activeProjects = configStore.getRunningProjects();
+            const project = pilotManager.getActiveProject();
+            const activeProjects = pilotManager.getRunningProjects();
             for (const project of activeProjects) {
                 serviceLog.log('    ' + project + ' is being auto started...');
-                configStore.setActiveProject(project);
+                pilotManager.setActiveProject(project);
                 // eslint-disable-next-line no-await-in-loop
                 await this.restart();
             }
 
-            configStore.setActiveProject(project);
+            pilotManager.setActiveProject(project);
             this.setIsRestarting(false);
             return;
         }
@@ -109,20 +108,20 @@ export default class Restart extends BaseCommand {
 
     private setIsRestarting(val: boolean) {
         if (val) {
-            if (configStore.isRestarting()) {
+            if (pilotManager.isRestarting()) {
                 serviceLog.log('Restart already ACTIVE')
                 process.exit(0);
             }
 
             process.on("exit", () => {
                 // serviceLog.log('exiting, clearing isRestarting flag');
-                configStore.setIsRestarting(0);
+                pilotManager.setIsRestarting(0);
             });
 
-            configStore.setIsRestarting(Date.now());
+            pilotManager.setIsRestarting(Date.now());
         }
         else {
-            configStore.setIsRestarting(0);
+            pilotManager.setIsRestarting(0);
         }
     }
 

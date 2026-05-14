@@ -1,12 +1,19 @@
 *-debug.log
 *-error.log
 **/.DS_Store
+src/*.d.ts
+src/*.js
+/test
 /.idea
 /.vscode
 dist
 /tmp
 node_modules
 oclif.manifest.json
+/keys
+
+source-nodes.env
+yarn.lock
 
 *.p12
 notes.txt

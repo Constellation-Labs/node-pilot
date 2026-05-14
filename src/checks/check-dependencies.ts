@@ -30,28 +30,37 @@ export const checkDependencies = async () => {
 
     const isDockerInstalled = await shellService.checkCommandAvailable('docker');
     const pilotDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), `../..`);
+    const hasInstallScript = fs.existsSync(path.join(pilotDir, 'install-dependencies.sh'));
 
-    if (fs.existsSync(path.join(pilotDir, 'install-dependencies.sh'))) {
+    if (isDockerInstalled) {
 
-        if (!isDockerInstalled) {
+        if(os.platform() === 'linux') {
+            const user = os.userInfo().username;
 
-            clm.step('Docker is required and needs to be installed.');
-            await promptHelper.doYouWishToContinue();
+            clm.preStep(`Checking if user ${user} has been added to the docker group...`);
 
-            await installDependencies(pilotDir);
+            const groups = await shellService.runCommandWithOutput('groups');
 
-            clm.postStep(`\nDocker has been installed. Please logout and login again to ensure the changes take effect. Then run cpilot again.`);
-            clm.echo('');
-            process.exit(0);
+            if (groups.includes('docker')) {
+                clm.postStep('✅ User has already been added');
+            } else {
+                await shellService.runCommand(`sudo usermod -aG docker ${user}`);
+                clm.postStep(`\n✅ Added user "${user}" to the docker group`);
+                clm.warn('\nPlease logout and login again in order for the group changes take effect.\n');
+                process.exit(0);
+            }
         }
+    }
+    else if (hasInstallScript) {
 
-        const isACLInstalled = await shellService.checkCommandAvailable('setfacl');
+        clm.step('Docker is required and needs to be installed.');
+        await promptHelper.doYouWishToContinue();
 
-        if (!isACLInstalled && os.platform() === 'linux') {
-            clm.step('ACL is required and needs to be installed.');
-            await promptHelper.doYouWishToContinue();
-            await installDependencies(pilotDir);
-        }
+        await installDependencies(pilotDir);
+
+        clm.postStep(`\nDocker has been installed. Please logout and login again to ensure the changes take effect. Then run cpilot again.`);
+        clm.echo('');
+        process.exit(0);
     }
 
 }

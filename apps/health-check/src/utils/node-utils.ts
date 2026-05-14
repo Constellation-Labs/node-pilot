@@ -68,12 +68,18 @@ export const nodeUtils = {
 
         storeUtils.setNodeStatusInfo({clusterState});
 
-        let {hasJoined = false} = storeUtils.getNodeStatusInfo();
+        let {error, errorDate, hasJoined = false} = storeUtils.getNodeStatusInfo();
 
-        if (hasJoined && OutOfClusterStates.has(state)) {
-            logger.log(`Node left the cluster. Current state: ${state}`);
-            storeUtils.setNodeStatusInfo({hasJoined: false});
-            hasJoined = false;
+        if (hasJoined) {
+            if (OutOfClusterStates.has(state)) {
+                logger.log(`Node left the cluster. Current state: ${state}`);
+                storeUtils.setNodeStatusInfo({hasJoined: false});
+                hasJoined = false;
+            }
+            else if (error && state === NodeState.Ready && errorDate && Date.now() - errorDate > 60_000) {
+                    // Node has recoverable from error.
+                    storeUtils.setNodeStatusInfo({error: ''});
+                }
         }
 
         if (!hasJoined) {
@@ -81,14 +87,14 @@ export const nodeUtils = {
             const {error,lastError,pilotSession='0'} = storeUtils.getNodeStatusInfo();
             if (state === NodeState.Ready) {
                 logger.log(`Node has joined the cluster. Current state: ${state}.`);
-                storeUtils.setNodeStatusInfo({clusterSession, error: '', hasJoined: true, lastError: error || lastError, pilotSession: APP_ENV.NODE_PILOT_SESSION});
+                storeUtils.setNodeStatusInfo({clusterSession, error: '', hashMismatchCount: 0, hasJoined: true, lastError: error || lastError, pilotSession: APP_ENV.NODE_PILOT_SESSION, unavailableCount: 0});
                 const { fatal: hadFatal = false, upgrade = false } = storeUtils.getTimerInfo();
                 if (upgrade) {
                     logger.log(`Node has upgraded`);
                     await notifyUtils.notify(`Node has been upgraded and is READY`);
                     storeUtils.setTimerInfo({upgrade: false});
                 }
-                else if (hadFatal) {
+                else if (hadFatal && error) {
                     logger.fatal(`Node has recovered`);
                     await notifyUtils.notify(`Node has recovered from "${error}" and is READY`);
                     storeUtils.setTimerInfo({fatal: false});
@@ -107,8 +113,7 @@ export const nodeUtils = {
 
                 logger.log(`Node is ready to join the cluster. Current state: ${state}. Last session: ${pilotSession}. Node Pilot session: ${APP_ENV.NODE_PILOT_SESSION}`);
 
-                await healUtils.detectClusterUpgradeStatus()
-                await healUtils.detectSeedlistDoesNotMatch();
+                await healUtils.detectClusterUpgradeStatus();
 
                 if (pilotSession === APP_ENV.NODE_PILOT_SESSION) {
                     const {isRunning, pid} = storeUtils.getArchiveInfo();
@@ -142,6 +147,7 @@ export const nodeUtils = {
                 }
             }
             else if (state !== NodeState.Initial) {
+                // Node state is not Initial or ReadyToJoin, meaning user must have started the join process manually.
                 storeUtils.setNodeStatusInfo({ pilotSession: APP_ENV.NODE_PILOT_SESSION});
             }
         }
@@ -177,7 +183,15 @@ export const nodeUtils = {
     },
 
     async getNodeOrdinalHash(ordinal: number): Promise<string> {
-        return this.makeNodeRequest(`${APP_ENV.SNAPSHOT_URL_PATH}/${ordinal}/hash`);
+        const url = `${APP_ENV.SNAPSHOT_URL_PATH}/${ordinal}/hash`;
+        return this.makeNodeRequest(url)
+            .then((h: string) => {
+                Buffer.from(h, 'hex');
+                return h;
+            })
+            .catch(() => {
+                throw new Error(`Unable to retrieve ${url} from node.`);
+            });
     },
 
     async getNodeVersion() {
@@ -208,7 +222,7 @@ export const nodeUtils = {
 
         storeUtils.setNodeStatusInfo({pilotSession: APP_ENV.NODE_PILOT_SESSION});
 
-        const state = await this.getCurrentState();
+        const { state } = storeUtils.getNodeStatusInfo();
 
         if (state === NodeState.Offline || state === NodeState.Leaving ) {
             logger.log(`Node has already left the cluster. Current state: "${state}".`);
@@ -227,7 +241,7 @@ export const nodeUtils = {
 
         const cliPort = APP_ENV.CL_CLI_HTTP_PORT;
 
-        logger.log(`${APP_ENV.CL_TESSELATION_LAYER} is leaving the cluster.`);
+        logger.log(`Sent leave cluster command for ${APP_ENV.CL_TESSELATION_LAYER}.`);
 
         await fetch(`http://localhost:${cliPort}/cluster/leave`, { method: 'POST' } )
     },
