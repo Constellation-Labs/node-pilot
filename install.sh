@@ -1,4 +1,23 @@
-  #!/usr/bin/env bash
+#!/usr/bin/env bash
+# Usage: bash install.sh <mainnet|testnet|intnet>
+
+NETWORK="${1:-}"
+
+case "$NETWORK" in
+  mainnet)               NPM_TAG="latest"  ;;
+  testnet)               NPM_TAG="testnet" ;;
+  intnet|integrationnet) NPM_TAG="intnet"  ;;
+  "")
+    echo "Error: network argument required."
+    echo "Usage: $0 <mainnet|testnet|intnet>"
+    exit 1
+    ;;
+  *)
+    echo "Error: unknown network '$NETWORK'."
+    echo "Usage: $0 <mainnet|testnet|intnet>"
+    exit 1
+    ;;
+esac
 
 # Check and install Node.js
 check_node() {
@@ -106,8 +125,8 @@ check_node_pilot() {
   if ! check_node; then
     return
   fi
-  echo "Installing Node Pilot..."
-  sudo npm install -g @constellation-network/node-pilot@testnet
+  echo "Installing Node Pilot for $NETWORK..."
+  sudo npm install -g "@constellation-network/node-pilot@$NPM_TAG"
   echo "✅ Node Pilot installed: $(cpilot --version)"
 }
 
