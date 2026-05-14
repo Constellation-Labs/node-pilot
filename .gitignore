@@ -1,6 +1,9 @@
 *-debug.log
 *-error.log
 **/.DS_Store
+src/*.d.ts
+src/*.js
+/test
 /.idea
 /.vscode
 dist
