@@ -200,7 +200,6 @@ export const keyFileHelper = {
         }
 
         configStore.setProjectFlag('duplicateNodeIdChecked', false);
-        configStore.setProjectFlag('seedListChecked', false);
     },
 
     async promptIfNoKeyFile() {

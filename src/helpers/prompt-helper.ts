@@ -71,24 +71,19 @@ export const promptHelper = {
             throw new Error('No supported networks found');
         }
 
-        if (supportedTypes.length === 1) {
-            configStore.setNetworkInfo({type: supportedTypes[0], version: "latest"});
-            // configStore.setEnvNetworkInfo(configStore.getNetworkEnvInfo(supportedTypes[0]));
-            return;
-        }
-
-        const networkType = await select({
-            choices: [
-                {disabled: !supportedTypes.includes('mainnet'), name: 'Mainnet', value: 'mainnet'},
-                {disabled: !supportedTypes.includes('testnet'), name: 'Testnet', value: 'testnet'},
-                {disabled: !supportedTypes.includes('integrationnet'), name: 'Integrationnet', value: 'integrationnet'}
-            ],
-            message: 'Select network type:'
-        }) as NetworkType;
+        const networkType = supportedTypes.length === 1
+            ? supportedTypes[0]
+            : await select({
+                choices: [
+                    {disabled: !supportedTypes.includes('mainnet'), name: 'Mainnet', value: 'mainnet'},
+                    {disabled: !supportedTypes.includes('testnet'), name: 'Testnet', value: 'testnet'},
+                    {disabled: !supportedTypes.includes('integrationnet'), name: 'Integrationnet', value: 'integrationnet'}
+                ],
+                message: 'Select network type:'
+            }) as NetworkType;
 
         configStore.setNetworkInfo({type: networkType, version: "latest"});
         configStore.setProjectFlag('duplicateNodeIdChecked', false);
-        configStore.setProjectFlag('seedListChecked', false);
         configStore.setProjectFlag('javaMemoryChecked', false);
     },
 

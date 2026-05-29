@@ -44,23 +44,18 @@ export const checkNetwork = {
     },
 
     async checkSeedList() {
-        if(configStore.hasProjectFlag('seedListChecked')) {
-            return;
-        }
-
+        // Seed list membership is dynamic — the upstream lists (especially testnet /
+        // integrationnet) get rotated and nodes can be dropped. Re-validate on every run
+        // instead of trusting a cached "passed" flag, otherwise a node that was removed
+        // upstream keeps launching and only gets rejected later by the protocol.
         const { type } = configStore.getNetworkInfo();
-
-        clm.preStep(`Checking inclusion into seed list for ${type.toUpperCase()} network...`);
         const { nodeId, projectDir } = configStore.getProjectInfo();
         const seedListFile = path.resolve(projectDir, 'seedlist');
-        if (fs.existsSync(seedListFile)) {
-            const found = fs.readFileSync(seedListFile, 'utf8').includes(nodeId);
-            if (found) {
-                clm.postStep(`✅ Node ID found in ${type.toUpperCase()} seed list.`);
-                configStore.setProjectFlag('seedListChecked', true);
-                return;
-            }
-        }
+
+        clm.preStep(`Checking inclusion into seed list for ${type.toUpperCase()} network...`);
+
+        const isInLocalSeedList = () =>
+            fs.existsSync(seedListFile) && fs.readFileSync(seedListFile, 'utf8').includes(nodeId);
 
         const printNotFoundError = () => {
             clm.warn(`Node ID not found in ${type.toUpperCase()} seed list. You may try again later.`);
@@ -69,29 +64,45 @@ export const checkNetwork = {
         }
 
         if (type === 'mainnet') {
-            // the mainnet seed list comed from a network release
-            printNotFoundError();
-        } else {
+            // the mainnet seed list comes from a network release (downloaded by install.sh);
+            // validate against the local file the node actually mounts.
+            if (isInLocalSeedList()) {
+                clm.postStep(`✅ Node ID found in ${type.toUpperCase()} seed list.`);
+                return;
+            }
 
-            const url = `https://constellationlabs-dag.s3.us-west-1.amazonaws.com/${type}-seedlist`
-            const seedList = await fetch(url)
-                .then(res => {
-                    if (res.ok) return res.text();
-                    throw new Error(`Failed`);
-                })
-                .catch(() => {
-                    clm.error(`Failed to fetch seed list from ${url}. Try again later.`);
-                    return '';
-                });
-            if (seedList.includes(nodeId)) {
-                clm.postStep(`Node ID found in ${type.toUpperCase()} seed list.`);
-                fs.writeFileSync(seedListFile, seedList);
-                configStore.setProjectFlag('seedListChecked', true);
-            }
-            else {
-                printNotFoundError();
-            }
+            printNotFoundError();
+            return;
         }
+
+        const url = `https://constellationlabs-dag.s3.us-west-1.amazonaws.com/${type}-seedlist`
+        const remoteSeedList = await fetch(url)
+            .then(res => {
+                if (res.ok) return res.text();
+                throw new Error(`Failed`);
+            })
+            .catch(() => '');
+
+        if (remoteSeedList) {
+            if (remoteSeedList.includes(nodeId)) {
+                // refresh the seed list the node mounts so it stays current
+                fs.writeFileSync(seedListFile, remoteSeedList);
+                clm.postStep(`✅ Node ID found in ${type.toUpperCase()} seed list.`);
+                return;
+            }
+
+            printNotFoundError();
+            return;
+        }
+
+        // Remote unreachable — fall back to the local seed list the node uses.
+        clm.warn(`Could not fetch the ${type.toUpperCase()} seed list from ${url}. Falling back to local copy.`);
+        if (isInLocalSeedList()) {
+            clm.postStep(`✅ Node ID found in local ${type.toUpperCase()} seed list.`);
+            return;
+        }
+
+        printNotFoundError();
     },
 
     async configureIpAddress() {
