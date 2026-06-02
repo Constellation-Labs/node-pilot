@@ -9,6 +9,43 @@ import {clusterService} from "../services/cluster-service.js";
 import {dockerService} from "../services/docker-service.js";
 import {shellService} from "../services/shell-service.js";
 
+const NODE_ID_REGEX = /^[\da-f]{128}$/i;
+
+function seedListEntries(text: string): string[] {
+    return text.split('\n').map(line => line.trim()).filter(Boolean);
+}
+
+// A seed list we trust enough to act on a *negative* result: non-empty and every line is
+// a node id. Rejects HTML/XML error bodies, empty bodies, and responses truncated mid-line
+// (the partial last line fails the id check). Without this a flaky S3 response could
+// hard-exit a node that is actually enrolled.
+function isCompleteSeedList(text: string): boolean {
+    const entries = seedListEntries(text);
+    return entries.length > 0 && entries.every(entry => NODE_ID_REGEX.test(entry));
+}
+
+// Fetch the seed list, returning '' unless we got a complete, untruncated list. Retries
+// once to ride out a transient blip before the caller falls back to the local copy.
+async function fetchCompleteSeedList(url: string): Promise<string> {
+    for (let attempt = 0; attempt < 2; attempt++) {
+        // eslint-disable-next-line no-await-in-loop
+        const body = await fetch(url)
+            .then(async res => {
+                if (!res.ok) return '';
+                const text = await res.text();
+                // a truncated transfer that still parsed as text
+                const declaredLength = Number(res.headers.get('content-length'));
+                if (declaredLength && Buffer.byteLength(text) !== declaredLength) return '';
+                return text;
+            })
+            .catch(() => '');
+
+        if (isCompleteSeedList(body)) return body;
+    }
+
+    return '';
+}
+
 export const checkNetwork = {
 
     checkExternalIpAddress() {
@@ -54,9 +91,11 @@ export const checkNetwork = {
 
         clm.preStep(`Checking inclusion into seed list for ${type.toUpperCase()} network...`);
 
-        const isInLocalSeedList = () =>
-            fs.existsSync(seedListFile) && fs.readFileSync(seedListFile, 'utf8').includes(nodeId);
+        const localSeedList = () => fs.existsSync(seedListFile) ? fs.readFileSync(seedListFile, 'utf8') : '';
+        const isEnrolled = (list: string) => seedListEntries(list).includes(nodeId);
 
+        // Hard-exits on purpose: the protocol enforces the seed list, so without this the
+        // node would just fail to connect with no explanation.
         const printNotFoundError = () => {
             clm.warn(`Node ID not found in ${type.toUpperCase()} seed list. You may try again later.`);
             clm.warn(`To change the Key File: use ${chalk.cyan('cpilot config')}, and select ${chalk.cyan('Key File')}`);
@@ -64,9 +103,9 @@ export const checkNetwork = {
         }
 
         if (type === 'mainnet') {
-            // the mainnet seed list comes from a network release (downloaded by install.sh);
-            // validate against the local file the node actually mounts.
-            if (isInLocalSeedList()) {
+            // the mainnet seed list ships with the network release (install.sh always writes
+            // the local file), so the local copy is authoritative.
+            if (isEnrolled(localSeedList())) {
                 clm.postStep(`✅ Node ID found in ${type.toUpperCase()} seed list.`);
                 return;
             }
@@ -75,16 +114,14 @@ export const checkNetwork = {
             return;
         }
 
+        // testnet / integrationnet: the S3 list is authoritative and rotates over time.
+        // Only act on a *negative* when we obtained a complete list — a partial or failed
+        // fetch must not hard-exit a node that is actually enrolled.
         const url = `https://constellationlabs-dag.s3.us-west-1.amazonaws.com/${type}-seedlist`
-        const remoteSeedList = await fetch(url)
-            .then(res => {
-                if (res.ok) return res.text();
-                throw new Error(`Failed`);
-            })
-            .catch(() => '');
+        const remoteSeedList = await fetchCompleteSeedList(url);
 
         if (remoteSeedList) {
-            if (remoteSeedList.includes(nodeId)) {
+            if (isEnrolled(remoteSeedList)) {
                 // refresh the seed list the node mounts so it stays current
                 fs.writeFileSync(seedListFile, remoteSeedList);
                 clm.postStep(`✅ Node ID found in ${type.toUpperCase()} seed list.`);
@@ -95,9 +132,10 @@ export const checkNetwork = {
             return;
         }
 
-        // Remote unreachable — fall back to the local seed list the node uses.
-        clm.warn(`Could not fetch the ${type.toUpperCase()} seed list from ${url}. Falling back to local copy.`);
-        if (isInLocalSeedList()) {
+        // Could not obtain a trustworthy remote list — fall back to the local copy the node
+        // mounts rather than hard-exiting on an unverified result.
+        clm.warn(`Could not fetch a complete ${type.toUpperCase()} seed list from ${url}. Falling back to local copy.`);
+        if (isEnrolled(localSeedList())) {
             clm.postStep(`✅ Node ID found in local ${type.toUpperCase()} seed list.`);
             return;
         }
