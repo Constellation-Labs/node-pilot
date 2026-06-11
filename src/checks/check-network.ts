@@ -9,19 +9,23 @@ import {clusterService} from "../services/cluster-service.js";
 import {dockerService} from "../services/docker-service.js";
 import {shellService} from "../services/shell-service.js";
 
-const NODE_ID_REGEX = /^[\da-f]{128}$/i;
+// Node ids are 128 hex chars, but the upstream lists occasionally carry a slightly
+// shorter id (a leading zero stripped during generation), so don't hard-require 128 —
+// just "a long hex token". This is only used to tell a real seed list apart from an
+// HTML/XML error page or other garbage, not to validate individual ids.
+const SEED_LIST_LINE_REGEX = /^[\da-f]{100,}$/i;
 
 function seedListEntries(text: string): string[] {
     return text.split('\n').map(line => line.trim()).filter(Boolean);
 }
 
-// A seed list we trust enough to act on a *negative* result: non-empty and every line is
-// a node id. Rejects HTML/XML error bodies, empty bodies, and responses truncated mid-line
-// (the partial last line fails the id check). Without this a flaky S3 response could
-// hard-exit a node that is actually enrolled.
+// A seed list we trust enough to act on a *negative* result: non-empty and every line
+// looks like a node id. Rejects HTML/XML error bodies, empty bodies, and responses
+// truncated mid-line. Without this a flaky S3 response could hard-exit a node that is
+// actually enrolled.
 function isCompleteSeedList(text: string): boolean {
     const entries = seedListEntries(text);
-    return entries.length > 0 && entries.every(entry => NODE_ID_REGEX.test(entry));
+    return entries.length > 0 && entries.every(entry => SEED_LIST_LINE_REGEX.test(entry));
 }
 
 // Fetch the seed list, returning '' unless we got a complete, untruncated list. Retries
@@ -33,9 +37,10 @@ async function fetchCompleteSeedList(url: string): Promise<string> {
             .then(async res => {
                 if (!res.ok) return '';
                 const text = await res.text();
-                // a truncated transfer that still parsed as text
+                // guard against a truncated transfer: fewer bytes than declared. A larger
+                // body (e.g. a decompressed gzip response) is fine, so only flag shortfalls.
                 const declaredLength = Number(res.headers.get('content-length'));
-                if (declaredLength && Buffer.byteLength(text) !== declaredLength) return '';
+                if (declaredLength && Buffer.byteLength(text) < declaredLength) return '';
                 return text;
             })
             .catch(() => '');
