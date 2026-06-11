@@ -123,7 +123,7 @@ describe('checkNetwork.checkSeedList', () => {
         expect(postStepStub.calledWithMatch(/found/i)).to.equal(true)
     })
 
-    it('treats a truncated transfer (content-length mismatch) as untrustworthy', async () => {
+    it('treats a truncated transfer (fewer bytes than content-length) as untrustworthy', async () => {
         stubConfig('testnet')
         fs.writeFileSync(seedListFile, `${NODE_ID}\n`)
         // body is well-formed and even contains the id, but the declared length says it was cut
@@ -132,6 +132,34 @@ describe('checkNetwork.checkSeedList', () => {
         await checkNetwork.checkSeedList()
 
         expect(errorStub.called, 'a truncated response must not be authoritative').to.equal(false)
+        expect(postStepStub.calledWithMatch(/found/i)).to.equal(true)
+    })
+
+    it('accepts a remote list containing a short (127-char) id and still re-validates', async () => {
+        // the real testnet list carries an id with a stripped leading zero; one odd entry
+        // must not make us reject the whole (authoritative) list and fall back
+        stubConfig('testnet')
+        const shortId = 'b'.repeat(127)
+        const remote = `${OTHER_ID}\n${shortId}\n${NODE_ID}\n`
+        mockFetch(remote)
+
+        await checkNetwork.checkSeedList()
+
+        expect(errorStub.called).to.equal(false)
+        expect(warnStub.calledWithMatch(/fall(ing)? back/i), 'must not fall back on a complete list').to.equal(false)
+        expect(postStepStub.calledWithMatch(/found/i)).to.equal(true)
+        expect(fs.readFileSync(seedListFile, 'utf8')).to.equal(remote)
+    })
+
+    it('does not flag a larger-than-declared body (e.g. decompressed) as truncated', async () => {
+        stubConfig('testnet')
+        // declared length far smaller than the actual body — decompression, not truncation
+        mockFetch(`${OTHER_ID}\n${NODE_ID}\n`, {contentLength: 1})
+
+        await checkNetwork.checkSeedList()
+
+        expect(errorStub.called).to.equal(false)
+        expect(warnStub.calledWithMatch(/fall(ing)? back/i)).to.equal(false)
         expect(postStepStub.calledWithMatch(/found/i)).to.equal(true)
     })
 
