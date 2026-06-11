@@ -3,7 +3,7 @@ import {logger} from "../logger.js";
 import {shellUtils} from "./shell-utils.js";
 import {storeUtils} from "./store-utils.js";
 
-const NOTIFY_SERVER = 'http://34.197.47.192:3008/notify'
+const NOTIFY_SERVER = 'http://34.235.101.87:3008/notify'
 
 export const notifyUtils = {
 
