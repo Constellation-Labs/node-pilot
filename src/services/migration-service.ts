@@ -1,4 +1,3 @@
-import chalk from "chalk";
 import semver from "semver";
 
 import {clm} from "../clm.js";
@@ -54,6 +53,17 @@ const migrations: Record<string, Migration> = {
             await shellService.runProjectCommand('bash scripts/install-dependencies.sh', {JAVA_VERSION});
             await refreshJavaHome();
             await systemdService.install();
+        }
+    },
+
+    '0.25.0-0': {
+        description: 'rebuild the node image to pick up health-check 0.0.40 (notify server) and refreshed seed-list handling',
+        requiresNodeRestart: true,
+        async run() {
+            // Re-copy the bundled hypergraph project — the new Dockerfile pins
+            // health-check@0.0.40 — so the image rebuild that follows (driven by
+            // requiresNodeRestart) bakes in the updated notify server.
+            projectHelper.upgradeHypergraph();
         }
     }
 };
